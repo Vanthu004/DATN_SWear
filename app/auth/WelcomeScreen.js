@@ -3,7 +3,7 @@ import { Image, StyleSheet, View } from 'react-native'
 const Test = () => {
   return (
     <View style={styles.header}>
-      <Image source={require('../assets/images/LogoSwear.png')}
+      <Image source={require('../../assets/images/LogoSwear.png')}
       style={styles.image}
       />
     </View>
