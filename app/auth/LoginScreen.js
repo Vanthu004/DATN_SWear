@@ -11,7 +11,6 @@ const LoginScreen = () => {
       <TouchableOpacity style={styles.button}>
         <Text style={styles.buttonText}>Tiếp tục</Text>
       </TouchableOpacity>
-
       <Text style={styles.signupText}>
         Chưa có Tài khoản? <Text style={styles.signupLink}>Tạo ngay!</Text>
       </Text>
@@ -19,13 +18,13 @@ const LoginScreen = () => {
     <View style={styles.LoginButton}>
      {/* Google Button */}
       <TouchableOpacity style={styles.socialButton}>
-        <Image source={require('../assets/images/google.png')} style={styles.icon} />
+        <Image source={require('../../assets/images/google.png')} style={styles.icon} />
         <Text style={styles.socialText}>Tiếp tục với Google</Text>
       </TouchableOpacity>
 
       {/* Facebook Button */}
       <TouchableOpacity style={styles.socialButton}>
-        <Image source={require('../assets/images/facebook.png')} style={styles.icon} />
+        <Image source={require('../../assets/images/facebook.png')} style={styles.icon} />
         <Text style={styles.socialText}>Tiếp tục với Facebook</Text>
       </TouchableOpacity>
     </View>

@@ -1,6 +1,6 @@
 import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
-const RegisterScreen = ({ navigation }) => {
+const ForgotPasswordScreen = ({ navigation }) => {
   return (
     <View style={styles.container}>
       {/* Nút quay lại */}
@@ -9,15 +9,16 @@ const RegisterScreen = ({ navigation }) => {
       </TouchableOpacity> */}
 
       {/* Tiêu đề */}
-      <Text style={styles.title}>Tạo tài khoản</Text>
+      <Text style={styles.title}>Quên mật khẩu</Text>
 
-      {/* Ô nhập thông tin */}
-      <TextInput style={styles.input} placeholder="Tên" />
-      <TextInput style={styles.input} placeholder="Họ" />
-      <TextInput style={styles.input} placeholder="Địa chỉ email" keyboardType="email-address" />
-      <TextInput style={styles.input} placeholder="Mật khẩu" secureTextEntry />
+      {/* Ô nhập email */}
+      <TextInput
+        style={styles.input}
+        placeholder="Địa chỉ email"
+        keyboardType="email-address"
+      />
 
-      {/* Nút Tiếp tục */}
+      {/* Nút tiếp tục */}
       <TouchableOpacity style={styles.button}>
         <Text style={styles.buttonText}>Tiếp tục</Text>
       </TouchableOpacity>
@@ -25,7 +26,7 @@ const RegisterScreen = ({ navigation }) => {
   );
 };
 
-export default RegisterScreen;
+export default ForgotPasswordScreen;
 
 const styles = StyleSheet.create({
   container: {
@@ -44,7 +45,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   title: {
-    fontSize: 28,
+    fontSize: 26,
     fontWeight: 'bold',
     marginBottom: 24,
   },
@@ -54,7 +55,7 @@ const styles = StyleSheet.create({
     borderColor: '#ddd',
     borderRadius: 8,
     paddingHorizontal: 12,
-    marginBottom: 16,
+    marginBottom: 20,
     backgroundColor: '#f5f5f5',
   },
   button: {
@@ -63,7 +64,7 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 12,
+    marginTop: 8,
   },
   buttonText: {
     color: '#fff',
