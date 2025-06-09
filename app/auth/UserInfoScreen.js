@@ -6,7 +6,7 @@ import {
     View
 } from 'react-native';
 
-// import { Picker as RNPickerSelect } from '@react-native-picker/picker';
+import { Picker as RNPickerSelect } from '@react-native-picker/picker';
 
 const UserInfoScreen = () => {
   const [gender, setGender] = useState(null);
@@ -54,7 +54,7 @@ const UserInfoScreen = () => {
       </View>
 
       <Text style={styles.label}>Bạn bao nhiêu tuổi?</Text>
-      {/* <View style={styles.pickerWrapper}>
+      <View style={styles.pickerWrapper}>
         <RNPickerSelect
           selectedValue={age}
           onValueChange={(value) => setAge(value)}
@@ -67,7 +67,7 @@ const UserInfoScreen = () => {
           <RNPickerSelect.Item label="35 - 44" value="35-44" />
           <RNPickerSelect.Item label="45+" value="45plus" />
         </RNPickerSelect>
-      </View> */}
+      </View>
 
       <TouchableOpacity style={styles.doneButton}>
         <Text style={styles.doneText}>Xong!</Text>
