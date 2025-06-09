@@ -11,7 +11,6 @@ const LoginScreen = () => {
       <TouchableOpacity style={styles.button}>
         <Text style={styles.buttonText}>Tiếp tục</Text>
       </TouchableOpacity>
-
       <Text style={styles.signupText}>
         Chưa có Tài khoản? <Text style={styles.signupLink}>Tạo ngay!</Text>
       </Text>
