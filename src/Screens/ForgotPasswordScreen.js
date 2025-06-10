@@ -7,17 +7,12 @@ const ForgotPasswordScreen = ({ navigation }) => {
       {/* <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
         <Ionicons name="chevron-back" size={24} color="#000" />
       </TouchableOpacity> */}
-
-      {/* Tiêu đề */}
       <Text style={styles.title}>Quên mật khẩu</Text>
-
-      {/* Ô nhập email */}
       <TextInput
         style={styles.input}
         placeholder="Địa chỉ email"
         keyboardType="email-address"
       />
-
       {/* Nút tiếp tục */}
       <TouchableOpacity style={styles.button}>
         <Text style={styles.buttonText}>Tiếp tục</Text>
