@@ -1,11 +1,12 @@
+import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
   Image,
   ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -34,6 +35,19 @@ const ProfileScreen = ({ navigation }) => {
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* Custom Header */}
+      <View style={styles.customHeader}>
+        <TouchableOpacity
+          style={styles.backBtn}
+          onPress={() => navigation.goBack()}
+          activeOpacity={0.7}
+        >
+          <View style={styles.backIconWrap}>
+            <Ionicons name="arrow-back" size={22} color="#222" />
+          </View>
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Tài khoản</Text>
+      </View>
       <ScrollView style={styles.scrollView}>
         <View style={styles.profileSection}>
           <View style={styles.avatarContainer}>
@@ -156,6 +170,35 @@ const styles = StyleSheet.create({
   logoutText: {
     fontSize: 16,
     color: "#FF3B30",
+  },
+  customHeader: {
+    height: 64,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "white",
+    position: "relative",
+    marginBottom: 8,
+    paddingTop: 24,
+  },
+  backBtn: {
+    position: "absolute",
+    left: 16,
+    top: 24,
+    zIndex: 2,
+  },
+  backIconWrap: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "#F6F6F6",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "#222",
+    textAlign: "center",
   },
 });
 

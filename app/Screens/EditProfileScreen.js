@@ -1,11 +1,12 @@
+import { Ionicons } from "@expo/vector-icons";
 import React, { useState } from "react";
 import {
-  View,
-  Text,
+  Image,
   StyleSheet,
+  Text,
   TextInput,
   TouchableOpacity,
-  Image,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -24,6 +25,20 @@ const EditProfileScreen = ({ navigation, route }) => {
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* Custom Header */}
+      <View style={styles.customHeader}>
+        <TouchableOpacity
+          style={styles.backBtn}
+          onPress={() => navigation.goBack()}
+          activeOpacity={0.7}
+        >
+          <View style={styles.backIconWrap}>
+            <Ionicons name="arrow-back" size={22} color="#222" />
+          </View>
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Chỉnh sửa thông tin</Text>
+      </View>
+
       <View style={styles.form}>
         <View style={styles.avatarSection}>
           <Image
@@ -129,6 +144,22 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 16,
     fontWeight: "bold",
+  },
+  customHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 10,
+  },
+  backBtn: {
+    padding: 5,
+  },
+  backIconWrap: {
+    padding: 5,
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    marginLeft: 10,
   },
 });
 

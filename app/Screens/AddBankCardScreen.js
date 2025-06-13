@@ -1,11 +1,12 @@
+import { Ionicons } from "@expo/vector-icons";
 import React, { useState } from "react";
 import {
-  View,
-  Text,
+  ScrollView,
   StyleSheet,
+  Text,
   TextInput,
   TouchableOpacity,
-  ScrollView,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -23,6 +24,20 @@ const AddBankCardScreen = ({ navigation }) => {
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* Custom Header */}
+      <View style={styles.customHeader}>
+        <TouchableOpacity
+          style={styles.backBtn}
+          onPress={() => navigation.goBack()}
+          activeOpacity={0.7}
+        >
+          <View style={styles.backIconWrap}>
+            <Ionicons name="arrow-back" size={22} color="#222" />
+          </View>
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Thêm thẻ</Text>
+      </View>
+
       <ScrollView style={styles.scrollView}>
         <View style={styles.disclaimerSection}>
           <Text style={styles.disclaimerTitle}>
@@ -113,6 +128,24 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#fff",
+  },
+  customHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: "#eee",
+  },
+  backBtn: {
+    padding: 5,
+  },
+  backIconWrap: {
+    padding: 5,
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    marginLeft: 10,
   },
   scrollView: {
     flex: 1,

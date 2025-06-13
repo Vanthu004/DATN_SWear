@@ -1,10 +1,11 @@
+import { Ionicons } from "@expo/vector-icons";
 import React, { useState } from "react";
 import {
-  View,
-  Text,
   StyleSheet,
+  Text,
   TextInput,
   TouchableOpacity,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -13,9 +14,12 @@ const AddAddressScreen = ({ navigation, route }) => {
   const isEditing = !!editAddress;
 
   const [formData, setFormData] = useState({
-    type: editAddress?.type || "",
+    name: editAddress?.name || "",
+    phone: editAddress?.phone || "",
     address: editAddress?.address || "",
-    note: editAddress?.note || "",
+    city: editAddress?.city || "",
+    district: editAddress?.district || "",
+    ward: editAddress?.ward || "",
   });
 
   const handleSave = () => {
@@ -25,46 +29,90 @@ const AddAddressScreen = ({ navigation, route }) => {
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* Custom Header */}
+      <View style={styles.customHeader}>
+        <TouchableOpacity
+          style={styles.backBtn}
+          onPress={() => navigation.goBack()}
+          activeOpacity={0.7}
+        >
+          <View style={styles.backIconWrap}>
+            <Ionicons name="arrow-back" size={22} color="#222" />
+          </View>
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Thêm địa chỉ</Text>
+      </View>
+
       <View style={styles.form}>
         <View style={styles.inputGroup}>
-          <Text style={styles.label}>Loại địa chỉ</Text>
+          <Text style={styles.label}>Tên người nhận</Text>
           <TextInput
             style={styles.input}
-            value={formData.type}
-            onChangeText={(text) => setFormData({ ...formData, type: text })}
-            placeholder="Nhà riêng, Văn phòng..."
+            value={formData.name}
+            onChangeText={(text) => setFormData({ ...formData, name: text })}
+            placeholder="Nhập tên người nhận"
+          />
+        </View>
+
+        <View style={styles.inputGroup}>
+          <Text style={styles.label}>Số điện thoại</Text>
+          <TextInput
+            style={styles.input}
+            value={formData.phone}
+            onChangeText={(text) => setFormData({ ...formData, phone: text })}
+            placeholder="Nhập số điện thoại"
+            keyboardType="phone-pad"
           />
         </View>
 
         <View style={styles.inputGroup}>
           <Text style={styles.label}>Địa chỉ</Text>
           <TextInput
-            style={[styles.input, styles.textArea]}
+            style={styles.input}
             value={formData.address}
             onChangeText={(text) => setFormData({ ...formData, address: text })}
-            placeholder="Nhập địa chỉ chi tiết"
+            placeholder="Nhập địa chỉ"
             multiline
-            numberOfLines={3}
           />
         </View>
 
+        <View style={styles.row}>
+          <View style={[styles.inputGroup, { flex: 1, marginRight: 10 }]}>
+            <Text style={styles.label}>Tỉnh/Thành phố</Text>
+            <TextInput
+              style={styles.input}
+              value={formData.city}
+              onChangeText={(text) => setFormData({ ...formData, city: text })}
+              placeholder="Chọn tỉnh/thành phố"
+            />
+          </View>
+
+          <View style={[styles.inputGroup, { flex: 1 }]}>
+            <Text style={styles.label}>Quận/Huyện</Text>
+            <TextInput
+              style={styles.input}
+              value={formData.district}
+              onChangeText={(text) =>
+                setFormData({ ...formData, district: text })
+              }
+              placeholder="Chọn quận/huyện"
+            />
+          </View>
+        </View>
+
         <View style={styles.inputGroup}>
-          <Text style={styles.label}>Ghi chú</Text>
+          <Text style={styles.label}>Phường/Xã</Text>
           <TextInput
-            style={[styles.input, styles.textArea]}
-            value={formData.note}
-            onChangeText={(text) => setFormData({ ...formData, note: text })}
-            placeholder="Thêm ghi chú cho địa chỉ này"
-            multiline
-            numberOfLines={2}
+            style={styles.input}
+            value={formData.ward}
+            onChangeText={(text) => setFormData({ ...formData, ward: text })}
+            placeholder="Chọn phường/xã"
           />
         </View>
       </View>
 
       <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-        <Text style={styles.saveButtonText}>
-          {isEditing ? "Cập nhật địa chỉ" : "Thêm địa chỉ"}
-        </Text>
+        <Text style={styles.saveButtonText}>Lưu địa chỉ</Text>
       </TouchableOpacity>
     </SafeAreaView>
   );
@@ -74,6 +122,24 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#fff",
+  },
+  customHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: "#eee",
+  },
+  backBtn: {
+    padding: 5,
+  },
+  backIconWrap: {
+    padding: 5,
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    marginLeft: 10,
   },
   form: {
     padding: 15,
@@ -95,9 +161,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
     backgroundColor: "#f8f8f8",
   },
-  textArea: {
-    height: 100,
-    textAlignVertical: "top",
+  row: {
+    flexDirection: "row",
+    justifyContent: "space-between",
   },
   saveButton: {
     margin: 15,

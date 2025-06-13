@@ -1,10 +1,11 @@
+import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
   FlatList,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -12,34 +13,49 @@ const AddressListScreen = ({ navigation }) => {
   const addresses = [
     {
       id: "1",
-      address: "123/4 Hồ Đắc Di, Đống Đa, Hà Nội",
-      type: "Nhà riêng",
+      name: "Nhà riêng",
+      address: "123 Đường ABC, Quận XYZ, TP.HCM",
+      phone: "0123456789",
     },
     {
       id: "2",
-      address: "56/7 Hồ Đắc Di, Đống Đa, Hà Nội",
-      type: "Văn phòng",
+      name: "Công ty",
+      address: "456 Đường DEF, Quận UVW, TP.HCM",
+      phone: "0987654321",
     },
   ];
 
-  const renderAddressItem = ({ item }) => (
-    <TouchableOpacity
-      style={styles.addressItem}
-      onPress={() => navigation.navigate("EditAddress", { address: item })}
-    >
-      <View style={styles.addressContent}>
-        <Text style={styles.addressType}>{item.type}</Text>
-        <Text style={styles.addressText}>{item.address}</Text>
-      </View>
-    </TouchableOpacity>
-  );
-
   return (
     <SafeAreaView style={styles.container}>
+      {/* Custom Header */}
+      <View style={styles.customHeader}>
+        <TouchableOpacity
+          style={styles.backBtn}
+          onPress={() => navigation.goBack()}
+          activeOpacity={0.7}
+        >
+          <View style={styles.backIconWrap}>
+            <Ionicons name="arrow-back" size={22} color="#222" />
+          </View>
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Địa chỉ</Text>
+      </View>
+
       <FlatList
         data={addresses}
-        renderItem={renderAddressItem}
         keyExtractor={(item) => item.id}
+        renderItem={({ item }) => (
+          <View style={styles.addressCard}>
+            <View style={styles.addressInfo}>
+              <Text style={styles.addressName}>{item.name}</Text>
+              <Text style={styles.addressText}>{item.address}</Text>
+              <Text style={styles.phoneText}>{item.phone}</Text>
+            </View>
+            <TouchableOpacity style={styles.editButton}>
+              <Ionicons name="pencil" size={20} color="#007AFF" />
+            </TouchableOpacity>
+          </View>
+        )}
         contentContainerStyle={styles.listContainer}
       />
 
@@ -58,28 +74,54 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#fff",
   },
+  customHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: "#eee",
+  },
+  backBtn: {
+    padding: 5,
+  },
+  backIconWrap: {
+    padding: 5,
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    marginLeft: 10,
+  },
   listContainer: {
     padding: 15,
   },
-  addressItem: {
+  addressCard: {
+    flexDirection: "row",
     backgroundColor: "#f8f8f8",
-    borderRadius: 8,
     padding: 15,
+    borderRadius: 10,
     marginBottom: 10,
-    borderWidth: 1,
-    borderColor: "#eee",
+    alignItems: "center",
   },
-  addressContent: {
-    gap: 5,
+  addressInfo: {
+    flex: 1,
   },
-  addressType: {
+  addressName: {
     fontSize: 16,
-    fontWeight: "bold",
-    color: "#333",
+    fontWeight: "600",
+    marginBottom: 5,
   },
   addressText: {
     fontSize: 14,
     color: "#666",
+    marginBottom: 3,
+  },
+  phoneText: {
+    fontSize: 14,
+    color: "#666",
+  },
+  editButton: {
+    padding: 10,
   },
   addButton: {
     margin: 15,
@@ -91,7 +133,7 @@ const styles = StyleSheet.create({
   addButtonText: {
     color: "#fff",
     fontSize: 16,
-    fontWeight: "bold",
+    fontWeight: "600",
   },
 });
 
