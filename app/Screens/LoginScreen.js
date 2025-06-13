@@ -1,104 +1,150 @@
-import { Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import React, { useState } from "react";
+import {
+  ActivityIndicator,
+  Alert,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { useAuth } from "../context/AuthContext";
 
-const LoginScreen = () => {
+export default function LoginScreen({ navigation }) {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const { login } = useAuth();
+
+  const handleLogin = async () => {
+    if (!email || !password) {
+      Alert.alert("Lỗi", "Vui lòng nhập đầy đủ thông tin");
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      // Thay thế bằng API call thực tế
+      const response = await mockLoginAPI(email, password);
+      await login(response.token, response.user);
+    } catch (error) {
+      Alert.alert("Lỗi", error.message || "Đăng nhập thất bại");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Mock API - thay thế bằng API thực tế
+  const mockLoginAPI = (email, password) => {
+    return new Promise((resolve, reject) => {
+      setTimeout(() => {
+        if (email === "test@example.com" && password === "password") {
+          resolve({
+            token: "mock-token",
+            user: {
+              id: 1,
+              email: "test@example.com",
+              name: "Test User",
+            },
+          });
+        } else {
+          reject(new Error("Email hoặc mật khẩu không đúng"));
+        }
+      }, 1000);
+    });
+  };
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Đăng nhập</Text>
 
-      <TextInput style={styles.input} placeholder="Địa chỉ email" />
-      <TextInput style={styles.input} placeholder="Mật khẩu" secureTextEntry />
+      <TextInput
+        style={styles.input}
+        placeholder="Email"
+        value={email}
+        onChangeText={setEmail}
+        keyboardType="email-address"
+        autoCapitalize="none"
+      />
 
-      <TouchableOpacity style={styles.button}>
-        <Text style={styles.buttonText}>Tiếp tục</Text>
-      </TouchableOpacity>
-      <Text style={styles.signupText}>
-        Chưa có Tài khoản? <Text style={styles.signupLink}>Tạo ngay!</Text>
-      </Text>
+      <TextInput
+        style={styles.input}
+        placeholder="Mật khẩu"
+        value={password}
+        onChangeText={setPassword}
+        secureTextEntry
+      />
 
-    <View style={styles.LoginButton}>
-     {/* Google Button */}
-      <TouchableOpacity style={styles.socialButton}>
-        <Image source={require('../../assets/images/google.png')} style={styles.icon} />
-        <Text style={styles.socialText}>Tiếp tục với Google</Text>
+      <TouchableOpacity
+        style={styles.button}
+        onPress={handleLogin}
+        disabled={isLoading}
+      >
+        {isLoading ? (
+          <ActivityIndicator color="#ffffff" />
+        ) : (
+          <Text style={styles.buttonText}>Đăng nhập</Text>
+        )}
       </TouchableOpacity>
 
-      {/* Facebook Button */}
-      <TouchableOpacity style={styles.socialButton}>
-        <Image source={require('../../assets/images/facebook.png')} style={styles.icon} />
-        <Text style={styles.socialText}>Tiếp tục với Facebook</Text>
+      <TouchableOpacity
+        onPress={() => navigation.navigate("ForgotPassword")}
+        style={styles.linkButton}
+      >
+        <Text style={styles.linkText}>Quên mật khẩu?</Text>
       </TouchableOpacity>
-    </View>
- 
+
+      <TouchableOpacity
+        onPress={() => navigation.navigate("Register")}
+        style={styles.linkButton}
+      >
+        <Text style={styles.linkText}>Chưa có tài khoản? Đăng ký ngay</Text>
+      </TouchableOpacity>
     </View>
   );
-};
-
-export default LoginScreen;
+}
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
-    paddingHorizontal: 24,
-    justifyContent: 'center',
+    padding: 20,
+    backgroundColor: "#ffffff",
+    justifyContent: "center",
   },
   title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    marginBottom: 50,
+    fontSize: 24,
+    fontWeight: "bold",
+    marginBottom: 30,
+    textAlign: "center",
   },
   input: {
-    height: 48,
+    height: 50,
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: "#ddd",
     borderRadius: 8,
-    paddingHorizontal: 12,
-    marginBottom: 16,
-    backgroundColor: '#f5f5f5',
+    paddingHorizontal: 15,
+    marginBottom: 15,
+    fontSize: 16,
   },
   button: {
-    height: 48,
-    backgroundColor: '#007bff',
-    borderRadius: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginVertical: 12,
+    backgroundColor: "#007AFF",
+    height: 50,
+    borderRadius: 8,
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: 20,
   },
   buttonText: {
-    color: '#fff',
+    color: "#ffffff",
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
-  signupText: {
-    textAlign: 'center',
-    color: '#555',
-    marginBottom: 16,
+  linkButton: {
+    marginTop: 15,
+    alignItems: "center",
   },
-  signupLink: {
-    color: '#007bff',
-    fontWeight: 'bold',
-  },
-  LoginButton:{
-    marginTop:30,
-  },
-  socialButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#f2f2f2',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 12,
-    marginBottom: 12,
-    
-  },
-  socialText: {
-    flex:1,
-    textAlign:'center',
-    fontSize: 16,
-    color: '#333',
-  },
-  icon: {
-    width: 24,
-    height: 24,
+  linkText: {
+    color: "#007AFF",
+    fontSize: 14,
   },
 });

@@ -1,20 +1,29 @@
-import { Ionicons } from '@expo/vector-icons';
-import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Ionicons } from "@expo/vector-icons";
+import { useNavigation } from "@react-navigation/native";
+import {
+  Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
 const cartItems = [
   {
-    name: 'Áo Polo Nam thêu chữ rã',
-    image: require('../../assets/images/anhtt1.png'),
+    name: "Áo Polo Nam thêu chữ rã",
+    image: require("../../assets/images/anhtt1.png"),
     price: 249000,
   },
   {
-    name: 'Áo thể thao Nam Recycle',
-    image: require('../../assets/images/anhtt2.png'),
+    name: "Áo thể thao Nam Recycle",
+    image: require("../../assets/images/anhtt2.png"),
     price: 269000,
-  }
+  },
 ];
 
 const CartScreen = () => {
+  const navigation = useNavigation();
   const subtotal = cartItems.reduce((sum, item) => sum + item.price, 0);
   const shipping = 0;
   const tax = 0;
@@ -22,15 +31,18 @@ const CartScreen = () => {
 
   return (
     <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity>
-          <Ionicons name="arrow-back" size={24} color="black" />
+      {/* Custom Header */}
+      <View style={styles.customHeader}>
+        <TouchableOpacity
+          style={styles.backBtn}
+          onPress={() => navigation.goBack()}
+          activeOpacity={0.7}
+        >
+          <View style={styles.backIconWrap}>
+            <Ionicons name="arrow-back" size={22} color="#222" />
+          </View>
         </TouchableOpacity>
-        <Text style={styles.title}>Giỏ hàng</Text>
-        <TouchableOpacity>
-          <Text style={styles.clearAll}>Xóa hết</Text>
-        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Giỏ hàng</Text>
       </View>
 
       {/* Product List */}
@@ -41,9 +53,12 @@ const CartScreen = () => {
             <View style={styles.itemInfo}>
               <Text style={styles.itemName}>{item.name}</Text>
               <Text style={styles.itemDetail}>
-                Kích cỡ - <Text style={styles.bold}>M</Text>   Màu - <Text style={styles.bold}>Trắng</Text>
+                Kích cỡ - <Text style={styles.bold}>M</Text> Màu -{" "}
+                <Text style={styles.bold}>Trắng</Text>
               </Text>
-              <Text style={styles.price}>{item.price.toLocaleString()} VND</Text>
+              <Text style={styles.price}>
+                {item.price.toLocaleString()} VND
+              </Text>
             </View>
             <View style={styles.quantityControl}>
               <TouchableOpacity style={styles.qtyButton}>
@@ -78,7 +93,10 @@ const CartScreen = () => {
       </View>
 
       {/* Checkout */}
-      <TouchableOpacity style={styles.checkoutButton}>
+      <TouchableOpacity
+        style={styles.checkoutButton}
+        onPress={() => navigation.navigate("Checkout")}
+      >
         <Text style={styles.checkoutText}>Thanh toán</Text>
       </TouchableOpacity>
     </View>
@@ -90,32 +108,49 @@ export default CartScreen;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     paddingTop: 50,
     paddingHorizontal: 20,
   },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+  customHeader: {
+    height: 64,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "white",
+    position: "relative",
+    marginBottom: 8,
+    paddingTop: 24,
   },
-  title: {
+  backBtn: {
+    position: "absolute",
+    left: 16,
+    top: 24,
+    zIndex: 2,
+  },
+  backIconWrap: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "#F6F6F6",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  headerTitle: {
     fontSize: 20,
-    fontWeight: 'bold',
-  },
-  clearAll: {
-    color: '#333',
+    fontWeight: "bold",
+    color: "#222",
+    textAlign: "center",
   },
   productList: {
     marginTop: 20,
   },
   item: {
-    flexDirection: 'row',
-    backgroundColor: '#F9F9F9',
+    flexDirection: "row",
+    backgroundColor: "#F9F9F9",
     borderRadius: 10,
     padding: 10,
     marginBottom: 15,
-    alignItems: 'center',
+    alignItems: "center",
   },
   image: {
     width: 60,
@@ -128,68 +163,68 @@ const styles = StyleSheet.create({
   },
   itemName: {
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   itemDetail: {
-    color: '#666',
+    color: "#666",
     fontSize: 13,
     marginTop: 4,
   },
   bold: {
-    fontWeight: 'bold',
-    color: '#000',
+    fontWeight: "bold",
+    color: "#000",
   },
   price: {
     marginTop: 4,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   quantityControl: {
-    flexDirection: 'column',
-    alignItems: 'center',
+    flexDirection: "column",
+    alignItems: "center",
   },
   qtyButton: {
-    backgroundColor: '#007BFF',
+    backgroundColor: "#007BFF",
     borderRadius: 20,
     width: 30,
     height: 30,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     marginVertical: 2,
   },
   qtyText: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   summary: {
     marginTop: 10,
     paddingTop: 10,
   },
   summaryRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
     marginVertical: 4,
   },
   label: {
-    color: '#999',
+    color: "#999",
   },
   totalLabel: {
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   totalAmount: {
-    fontWeight: 'bold',
+    fontWeight: "bold",
     fontSize: 16,
   },
   checkoutButton: {
-    backgroundColor: '#007BFF',
+    backgroundColor: "#007BFF",
     paddingVertical: 14,
     borderRadius: 25,
     marginTop: 20,
-    alignItems: 'center',
+    alignItems: "center",
   },
   checkoutText: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 16,
-    fontWeight: '500',
+    fontWeight: "500",
   },
 });
