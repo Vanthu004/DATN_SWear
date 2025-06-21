@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Image,
   StyleSheet,
   Text,
   TextInput,
@@ -9,7 +10,7 @@ import {
   View,
 } from "react-native";
 import { useAuth } from "../context/AuthContext";
-
+import api from "../utils/api";
 export default function LoginScreen({ navigation }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -24,38 +25,29 @@ export default function LoginScreen({ navigation }) {
 
     setIsLoading(true);
     try {
-      // Thay thế bằng API call thực tế
-      const response = await mockLoginAPI(email, password);
-      await login(response.token, response.user);
+      const res = await api.post("/login", { email, password });
+      const { token, user } = res.data;
+
+      await login(token, user); // lưu vào AuthContext hoặc AsyncStorage
+    //    navigation.reset({
+    //   index: 0,
+    //   routes: [{ name: "Main" }],
+    // });
     } catch (error) {
-      Alert.alert("Lỗi", error.message || "Đăng nhập thất bại");
+      const message =
+        error.response?.data?.message || "Đăng nhập thất bại";
+      Alert.alert("Lỗi", message);
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Mock API - thay thế bằng API thực tế
-  const mockLoginAPI = (email, password) => {
-    return new Promise((resolve, reject) => {
-      setTimeout(() => {
-        if (email === "test@example.com" && password === "password") {
-          resolve({
-            token: "mock-token",
-            user: {
-              id: 1,
-              email: "test@example.com",
-              name: "Test User",
-            },
-          });
-        } else {
-          reject(new Error("Email hoặc mật khẩu không đúng"));
-        }
-      }, 1000);
-    });
-  };
-
   return (
     <View style={styles.container}>
+      <Image
+                source={require("../../assets/images/LogoSwear.png")}
+                style={styles.image}
+              />
       <Text style={styles.title}>Đăng nhập</Text>
 
       <TextInput
@@ -103,13 +95,19 @@ export default function LoginScreen({ navigation }) {
     </View>
   );
 }
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
     backgroundColor: "#ffffff",
     justifyContent: "center",
+  },
+  image: {
+    alignSelf:"center",
+    width: 150,
+    height: 150,
+    marginBottom:'100',
+    resizeMode: "contain",
   },
   title: {
     fontSize: 24,

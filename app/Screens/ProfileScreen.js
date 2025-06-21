@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 import {
+  Alert,
   Image,
   ScrollView,
   StyleSheet,
@@ -9,14 +10,14 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-
+import { useAuth } from "../context/AuthContext";
 const ProfileScreen = ({ navigation }) => {
-  const userInfo = {
-    name: "Nguyễn Văn Quân",
-    email: "vanquan001@gmail.com",
-    phone: "0963256277",
-  };
-
+  // const userInfo = {
+  //   name: "Nguyễn Văn Quân",
+  //   email: "vanquan001@gmail.com",
+  //   phone: "0963256277",
+  // };
+const { userInfo, logout } = useAuth();
   const menuItems = [
     {
       id: 1,
@@ -52,15 +53,19 @@ const ProfileScreen = ({ navigation }) => {
         <View style={styles.profileSection}>
           <View style={styles.avatarContainer}>
             <Image
-              source={require("../../assets/images/default-avatar.png")}
+              source={
+                userInfo?.avata_url
+                  ? { uri: userInfo.avata_url }
+                  : require("../../assets/images/default-avatar.png")
+              }
               style={styles.avatar}
             />
           </View>
 
           <View style={styles.userInfoContainer}>
-            <Text style={styles.name}>{userInfo.name}</Text>
-            <Text style={styles.email}>{userInfo.email}</Text>
-            <Text style={styles.phone}>{userInfo.phone}</Text>
+            <Text style={styles.name}>{userInfo?.name}</Text>
+            <Text style={styles.email}>{userInfo?.email}</Text>
+            <Text style={styles.phone}>{userInfo?.phone_number}</Text>
             <TouchableOpacity
               onPress={() => navigation.navigate("EditProfile")}
               style={styles.editButton}
@@ -83,9 +88,21 @@ const ProfileScreen = ({ navigation }) => {
           ))}
         </View>
 
-        <TouchableOpacity style={styles.logoutButton} onPress={() => {}}>
+        {/* <TouchableOpacity style={styles.logoutButton} onPress={() => {}}>
           <Text style={styles.logoutText}>Đăng xuất</Text>
-        </TouchableOpacity>
+        </TouchableOpacity> */}
+        <TouchableOpacity
+              style={styles.logoutButton}
+              onPress={() =>
+                Alert.alert("Xác nhận", "Bạn có chắc muốn đăng xuất?", [
+                  { text: "Hủy" },
+                  { text: "Đăng xuất", onPress: logout },
+                ])
+              }
+            >
+              <Text style={styles.logoutText}>Đăng xuất</Text>
+            </TouchableOpacity>
+
       </ScrollView>
     </SafeAreaView>
   );

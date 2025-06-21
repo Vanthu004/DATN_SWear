@@ -5,6 +5,10 @@ export const ROUTES = {
   LOGIN: "Login",
   REGISTER: "Register",
   FORGOT_PASSWORD: "ForgotPassword",
+  RESET_PASSWORD: "ResetPassword",
+  EMAIL_VERIFICATION: "EmailVerification",
+  EMAIL_VERIFICATION_SUCCESS: "EmailVerificationSuccess",
+  EMAIL_SUPPORT: "EmailSupport",
 
   // Main tabs
   MAIN: "Main",
