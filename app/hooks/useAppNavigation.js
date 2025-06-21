@@ -9,6 +9,9 @@ export function useAppNavigation() {
     goToLogin: () => navigation.navigate(ROUTES.LOGIN),
     goToRegister: () => navigation.navigate(ROUTES.REGISTER),
     goToForgotPassword: () => navigation.navigate(ROUTES.FORGOT_PASSWORD),
+    goToResetPassword: (email) => navigation.navigate(ROUTES.RESET_PASSWORD, { email }),
+    goToEmailVerification: (email, name) => navigation.navigate(ROUTES.EMAIL_VERIFICATION, { email, name }),
+    goToEmailSupport: (email) => navigation.navigate(ROUTES.EMAIL_SUPPORT, { email }),
 
     // Shop
     goToHome: () => navigation.navigate(ROUTES.HOME),
