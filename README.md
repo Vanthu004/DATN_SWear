@@ -48,3 +48,75 @@ Join our community of developers creating universal apps.
 
 - [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
 - [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+
+# DATN_SWear - React Native App
+
+## Luồng Email Verification
+
+### 1. Đăng ký tài khoản mới
+- User nhập thông tin đăng ký (tên, email, mật khẩu)
+- Sau khi đăng ký thành công:
+  - Lưu token và thông tin user tạm thời (email_verified: false)
+  - Tự động gửi OTP đến email
+  - Chuyển đến màn hình EmailVerification
+
+### 2. Xác nhận Email
+- Màn hình EmailVerification tự động gửi OTP khi vào từ Register
+- User nhập mã OTP 6 số
+- Sau khi xác nhận thành công:
+  - Cập nhật trạng thái email_verified: true
+  - Hiển thị thông báo thành công
+  - Chuyển về màn hình Login
+
+### 3. Đăng nhập
+- Kiểm tra email đã xác nhận chưa trước khi cho phép đăng nhập
+- Nếu email chưa xác nhận:
+  - Hiển thị thông báo yêu cầu xác nhận
+  - Cho phép chuyển đến màn hình EmailVerification
+- Nếu email đã xác nhận: Cho phép đăng nhập bình thường
+
+### 4. Gửi lại OTP
+- User có thể gửi lại OTP tối đa 3 lần
+- Có timer 60 giây giữa các lần gửi
+- Sau 3 lần, hiển thị option liên hệ hỗ trợ
+
+## API Endpoints
+
+### Register
+- `POST /register`
+- Body: `{ name, email, password }`
+- Response: `{ token, user }`
+
+### Send Verification Email
+- `POST /resend-verification` (hoặc `/send-verification-email`, `/verify-email/resend`)
+- Body: `{ email }`
+
+### Verify Email
+- `POST /verify-email`
+- Body: `{ email, otp }`
+
+### Login
+- `POST /login`
+- Body: `{ email, password }`
+- Response: `{ token, user, isEmailVerified }`
+
+### Check Email Verification
+- `GET /check-email-verification?email={email}`
+- Response: `{ isEmailVerified }`
+
+## Cấu hình
+
+### API Base URL
+- File: `app/utils/api.js`
+- Thay đổi `API_BASE_URL` theo server của bạn
+
+### Debug
+- API requests và responses được log tự động
+- Kiểm tra console để debug các vấn đề API
+
+## Lưu ý
+
+1. Đảm bảo server hỗ trợ các endpoint cần thiết
+2. Email service phải được cấu hình đúng trên server
+3. OTP có hiệu lực trong 10 phút
+4. User phải xác nhận email trước khi có thể đăng nhập

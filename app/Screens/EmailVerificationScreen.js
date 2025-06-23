@@ -1,23 +1,27 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useState } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
+import { useAuth } from '../context/AuthContext';
 import api from '../utils/api';
 
 const EmailVerificationScreen = ({ route, navigation }) => {
-  const { email, name } = route.params;
+  const { email, name, fromRegister = false, tempToken } = route.params;
+  const { login, updateEmailVerificationStatus } = useAuth();
   const [otp, setOtp] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [resendLoading, setResendLoading] = useState(false);
   const [timeLeft, setTimeLeft] = useState(60);
   const [resendCount, setResendCount] = useState(0);
+  const [emailSent, setEmailSent] = useState(false);
+  const [networkError, setNetworkError] = useState(false);
 
   useEffect(() => {
     if (timeLeft > 0) {
@@ -25,6 +29,19 @@ const EmailVerificationScreen = ({ route, navigation }) => {
       return () => clearTimeout(timer);
     }
   }, [timeLeft]);
+
+  // Chỉ tự động gửi email xác nhận khi vào từ Login (không phải từ Register)
+  useEffect(() => {
+    console.log('EmailVerificationScreen mounted with email:', email, 'fromRegister:', fromRegister);
+    // Không auto-send khi vào từ Register vì server đã gửi email rồi
+    if (!fromRegister && !emailSent) {
+      // Delay một chút để tránh gửi trùng với email từ server
+      const timer = setTimeout(() => {
+        handleResendOTP(true); // true = auto send
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, []);
 
   const handleVerifyEmail = async () => {
     if (!otp) {
@@ -39,40 +56,123 @@ const EmailVerificationScreen = ({ route, navigation }) => {
 
     setIsLoading(true);
     try {
-      await api.post('/verify-email', {
+      console.log('Verifying email with OTP:', otp);
+      const response = await api.post('/verify-email', {
         email,
         otp,
       });
 
-      navigation.navigate('EmailVerificationSuccess');
+      console.log('Verify email response:', response.data);
+
+      // Sau khi xác nhận thành công, luôn chuyển về Login
+      Alert.alert(
+        'Thành công', 
+        'Email đã được xác nhận thành công! Vui lòng đăng nhập.',
+        [
+          { 
+            text: 'Đăng nhập ngay', 
+            onPress: () => {
+              // Reset navigation stack để về Login
+              navigation.reset({
+                index: 0,
+                routes: [{ name: 'Login' }],
+              });
+            }
+          }
+        ]
+      );
     } catch (error) {
-      const message = error.response?.data?.message || 'Xác nhận email thất bại';
+      console.log('Verification error:', error);
+      console.log('Error response:', error.response?.data);
+      
+      let message = 'Xác nhận email thất bại';
+      
+      if (error.response?.data?.message) {
+        message = error.response.data.message;
+      } else if (error.message) {
+        message = error.message;
+      }
+
       Alert.alert('Lỗi', message);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleResendOTP = async () => {
-    if (resendCount >= 3) {
+  const handleResendOTP = async (isAutoSend = false) => {
+    if (!isAutoSend && resendCount >= 3) {
       Alert.alert(
         'Giới hạn gửi lại', 
-        'Bạn đã gửi lại mã quá nhiều lần. Vui lòng thử lại sau 10 phút hoặc liên hệ hỗ trợ.'
+        'Bạn đã gửi lại mã quá nhiều lần. Vui lòng thử lại sau 10 phút hoặc liên hệ hỗ trợ.',
+        [
+          { text: 'Liên hệ hỗ trợ', onPress: () => navigation.navigate('EmailSupport', { email }) },
+          { text: 'Hủy', style: 'cancel' }
+        ]
       );
       return;
     }
 
-    setResendLoading(true);
+    // Nếu đã gửi email rồi và đang auto-send, bỏ qua
+    if (isAutoSend && emailSent) {
+      console.log('Email already sent, skipping auto-send');
+      return;
+    }
+
+    if (!isAutoSend) {
+      setResendLoading(true);
+    }
+
     try {
-      await api.post('/resend-verification', { email });
-      setResendCount(prev => prev + 1);
-      Alert.alert('Thành công', 'Mã xác nhận đã được gửi lại vào email của bạn');
+      console.log('Sending resend verification request for email:', email);
+      // Thử các endpoint khác nhau cho resend verification
+      let response;
+      try {
+        response = await api.post('/resend-verification', { email });
+      } catch (firstError) {
+        // Nếu endpoint đầu tiên không tồn tại, thử endpoint khác
+        try {
+          response = await api.post('/send-verification-email', { email });
+        } catch (secondError) {
+          // Nếu cả hai đều không tồn tại, thử endpoint đơn giản
+          response = await api.post('/verify-email/resend', { email });
+        }
+      }
+      
+      console.log('Resend verification response:', response.data);
+      
+      if (!isAutoSend) {
+        setResendCount(prev => prev + 1);
+        Alert.alert('Thành công', 'Mã xác nhận đã được gửi lại vào email của bạn');
+      } else {
+        console.log('Auto-sent verification email successfully');
+      }
+      
+      setEmailSent(true);
+      setNetworkError(false);
       setTimeLeft(60);
     } catch (error) {
-      const message = error.response?.data?.message || 'Gửi lại mã xác nhận thất bại';
-      Alert.alert('Lỗi', message);
+      console.log('Resend error:', error);
+      console.log('Error response:', error.response?.data);
+      
+      let message = 'Gửi lại mã xác nhận thất bại';
+      
+      if (error.response?.data?.message) {
+        message = error.response.data.message;
+      } else if (error.message) {
+        message = error.message;
+      }
+
+      if (!isAutoSend) {
+        Alert.alert('Lỗi', message);
+      } else {
+        // Nếu auto send thất bại, hiển thị thông báo nhẹ nhàng
+        console.log('Auto send failed:', message);
+        setNetworkError(true);
+      }
     } finally {
-      setResendLoading(false);
+      if (!isAutoSend) {
+        setResendLoading(false);
+      }
     }
   };
 
@@ -100,9 +200,26 @@ const EmailVerificationScreen = ({ route, navigation }) => {
 
         <Text style={styles.title}>Xác nhận email</Text>
         <Text style={styles.subtitle}>
-          Chúng tôi đã gửi mã xác nhận đến
+          {fromRegister 
+            ? "Chúng tôi đã gửi mã xác nhận đến"
+            : "Nhập mã xác nhận đã được gửi đến"
+          }
         </Text>
         <Text style={styles.email}>{email}</Text>
+
+        {!fromRegister && (
+          <View style={styles.infoContainer}>
+            <Ionicons name="information-circle-outline" size={16} color="#007AFF" />
+            <Text style={styles.infoText}>Bạn có thể gửi lại mã nếu cần thiết</Text>
+          </View>
+        )}
+
+        {networkError && (
+          <View style={styles.errorContainer}>
+            <Ionicons name="wifi-outline" size={16} color="#FF3B30" />
+            <Text style={styles.errorText}>Không thể gửi email. Vui lòng thử lại.</Text>
+          </View>
+        )}
 
         <TextInput
           style={styles.input}
@@ -137,7 +254,7 @@ const EmailVerificationScreen = ({ route, navigation }) => {
           ) : (
             <TouchableOpacity
               style={styles.resendButtonContainer}
-              onPress={handleResendOTP}
+              onPress={() => handleResendOTP(false)}
               disabled={resendLoading}
             >
               {resendLoading ? (
@@ -325,5 +442,35 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#007AFF',
     fontWeight: '600',
+  },
+  infoContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#E5F2FF',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    marginBottom: 20,
+    gap: 6,
+  },
+  infoText: {
+    fontSize: 12,
+    color: '#007AFF',
+    fontWeight: '500',
+  },
+  errorContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFE5E5',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    marginBottom: 20,
+    gap: 6,
+  },
+  errorText: {
+    fontSize: 12,
+    color: '#FF3B30',
+    fontWeight: '500',
   },
 }); 

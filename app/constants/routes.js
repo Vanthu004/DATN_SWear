@@ -31,6 +31,7 @@ export const ROUTES = {
   ADD_ADDRESS: "AddAddress",
   PAYMENT: "Payment",
   ADD_BANK_CARD: "AddBankCard",
+  CHANGE_PASSWORD: "ChangePassword",
 
   // Order routes
   ORDER_HISTORY: "OrderHistory",
