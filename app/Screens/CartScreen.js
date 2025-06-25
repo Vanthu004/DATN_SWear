@@ -72,6 +72,29 @@ for (const item of items) {
     fetchCartData();
   }, []);
 
+  const handleRemoveItem = async (itemId) => {
+  Alert.alert(
+    "Xác nhận",
+    "Bạn có chắc muốn xoá sản phẩm khỏi giỏ hàng?",
+    [
+      { text: "Huỷ", style: "cancel" },
+      {
+        text: "Xoá",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            await axios.delete(`${API_BASE}/cart-items/api/cart-items/${itemId}`);
+            setCartItems((prev) => prev.filter((item) => item._id !== itemId));
+          } catch (err) {
+            console.error("❌ Lỗi xoá sản phẩm:", err.message);
+            Alert.alert("Lỗi", "Không thể xoá sản phẩm khỏi giỏ hàng");
+          }
+        },
+      },
+    ]
+  );
+};
+
   // ✅ Tính tổng
   const subtotal = useMemo(() => {
     return cartItems.reduce(
@@ -135,6 +158,13 @@ const total = subtotal + shipping + tax;
         {cartItems.map((item, index) => (
           <View key={item._id} style={styles.item}>
             <Image source={{ uri: item.product.image_url }} style={styles.image} />
+            <TouchableOpacity
+            style={styles.removeIcon}
+            onPress={() => handleRemoveItem(item._id)}
+             >
+            <Ionicons name="close-circle" size={20} color="#ef4444" />
+            </TouchableOpacity>
+
             <View style={styles.itemInfo}>
               <Text style={styles.itemName}>{item.product.name}</Text>
               <Text style={styles.price}>
@@ -329,6 +359,14 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
+
+  removeIcon: {
+  position: "absolute",
+  top: 6,
+  right: 6,
+  zIndex: 1,
+},
+
 });
 
 
