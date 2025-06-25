@@ -21,7 +21,7 @@ import ProductDetailScreen from "../Screens/ProductDetailScreen";
 import ProductScreen from "../Screens/ProductScreen";
 import ProfileScreen from "../Screens/ProfileScreen";
 import UserInfoScreen from "../Screens/UserInfoScreen";
-import WishlistScreen from "../Screens/WishlistScreen.js";
+import WishlistScreen from "../Screens/WishlistScreen";
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
