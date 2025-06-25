@@ -38,6 +38,19 @@ export default function WishlistScreen() {
 
     fetchFavorites();
   }, []);
+const handleRemoveFavorite = async (productId) => {
+  try {
+    await axios.delete(`${API_BASE}/favorites/api/favorites/${USER_ID}/${productId}`);
+    // Sau khi xóa, cập nhật lại danh sách
+    const updatedFavorites = favorites.filter(
+      (item) => item.product_id._id !== productId
+    );
+    setFavorites(updatedFavorites);
+  } catch (err) {
+    console.error("❌ Lỗi khi xóa sản phẩm yêu thích:", err.message);
+    Alert.alert("Lỗi", "Không thể xóa sản phẩm khỏi danh sách yêu thích");
+  }
+};
 
   const renderItem = ({ item }) => {
     const product = item.product_id;
@@ -46,7 +59,23 @@ export default function WishlistScreen() {
     return (
       <View style={styles.card}>
         <Image source={{ uri: product.image_url }} style={styles.image} />
-        <TouchableOpacity style={styles.heartIcon}>
+        <TouchableOpacity style={styles.heartIcon}
+        onPress={() =>
+  Alert.alert(
+    "Xác nhận",
+    "Bạn có chắc muốn xoá sản phẩm khỏi yêu thích?",
+    [
+      { text: "Huỷ", style: "cancel" },
+      {
+        text: "Xoá",
+        onPress: () => handleRemoveFavorite(product._id),
+        style: "destructive",
+      },
+    ]
+  )
+}
+
+        >
           <Ionicons name="heart" size={20} color="#f87171" />
         </TouchableOpacity>
         <Text style={styles.name}>{product.name}</Text>
