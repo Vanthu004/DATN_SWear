@@ -20,9 +20,11 @@ export default function AppNavigator() {
     <NavigationContainer>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         {userToken ? (
-             <Stack.Screen name="Main" component={TabNavigator} />
+          
+          <Stack.Screen name="Main" component={TabNavigator} />
+             
         ) : (
-              <Stack.Screen name="Auth" component={AuthNavigator} />
+          <Stack.Screen name="Auth" component={AuthNavigator} />
         )}
       </Stack.Navigator>
     </NavigationContainer>

@@ -115,7 +115,7 @@ export const AuthProvider = ({ children }) => {
       console.log('Refreshing user data from server...');
       
       // Thêm token vào header
-      const response = await fetch('http://192.168.1.6:3000/api/users/profile', {
+      const response = await fetch('http://192.168.52.106:3000/api/users/profile', {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${userToken}`,
