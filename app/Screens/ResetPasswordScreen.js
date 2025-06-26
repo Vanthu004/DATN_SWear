@@ -1,12 +1,12 @@
 import React, { useState } from "react";
 import {
-  ActivityIndicator,
-  Alert,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Alert,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import api from "../utils/api";
 
@@ -41,7 +41,7 @@ const ResetPasswordScreen = ({ route, navigation }) => {
 
     setIsLoading(true);
     try {
-      await api.post("/reset-password", {
+      await api.post("/users/reset-password", {
         email,
         otp,
         newPassword,

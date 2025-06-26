@@ -8,6 +8,7 @@ import AddAddressScreen from "../Screens/AddAddressScreen";
 import AddBankCardScreen from "../Screens/AddBankCardScreen";
 import AddressListScreen from "../Screens/AddressListScreen";
 import CartScreen from "../Screens/CartScreen";
+import ChangePasswordScreen from "../Screens/ChangePasswordScreen";
 import CheckoutScreen from "../Screens/CheckoutScreen";
 import EditProfileScreen from "../Screens/EditProfileScreen";
 import HomeScreen from "../Screens/HomeScreen";
@@ -169,6 +170,11 @@ function ProfileStack() {
       <Stack.Screen
         name="AddBankCard"
         component={AddBankCardScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="ChangePassword"
+        component={ChangePasswordScreen}
         options={{ headerShown: false }}
       />
       <Stack.Screen

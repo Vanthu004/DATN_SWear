@@ -1,12 +1,13 @@
+import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import api from '../utils/api';
 
@@ -16,6 +17,8 @@ const RegisterScreen = ({ navigation }) => {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const validateEmail = (email) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -51,21 +54,60 @@ const RegisterScreen = ({ navigation }) => {
 
     setIsLoading(true);
     try {
-      const res = await api.post('/register', {
+      const res = await api.post('/users/register', {
         name,
         email,
         password,
+        confirmPassword,
       });
 
-      // Chuyển đến màn hình xác nhận email thay vì đăng nhập trực tiếp
-      navigation.navigate('EmailVerification', { 
-        email, 
-        name 
+      console.log('Register response:', res.data);
+
+      // Chỉ chuyển đến màn hình xác nhận email, không lưu token
+      navigation.navigate('EmailVerification', {
+        email: res.data.user.email,
+        name: res.data.user.name,
+        fromRegister: true,
+        tempToken: res.data.token, // Lưu token tạm thời để gửi OTP
       });
     } catch (error) {
-      const message =
-        error.response?.data?.message || 'Đăng ký thất bại';
-      Alert.alert('Lỗi', message);
+      console.log('Register error:', error);
+      
+      // Xử lý trường hợp email đã tồn tại nhưng chưa xác nhận
+      if (error.response?.status === 409 && error.response?.data?.message?.includes('email')) {
+        Alert.alert(
+          'Email đã tồn tại',
+          'Email này đã được đăng ký nhưng có thể chưa xác nhận. Bạn có muốn xác nhận email không?',
+          [
+            {
+              text: 'Xác nhận email',
+              onPress: () => navigation.navigate('EmailVerification', {
+                email,
+                name: name,
+                fromRegister: false
+              })
+            },
+            {
+              text: 'Thử đăng nhập',
+              onPress: () => navigation.navigate('Login')
+            },
+            {
+              text: 'Hủy',
+              style: 'cancel'
+            }
+          ]
+        );
+      } else {
+        let message = 'Đăng ký thất bại';
+        
+        if (error.response?.data?.message) {
+          message = error.response.data.message;
+        } else if (error.message) {
+          message = error.message;
+        }
+
+        Alert.alert('Lỗi', message);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -91,22 +133,48 @@ const RegisterScreen = ({ navigation }) => {
         autoCapitalize="none"
         editable={!isLoading}
       />
-      <TextInput
-        style={styles.input}
-        placeholder="Mật khẩu"
-        secureTextEntry
-        value={password}
-        onChangeText={setPassword}
-        editable={!isLoading}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Xác nhận mật khẩu"
-        secureTextEntry
-        value={confirmPassword}
-        onChangeText={setConfirmPassword}
-        editable={!isLoading}
-      />
+      
+      <View style={styles.passwordContainer}>
+        <TextInput
+          style={styles.passwordInput}
+          placeholder="Mật khẩu"
+          secureTextEntry={!showPassword}
+          value={password}
+          onChangeText={setPassword}
+          editable={!isLoading}
+        />
+        <TouchableOpacity
+          style={styles.eyeButton}
+          onPress={() => setShowPassword(!showPassword)}
+        >
+          <Ionicons 
+            name={showPassword ? "eye-off" : "eye"} 
+            size={24} 
+            color="#666" 
+          />
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.passwordContainer}>
+        <TextInput
+          style={styles.passwordInput}
+          placeholder="Xác nhận mật khẩu"
+          secureTextEntry={!showConfirmPassword}
+          value={confirmPassword}
+          onChangeText={setConfirmPassword}
+          editable={!isLoading}
+        />
+        <TouchableOpacity
+          style={styles.eyeButton}
+          onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+        >
+          <Ionicons 
+            name={showConfirmPassword ? "eye-off" : "eye"} 
+            size={24} 
+            color="#666" 
+          />
+        </TouchableOpacity>
+      </View>
 
       <TouchableOpacity 
         style={[styles.button, isLoading && styles.buttonDisabled]} 
@@ -154,6 +222,24 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     marginBottom: 16,
     backgroundColor: '#f5f5f5',
+  },
+  passwordContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    marginBottom: 16,
+    backgroundColor: '#f5f5f5',
+  },
+  passwordInput: {
+    flex: 1,
+    height: 48,
+    paddingHorizontal: 12,
+    backgroundColor: 'transparent',
+  },
+  eyeButton: {
+    padding: 12,
   },
   button: {
     height: 48,
