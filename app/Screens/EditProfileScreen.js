@@ -1,5 +1,4 @@
 import { Ionicons } from "@expo/vector-icons";
-import * as ImagePicker from 'expo-image-picker';
 import React, { useEffect, useState } from "react";
 import {
     Alert,
@@ -12,10 +11,12 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuth } from "../context/AuthContext";
-import api from "../utils/api";
+import { useImageUpload } from "../hooks/useImageUpload";
+import api, { updateUserAvatar } from "../utils/api";
 
 const EditProfileScreen = ({ navigation, route }) => {
   const { userInfo, updateUserInfo } = useAuth();
+  const { isUploading, showImagePickerOptions, uploadImageFile } = useImageUpload();
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -39,69 +40,12 @@ const EditProfileScreen = ({ navigation, route }) => {
     }
   }, [userInfo]);
 
-  const requestPermissions = async () => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert('Quyền truy cập', 'Cần quyền truy cập thư viện ảnh để chọn ảnh');
-      return false;
-    }
-    return true;
-  };
-
-  const requestCameraPermissions = async () => {
-    const { status } = await ImagePicker.requestCameraPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert('Quyền truy cập', 'Cần quyền truy cập camera để chụp ảnh');
-      return false;
-    }
-    return true;
-  };
-
-  const pickImageFromLibrary = async () => {
-    const hasPermission = await requestPermissions();
-    if (!hasPermission) return;
-
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.8,
-    });
-
-    if (!result.canceled && result.assets && result.assets[0]) {
-      const imageAsset = result.assets[0];
+  const handleImagePicker = async () => {
+    const imageAsset = await showImagePickerOptions();
+    if (imageAsset) {
       setFormData({ ...formData, avatar: imageAsset.uri });
-      setNewAvatar(imageAsset); // Lưu object ảnh đầy đủ
+      setNewAvatar(imageAsset);
     }
-  };
-
-  const takePhoto = async () => {
-    const hasPermission = await requestCameraPermissions();
-    if (!hasPermission) return;
-
-    const result = await ImagePicker.launchCameraAsync({
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.8,
-    });
-
-    if (!result.canceled && result.assets && result.assets[0]) {
-      const imageAsset = result.assets[0];
-      setFormData({ ...formData, avatar: imageAsset.uri });
-      setNewAvatar(imageAsset); // Lưu object ảnh đầy đủ
-    }
-  };
-
-  const showImagePickerOptions = () => {
-    Alert.alert(
-      "Chọn ảnh đại diện",
-      "Bạn muốn chụp ảnh mới hay chọn từ thư viện?",
-      [
-        { text: "Chụp ảnh", onPress: takePhoto },
-        { text: "Chọn từ thư viện", onPress: pickImageFromLibrary },
-        { text: "Hủy", style: "cancel" }
-      ]
-    );
   };
 
   const handleSave = async () => {
@@ -120,29 +64,19 @@ const EditProfileScreen = ({ navigation, route }) => {
       let response;
       
       if (newAvatar) {
-        // Nếu có ảnh mới, sử dụng FormData
-        const dataToUpload = new FormData();
-        dataToUpload.append('name', formData.name.trim());
-        dataToUpload.append('email', formData.email.trim());
-        dataToUpload.append('phone_number', formData.phone.trim());
-        dataToUpload.append('gender', formData.gender);
-        
-        const uriParts = newAvatar.uri.split('.');
-        const fileType = uriParts[uriParts.length - 1];
-        dataToUpload.append('avata_url', {
-          uri: newAvatar.uri,
-          name: `photo.${fileType}`,
-          type: `image/${fileType}`,
-        });
-        
-        console.log('Uploading with avatar...');
-        response = await api.put('/update-profile', dataToUpload, {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
-        });
-      } else {
-        // Nếu không có ảnh mới, sử dụng JSON
+        // Bước 1: Upload ảnh mới
+        console.log('Uploading new avatar...');
+        const uploadResponse = await uploadImageFile(newAvatar, "User", userInfo?._id);
+        console.log('Upload response:', uploadResponse);
+
+        if (uploadResponse.upload && uploadResponse.upload._id) {
+          // Bước 2: Cập nhật avatar với upload ID
+          console.log('Updating avatar with upload ID...');
+          const avatarResponse = await updateUserAvatar(uploadResponse.upload._id);
+          console.log('Avatar update response:', avatarResponse);
+        }
+
+        // Bước 3: Cập nhật thông tin cá nhân (không bao gồm avatar)
         const updateData = {
           name: formData.name.trim(),
           email: formData.email.trim(),
@@ -150,8 +84,19 @@ const EditProfileScreen = ({ navigation, route }) => {
           gender: formData.gender,
         };
         
-        console.log('Uploading without avatar...');
-        response = await api.put('/update-profile', updateData);
+        console.log('Updating profile info...');
+        response = await api.put('/users/update-profile', updateData);
+      } else {
+        // Nếu không có ảnh mới, chỉ cập nhật thông tin cá nhân
+        const updateData = {
+          name: formData.name.trim(),
+          email: formData.email.trim(),
+          phone_number: formData.phone.trim(),
+          gender: formData.gender,
+        };
+        
+        console.log('Updating profile without avatar...');
+        response = await api.put('/users/update-profile', updateData);
       }
       
       console.log('Server response:', response.data);
@@ -202,9 +147,12 @@ const EditProfileScreen = ({ navigation, route }) => {
           />
           <TouchableOpacity 
             style={styles.changeAvatarButton}
-            onPress={showImagePickerOptions}
+            onPress={handleImagePicker}
+            disabled={isUploading}
           >
-            <Text style={styles.changeAvatarText}>Thay đổi ảnh đại diện</Text>
+            <Text style={styles.changeAvatarText}>
+              {isUploading ? "Đang upload..." : "Thay đổi ảnh đại diện"}
+            </Text>
           </TouchableOpacity>
         </View>
 
@@ -305,12 +253,12 @@ const EditProfileScreen = ({ navigation, route }) => {
       </View>
 
       <TouchableOpacity 
-        style={[styles.saveButton, isLoading && styles.saveButtonDisabled]} 
+        style={[styles.saveButton, (isLoading || isUploading) && styles.saveButtonDisabled]} 
         onPress={handleSave}
-        disabled={isLoading}
+        disabled={isLoading || isUploading}
       >
         <Text style={styles.saveButtonText}>
-          {isLoading ? "Đang lưu..." : "Lưu thay đổi"}
+          {isLoading || isUploading ? "Đang lưu..." : "Lưu thay đổi"}
         </Text>
       </TouchableOpacity>
     </SafeAreaView>

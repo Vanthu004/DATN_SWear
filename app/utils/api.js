@@ -1,8 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 
-const API_BASE_URL = 'http://192.168.1.6:3000/api/users'; //
-
+const API_BASE_URL = 'http://192.168.1.5:3000/api'; //
 const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {
@@ -58,5 +57,62 @@ api.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+
+// Upload functions
+export const uploadImage = async (imageFile, relatedModel = null, relatedId = null) => {
+  try {
+    const formData = new FormData();
+    formData.append('image', imageFile);
+    
+    if (relatedModel) {
+      formData.append('relatedModel', relatedModel);
+    }
+    
+    if (relatedId) {
+      formData.append('relatedId', relatedId);
+    }
+
+    const response = await api.post('/upload', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+
+    return response.data;
+  } catch (error) {
+    console.error('Upload image error:', error);
+    throw error;
+  }
+};
+
+export const getUploads = async () => {
+  try {
+    const response = await api.get('/uploads');
+    return response.data;
+  } catch (error) {
+    console.error('Get uploads error:', error);
+    throw error;
+  }
+};
+
+export const deleteUpload = async (uploadId) => {
+  try {
+    const response = await api.delete(`/uploads/${uploadId}`);
+    return response.data;
+  } catch (error) {
+    console.error('Delete upload error:', error);
+    throw error;
+  }
+};
+
+export const updateUserAvatar = async (avatarId) => {
+  try {
+    const response = await api.put('/users/update-avatar', { avatarId });
+    return response.data;
+  } catch (error) {
+    console.error('Update user avatar error:', error);
+    throw error;
+  }
+};
 
 export default api;

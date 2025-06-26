@@ -57,7 +57,7 @@ const EmailVerificationScreen = ({ route, navigation }) => {
     setIsLoading(true);
     try {
       console.log('Verifying email with OTP:', otp);
-      const response = await api.post('/verify-email', {
+      const response = await api.post('/users/verify-email', {
         email,
         otp,
       });
@@ -100,6 +100,19 @@ const EmailVerificationScreen = ({ route, navigation }) => {
   };
 
   const handleResendOTP = async (isAutoSend = false) => {
+    // Tạm thời comment out để tránh lỗi 404
+    Alert.alert(
+      'Thông báo', 
+      'Tính năng gửi lại OTP đang được cập nhật. Vui lòng kiểm tra email hoặc liên hệ hỗ trợ.',
+      [
+        { text: 'Liên hệ hỗ trợ', onPress: () => navigation.navigate('EmailSupport', { email }) },
+        { text: 'Hủy', style: 'cancel' }
+      ]
+    );
+    return;
+
+    // Code cũ đã comment out
+    /*
     if (!isAutoSend && resendCount >= 3) {
       Alert.alert(
         'Giới hạn gửi lại', 
@@ -127,14 +140,14 @@ const EmailVerificationScreen = ({ route, navigation }) => {
       // Thử các endpoint khác nhau cho resend verification
       let response;
       try {
-        response = await api.post('/resend-verification', { email });
+        response = await api.post('/users/resend-verification', { email });
       } catch (firstError) {
         // Nếu endpoint đầu tiên không tồn tại, thử endpoint khác
         try {
-          response = await api.post('/send-verification-email', { email });
+          response = await api.post('/users/send-verification-email', { email });
         } catch (secondError) {
           // Nếu cả hai đều không tồn tại, thử endpoint đơn giản
-          response = await api.post('/verify-email/resend', { email });
+          response = await api.post('/users/verify-email/resend', { email });
         }
       }
       
@@ -174,6 +187,7 @@ const EmailVerificationScreen = ({ route, navigation }) => {
         setResendLoading(false);
       }
     }
+    */
   };
 
   const formatTime = (seconds) => {

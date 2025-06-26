@@ -40,7 +40,7 @@ const ChangePasswordScreen = ({ navigation }) => {
     setIsLoading(true);
     try {
       // Gọi API để thay đổi mật khẩu
-      const response = await api.put('/change-password', {
+      const response = await api.put('/users/change-password', {
         currentPassword: currentPassword,
         newPassword: newPassword,
       });
