@@ -23,7 +23,7 @@ export const fetchPopular = createAsyncThunk('home/fetchPopular', async () => {
 
 export const fetchProductsByCategory = createAsyncThunk('home/fetchProductsByCategory', async (categoryId) => {
   const res = await api.get(`/products/category/${categoryId}`);
-  return res.data;
+  return res.data.data;
 });
 
 export const searchProducts = createAsyncThunk('home/searchProducts', async (keyword) => {
@@ -105,8 +105,9 @@ const homeSlice = createSlice({
         state.searchLoading = false;
         state.searchError = action.error.message;
       });
+      
   },
 });
 
-export const { setSearchKeyword, clearSelectedCategoryProducts } = homeSlice.actions;
+export const { setSearchKeyword, clearSelectedCategoryProducts, clearSearchResults } = homeSlice.actions;
 export default homeSlice.reducer; 

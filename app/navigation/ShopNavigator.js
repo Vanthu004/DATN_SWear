@@ -21,7 +21,7 @@ export default function ShopNavigator() {
       <ShopStack.Screen
         name={ROUTES.PRODUCT_DETAIL}
         component={ProductDetailScreen}
-        options={{ title: "Chi tiết sản phẩm" }}
+        options={{ headerShown: false }}
       />
       <ShopStack.Screen
         name={ROUTES.CART}

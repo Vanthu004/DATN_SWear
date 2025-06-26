@@ -2,20 +2,20 @@ import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import React, { useEffect } from "react";
 import {
-    FlatList,
-    Image,
-    SafeAreaView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View
+  FlatList,
+  Image,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from "react-native";
 import { useDispatch, useSelector } from "react-redux";
 import ProductCard from "../components/ProductCard";
 import { useAuth } from "../context/AuthContext";
 import {
-    fetchBestSellers,
-    fetchCategories,
+  fetchBestSellers,
+  fetchCategories,
 } from "../reudx/homeSlice";
 
 const bannerImg = require("../../assets/sp1.png");
@@ -120,7 +120,8 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#fff" },
+  container: { flex: 1,
+     backgroundColor: "#fff" },
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -161,8 +162,6 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     borderRadius: 16,
     overflow: "hidden",
-    borderWidth: 2,
-    borderColor: "#2979FF",
     marginBottom: 16,
   },
   bannerImg: {
