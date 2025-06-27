@@ -51,7 +51,7 @@ export default function HomeScreen() {
           style={styles.cartBtn}
           onPress={() => navigation.navigate("Cart")}
         >
-          <Ionicons name="cart-outline" size={26} color="#2979FF" />
+          <Image source={require('../../assets/images/ItemCart.png')} style={{width:30, height:30}} />
         </TouchableOpacity>
       </View>
 
@@ -98,16 +98,15 @@ export default function HomeScreen() {
         )}
       />
 
-      {/* Sản phẩm nổi bật */}
       <View style={styles.sectionRow}>
-        <Text style={styles.sectionTitle}>Sản phẩm nổi bật</Text>
+        <Text style={styles.sectionTitle}>Sản phẩm bán chạy nhất </Text>
       </View>
       <FlatList
         data={bestSellers}
         keyExtractor={(item) => item._id || item.id}
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ paddingHorizontal: 8, paddingBottom: 12 }}
+        contentContainerStyle={{paddingBottom: 12, }}
         renderItem={({ item }) => (
           <ProductCard product={item} navigation={navigation} />
         )}
@@ -121,8 +120,8 @@ export default function HomeScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1,
-     backgroundColor: "#fff" },
-  header: {
+    backgroundColor: "#fff" },
+    header: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
@@ -131,17 +130,17 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   avatarWrap: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
     overflow: "hidden",
     borderWidth: 1,
     borderColor: "#eee",
   },
   avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
   },
   cartBtn: {
     backgroundColor: "#F6F6F6",
@@ -166,7 +165,7 @@ const styles = StyleSheet.create({
   },
   bannerImg: {
     width: "100%",
-    height: 150,
+    height: 200,
     borderRadius: 16,
   },
   categoryRow: {

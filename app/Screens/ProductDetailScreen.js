@@ -120,7 +120,7 @@ export default function ProductDetailScreen({ route, navigation }) {
                     </TouchableOpacity>
                 </View>
                 {/* Mô tả */}
-                <Text style={styles.label}>Mô tả sản phẩm </Text>s
+                <Text style={styles.label}>Mô tả sản phẩm </Text>
                 {product.description && (
                     <Text style={styles.description}>{product.description}</Text>
                 )}
