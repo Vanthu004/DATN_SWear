@@ -8,6 +8,7 @@ import AddAddressScreen from "../Screens/AddAddressScreen";
 import AddBankCardScreen from "../Screens/AddBankCardScreen";
 import AddressListScreen from "../Screens/AddressListScreen";
 import CartScreen from "../Screens/CartScreen";
+import CategoryScreen from "../Screens/CategoryScreen";
 import ChangePasswordScreen from "../Screens/ChangePasswordScreen";
 import CheckoutScreen from "../Screens/CheckoutScreen";
 import EditProfileScreen from "../Screens/EditProfileScreen";
@@ -20,9 +21,9 @@ import PaymentScreen from "../Screens/PaymentScreen";
 import ProductDetailScreen from "../Screens/ProductDetailScreen";
 import ProductScreen from "../Screens/ProductScreen";
 import ProfileScreen from "../Screens/ProfileScreen";
+import SearchSc from '../Screens/SearchSc';
 import UserInfoScreen from "../Screens/UserInfoScreen";
 import WishlistScreen from "../Screens/WishlistScreen.js";
-
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
 
@@ -38,7 +39,7 @@ function HomeStack() {
       <Stack.Screen
         name="ProductDetail"
         component={ProductDetailScreen}
-        options={{ title: "Chi tiết sản phẩm" }}
+        options={{ headerShown: false }}
       />
       <Stack.Screen
         name="Notifications"
@@ -49,6 +50,16 @@ function HomeStack() {
         name="Cart"
         component={CartScreen}
         options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="SearchSc"
+        component={SearchSc}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="CategoryScreen"
+        component={CategoryScreen}
+        options={{ title: "Danh mục" }}
       />
     </Stack.Navigator>
   );
@@ -67,6 +78,11 @@ function ProductStack() {
         name="ProductDetail"
         component={ProductDetailScreen}
         options={{ title: "Chi tiết sản phẩm" }}
+      />
+      <Stack.Screen
+        name="CategoryScreen"
+        component={CategoryScreen}
+        options={{ title: "Danh mục" }}
       />
     </Stack.Navigator>
   );

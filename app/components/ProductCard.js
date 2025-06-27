@@ -1,12 +1,12 @@
 import { Ionicons } from "@expo/vector-icons";
 import React, { useRef } from "react";
 import {
-    Animated,
-    Image,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Animated,
+  Image,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 export default function ProductCard({
@@ -69,6 +69,7 @@ export default function ProductCard({
         </View>
         {/* Giá */}
         <Text style={styles.productPrice}>{price}</Text>
+        <Text style={styles.productPrice}>.</Text>
         {/* Tên sản phẩm */}
         <Text numberOfLines={2} style={styles.productName}>{name}</Text>
         {/* Rating và icon khoá */}
@@ -77,7 +78,11 @@ export default function ProductCard({
           <Text style={styles.ratingText}>{rating.toFixed(1)}</Text>
           <Text style={styles.ratingCount}>({ratingCount})</Text>
           <View style={{ flex: 1 }} />
-          <Ionicons name="lock-closed-outline" size={18} color="#888" />
+          <TouchableOpacity
+          style={styles.cartBtn}
+           onPress={() => navigation.navigate('Cart')}>
+          <Image source={require('../../assets/images/moreCart.png')} style={{width:20, height:20}} />
+          </TouchableOpacity>
         </View>
       </TouchableOpacity>
     </Animated.View>
@@ -87,14 +92,12 @@ export default function ProductCard({
 const styles = StyleSheet.create({
   card: {
     width: 170,
-    minHeight: 300,
+    minHeight: 250,
     marginRight: 16,
     backgroundColor: "#fff",
-    borderRadius: 16,
     padding: 0,
+    marginTop: 10,
     marginBottom: 16,
-    borderWidth: 2,
-    borderColor: "#1e90ff",
     overflow: "hidden",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
@@ -108,8 +111,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#f8f8f8",
     justifyContent: "center",
     alignItems: "center",
-    borderTopLeftRadius: 14,
-    borderTopRightRadius: 14,
     overflow: "hidden",
   },
   productImage: {
@@ -118,17 +119,17 @@ const styles = StyleSheet.create({
     resizeMode: "contain",
   },
   productPrice: {
-    fontWeight: "bold",
+    fontWeight: "500",
     fontSize: 18,
     color: "#222",
-    marginTop: 8,
+    marginTop: 2,
     marginLeft: 10,
   },
   productName: {
     fontSize: 15,
     color: "#222",
     marginHorizontal: 10,
-    marginTop: 4,
+    marginTop: 0,
     marginBottom: 6,
     fontWeight: "400",
   },
@@ -148,5 +149,10 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: "#888",
     marginLeft: 4,
+  },
+  cartBtn: {
+    backgroundColor: "#F6F6F6",
+    borderRadius: 20,
+    padding: 8,
   },
 });
