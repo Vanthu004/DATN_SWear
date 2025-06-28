@@ -12,7 +12,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuth } from "../context/AuthContext";
 import { useImageUpload } from "../hooks/useImageUpload";
-import api, { updateUserAvatar } from "../utils/api";
+import { updateProfileWithAvatar } from "../utils/api";
 
 const EditProfileScreen = ({ navigation, route }) => {
   const { userInfo, updateUserInfo } = useAuth();
@@ -61,49 +61,23 @@ const EditProfileScreen = ({ navigation, route }) => {
 
     setIsLoading(true);
     try {
-      let response;
+      // Chuẩn bị dữ liệu profile
+      const profileData = {
+        name: formData.name.trim(),
+        email: formData.email.trim(),
+        phone_number: formData.phone.trim(),
+        gender: formData.gender,
+      };
+
+      // Sử dụng hàm helper để update profile với avatar
+      const imageUri = newAvatar ? newAvatar.uri : null;
+      const response = await updateProfileWithAvatar(profileData, imageUri);
       
-      if (newAvatar) {
-        // Bước 1: Upload ảnh mới
-        console.log('Uploading new avatar...');
-        const uploadResponse = await uploadImageFile(newAvatar, "User", userInfo?._id);
-        console.log('Upload response:', uploadResponse);
+      console.log('Update profile response:', response);
 
-        if (uploadResponse.upload && uploadResponse.upload._id) {
-          // Bước 2: Cập nhật avatar với upload ID
-          console.log('Updating avatar with upload ID...');
-          const avatarResponse = await updateUserAvatar(uploadResponse.upload._id);
-          console.log('Avatar update response:', avatarResponse);
-        }
-
-        // Bước 3: Cập nhật thông tin cá nhân (không bao gồm avatar)
-        const updateData = {
-          name: formData.name.trim(),
-          email: formData.email.trim(),
-          phone_number: formData.phone.trim(),
-          gender: formData.gender,
-        };
-        
-        console.log('Updating profile info...');
-        response = await api.put('/users/update-profile', updateData);
-      } else {
-        // Nếu không có ảnh mới, chỉ cập nhật thông tin cá nhân
-        const updateData = {
-          name: formData.name.trim(),
-          email: formData.email.trim(),
-          phone_number: formData.phone.trim(),
-          gender: formData.gender,
-        };
-        
-        console.log('Updating profile without avatar...');
-        response = await api.put('/users/update-profile', updateData);
-      }
-      
-      console.log('Server response:', response.data);
-
-      if (response.data && response.data.user) {
+      if (response && response.user) {
         // Cập nhật userInfo trong context sau khi update thành công
-        await updateUserInfo(response.data.user);
+        await updateUserInfo(response.user);
         Alert.alert("Thành công", "Thông tin đã được cập nhật.", [
           { text: "OK", onPress: () => navigation.goBack() }
         ]);
