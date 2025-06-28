@@ -36,4 +36,7 @@ export const ROUTES = {
   ORDER_HISTORY: "OrderHistory",
   ORDER_STATUS: "OrderStatus",
   ORDERS_EMPTY: "OrdersEmpty",
+    RATING_REVIEWS: "RatingReviews",
+  WRITE_REVIEW: "WriteReview",
+
 };
