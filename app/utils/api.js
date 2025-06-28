@@ -85,6 +85,66 @@ export const uploadImage = async (imageFile, relatedModel = null, relatedId = nu
   }
 };
 
+// Upload avatar function theo format API mới
+export const uploadAvatar = async (imageUri) => {
+  try {
+    const formData = new FormData();
+    formData.append("image", {
+      uri: imageUri,
+      type: "image/jpeg", 
+      name: "avatar.jpg"
+    });
+
+    const response = await api.post('/upload', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+
+    return response.data;
+  } catch (error) {
+    console.error('Upload avatar error:', error);
+    throw error;
+  }
+};
+
+// Hàm helper để update profile với avatar theo flow mới
+export const updateProfileWithAvatar = async (profileData, imageUri = null) => {
+  try {
+    let uploadId = null;
+    
+    // Bước 1: Upload ảnh nếu có
+    if (imageUri) {
+      console.log('Step 1: Uploading avatar...');
+      const uploadResponse = await uploadAvatar(imageUri);
+      console.log('Upload response:', uploadResponse);
+      
+      if (uploadResponse.upload && uploadResponse.upload._id) {
+        uploadId = uploadResponse.upload._id;
+      } else {
+        throw new Error("Upload response does not contain valid upload ID");
+      }
+    }
+    
+    // Bước 2: Update avatar nếu có uploadId
+    if (uploadId) {
+      console.log('Step 2: Updating avatar with uploadId:', uploadId);
+      const avatarResponse = await updateUserAvatar(uploadId);
+      console.log('Avatar update response:', avatarResponse);
+    }
+    
+    // Bước 3: Update profile info
+    console.log('Step 3: Updating profile info...');
+    const response = await api.put('/users/update-profile', profileData);
+    console.log('Profile update response:', response.data);
+    
+    return response.data;
+  } catch (error) {
+    console.error('Update profile with avatar failed:', error);
+    throw error;
+  }
+};
+
 export const getUploads = async () => {
   try {
     const response = await api.get('/uploads');
@@ -105,9 +165,9 @@ export const deleteUpload = async (uploadId) => {
   }
 };
 
-export const updateUserAvatar = async (avatarId) => {
+export const updateUserAvatar = async (uploadId) => {
   try {
-    const response = await api.put('/users/update-avatar', { avatarId });
+    const response = await api.put('/users/update-avatar', { uploadId });
     return response.data;
   } catch (error) {
     console.error('Update user avatar error:', error);

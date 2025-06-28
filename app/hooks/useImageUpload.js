@@ -103,14 +103,22 @@ export const useImageUpload = () => {
       
       const imageFile = {
         uri: imageAsset.uri,
-        name: `image_${Date.now()}.${fileType}`,
+        name: `avatar_${Date.now()}.${fileType}`,
         type: `image/${fileType}`,
       };
 
+      console.log('Uploading image file:', imageFile);
       const response = await uploadImage(imageFile, relatedModel, relatedId);
+      console.log('Upload response:', response);
+      
       setUploadProgress(100);
       
-      return response;
+      // Đảm bảo response có đúng format
+      if (response && response.upload && response.upload._id) {
+        return response;
+      } else {
+        throw new Error('Invalid upload response format');
+      }
     } catch (error) {
       console.error('Upload failed:', error);
       throw error;
