@@ -4,6 +4,7 @@ import {
   Dimensions,
   Image,
   SafeAreaView,
+
   ScrollView,
   StyleSheet,
   Text,
@@ -21,6 +22,7 @@ const renderStars = (rating) => (
                 color="#facc15"
             />
         ))}
+
     </View>
 );
 
