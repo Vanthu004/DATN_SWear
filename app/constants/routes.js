@@ -5,6 +5,10 @@ export const ROUTES = {
   LOGIN: "Login",
   REGISTER: "Register",
   FORGOT_PASSWORD: "ForgotPassword",
+  RESET_PASSWORD: "ResetPassword",
+  EMAIL_VERIFICATION: "EmailVerification",
+  EMAIL_VERIFICATION_SUCCESS: "EmailVerificationSuccess",
+  EMAIL_SUPPORT: "EmailSupport",
 
   // Main tabs
   MAIN: "Main",
@@ -27,6 +31,7 @@ export const ROUTES = {
   ADD_ADDRESS: "AddAddress",
   PAYMENT: "Payment",
   ADD_BANK_CARD: "AddBankCard",
+  CHANGE_PASSWORD: "ChangePassword",
 
   // Order routes
   ORDER_HISTORY: "OrderHistory",

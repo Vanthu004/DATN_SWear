@@ -1,37 +1,79 @@
 import { Ionicons } from "@expo/vector-icons";
-import React from "react";
+import { useFocusEffect } from "@react-navigation/native";
+import React, { useEffect } from "react";
 import {
-  Image,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    Alert,
+    Image,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { ROUTES } from "../constants/routes";
+import { useAuth } from "../context/AuthContext";
 
 const ProfileScreen = ({ navigation }) => {
-  const userInfo = {
-    name: "Nguyễn Văn Quân",
-    email: "vanquan001@gmail.com",
-    phone: "0963256277",
-  };
+  const { userInfo, logout, refreshUserData } = useAuth();
+
+  // Debug logging
+  useEffect(() => {
+    console.log('ProfileScreen: Current userInfo:', userInfo);
+    console.log('ProfileScreen: Avatar URL:', userInfo?.avata_url);
+  }, [userInfo]);
+
+  // Refresh dữ liệu khi quay lại màn hình này
+  useFocusEffect(
+    React.useCallback(() => {
+      // Refresh dữ liệu từ server khi vào màn hình
+      const refreshData = async () => {
+        console.log('ProfileScreen focused, refreshing user data...');
+        await refreshUserData();
+      };
+      
+      refreshData();
+    }, [])
+  );
 
   const menuItems = [
     {
       id: 1,
       title: "Địa chỉ",
-      onPress: () => navigation.navigate("AddressList"),
+      icon: "location-outline",
+      onPress: () => navigation.navigate(ROUTES.ADDRESS_LIST),
     },
-    { id: 2, title: "Sản phẩm yêu thích", onPress: () => {} },
+    {
+      id: 2,
+      title: "Đổi mật khẩu",
+      icon: "lock-closed-outline",
+      onPress: () => navigation.navigate(ROUTES.CHANGE_PASSWORD),
+    },
     {
       id: 3,
       title: "Thanh toán",
-      onPress: () => navigation.navigate("Payment"),
+      icon: "card-outline",
+      onPress: () => navigation.navigate(ROUTES.PAYMENT),
     },
-    { id: 4, title: "Đơn hàng", onPress: () => {} },
-    { id: 5, title: "Trợ giúp", onPress: () => {} },
+    { 
+      id: 4, 
+      title: "Đơn hàng", 
+      icon: "cube-outline", 
+      onPress: () => {} 
+    },
+    { 
+      id: 5, 
+      title: "Trợ giúp", 
+      icon: "help-circle-outline", 
+      onPress: () => {} 
+    },
   ];
+
+  const getGenderIcon = (gender) => {
+    if (gender === 'male') return 'male';
+    if (gender === 'female') return 'female';
+    return 'male-female';
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -48,26 +90,39 @@ const ProfileScreen = ({ navigation }) => {
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Tài khoản</Text>
       </View>
-      <ScrollView style={styles.scrollView}>
-        <View style={styles.profileSection}>
-          <View style={styles.avatarContainer}>
-            <Image
-              source={require("../../assets/images/default-avatar.png")}
-              style={styles.avatar}
-            />
-          </View>
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.contentContainer}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.avatarContainer}>
+          <Image
+            key={userInfo?.avata_url || "default"}
+            source={
+              userInfo?.avata_url
+                ? { uri: userInfo.avata_url }
+                : require("../../assets/images/default-avatar.png")
+            }
+            style={styles.avatar}
+          />
+        </View>
 
-          <View style={styles.userInfoContainer}>
-            <Text style={styles.name}>{userInfo.name}</Text>
-            <Text style={styles.email}>{userInfo.email}</Text>
-            <Text style={styles.phone}>{userInfo.phone}</Text>
-            <TouchableOpacity
-              onPress={() => navigation.navigate("EditProfile")}
-              style={styles.editButton}
-            >
+        <View style={styles.userInfoSection}>
+          <View style={styles.infoLine}>
+            <Text style={styles.name}>{userInfo?.name || "Người dùng"}</Text>
+            {userInfo?.gender && (
+              <Ionicons name={getGenderIcon(userInfo.gender)} size={18} color="#555" style={styles.genderIcon}/>
+            )}
+          </View>
+          <View style={[styles.infoLine, { justifyContent: 'space-between' }]}>
+            <Text style={styles.email}>{userInfo?.email}</Text>
+            <TouchableOpacity onPress={() => navigation.navigate(ROUTES.EDIT_PROFILE)}>
               <Text style={styles.editButtonText}>Chỉnh sửa</Text>
             </TouchableOpacity>
           </View>
+          {userInfo?.phone_number && (
+            <Text style={styles.phone}>{userInfo?.phone_number}</Text>
+          )}
         </View>
 
         <View style={styles.menuSection}>
@@ -78,12 +133,20 @@ const ProfileScreen = ({ navigation }) => {
               onPress={item.onPress}
             >
               <Text style={styles.menuText}>{item.title}</Text>
-              <Text style={styles.chevron}>›</Text>
+              <Ionicons name="chevron-forward" size={20} color="#bbb" />
             </TouchableOpacity>
           ))}
         </View>
 
-        <TouchableOpacity style={styles.logoutButton} onPress={() => {}}>
+        <TouchableOpacity
+          style={styles.logoutButton}
+          onPress={() =>
+            Alert.alert("Xác nhận", "Bạn có chắc muốn đăng xuất?", [
+              { text: "Hủy", style: "cancel" },
+              { text: "Đăng xuất", onPress: logout },
+            ])
+          }
+        >
           <Text style={styles.logoutText}>Đăng xuất</Text>
         </TouchableOpacity>
       </ScrollView>
@@ -94,82 +157,96 @@ const ProfileScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: "#F4F5F7",
   },
   scrollView: {
     flex: 1,
   },
-  profileSection: {
-    padding: 20,
-    paddingBottom: 30,
+  contentContainer: {
+    paddingBottom: 40,
   },
   avatarContainer: {
     alignItems: "center",
+    marginTop: 20,
     marginBottom: 16,
   },
   avatar: {
     width: 100,
     height: 100,
     borderRadius: 50,
-    backgroundColor: "#f0f0f0",
   },
-  userInfoContainer: {
-    alignItems: "center",
+  userInfoSection: {
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    padding: 20,
+    marginHorizontal: 16,
+    marginBottom: 24,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 5,
+    elevation: 2,
+  },
+  infoLine: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   name: {
-    fontSize: 20,
-    fontWeight: "600",
+    fontSize: 22,
+    fontWeight: "bold",
+    color: "#222",
+    marginBottom: 8,
+  },
+  genderIcon: {
+    marginLeft: 8,
     marginBottom: 8,
   },
   email: {
-    fontSize: 14,
+    fontSize: 15,
     color: "#666",
-    marginBottom: 4,
   },
   phone: {
-    fontSize: 14,
+    fontSize: 15,
     color: "#666",
-    marginBottom: 12,
-  },
-  editButton: {
-    paddingVertical: 6,
+    marginTop: 8,
   },
   editButtonText: {
     color: "#007AFF",
-    fontSize: 14,
+    fontSize: 15,
+    fontWeight: '500',
   },
   menuSection: {
-    paddingHorizontal: 20,
+    marginHorizontal: 16,
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    overflow: 'hidden',
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 5,
+    elevation: 2,
   },
   menuItem: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     paddingVertical: 16,
-    backgroundColor: "#f5f5f5",
-    marginBottom: 1,
-    paddingHorizontal: 16,
-    borderRadius: 8,
+    paddingHorizontal: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F4F5F7',
   },
   menuText: {
     fontSize: 16,
-    color: "#000",
-  },
-  chevron: {
-    fontSize: 20,
-    color: "#666",
+    color: "#333",
   },
   logoutButton: {
-    marginTop: 30,
-    marginBottom: 20,
-    marginHorizontal: 20,
-    padding: 16,
+    marginTop: 40,
     alignItems: "center",
-    borderRadius: 8,
   },
   logoutText: {
     fontSize: 16,
     color: "#FF3B30",
+    fontWeight: "500",
   },
   customHeader: {
     height: 64,
