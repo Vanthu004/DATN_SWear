@@ -11,53 +11,57 @@ import {
   TouchableOpacity,
   View
 } from "react-native";
-
-// 👇 user_id giả lập
-const USER_ID = "684fff1dca202e28f58ddaf9";
-const API_BASE = "http://192.168.52.106:3000/api"; 
+import { useAuth } from '../context/AuthContext';
+import api from '../utils/api';
 
 const CartScreen = () => {
   const navigation = useNavigation();
   const [cartItems, setCartItems] = useState([]);
   const [loading, setLoading] = useState(true);
-
+  //lấy id user
+  const { userInfo } = useAuth();
+  const USER_ID = userInfo?._id || userInfo?.id;
   // ✅ B1-3: Gọi dữ liệu
   useEffect(() => {
     const fetchCartData = async () => {
       try {
-        // 1. Lấy Cart theo user_id
         console.log("🧪 Gọi API cart của user:", USER_ID);
-        const cartRes = await axios.get(`${API_BASE}/cart/api/carts/user/${USER_ID}`);
+
+        // 1. Lấy Cart theo user_id
+        const cartRes = await api.get(`/carts/user/${USER_ID}`);
         const cart = cartRes.data;
         console.log("Cart:", cart);
+
         // 2. Lấy CartItem theo cart_id
-        const cartItemRes = await axios.get(`${API_BASE}/cart-items/api/cart-items/cart/${cart._id}`);
+        const cartItemRes = await api.get(`/cart-items/cart/${cart._id}`);
         const items = cartItemRes.data;
         console.log("CartItem:", items);
-     
+
         // 3. Lấy Product cho từng CartItem
-const itemsWithProduct = [];
+        const itemsWithProduct = [];
 
-for (const item of items) {
-  try {
-    const productId = item.product_id._id || item.product_id.toString();
-    console.log("📦 Đang lấy sản phẩm với ID:", item.product_id);
-    const productRes = await axios.get(`${API_BASE}/products/api/products/${productId}`);
-    const product = productRes.data;
-    console.log("✅ Sản phẩm lấy được:", product.name);
+        for (const item of items) {
+          try {
+            // Có thể item.product_id là object hoặc id string
+            const productId = item.product_id._id || item.product_id.toString();
+            console.log("📦 Đang lấy sản phẩm với ID:", productId);
 
-    itemsWithProduct.push({
-      ...item,
-      product: product,
-    });
-  } catch (err) {
-    console.error(`❌ Không thể lấy sản phẩm ID ${item.product_id}:`, err.message);
-    itemsWithProduct.push({
-      ...item,
-      product: null,
-    });
-  }
-}
+            const productRes = await api.get(`/products/api/products/${productId}`);
+            const product = productRes.data;
+            console.log("✅ Sản phẩm lấy được:", product.name);
+
+            itemsWithProduct.push({
+              ...item,
+              product: product,
+            });
+          } catch (err) {
+            console.error(`❌ Không thể lấy sản phẩm ID ${item.product_id}:`, err.message);
+            itemsWithProduct.push({
+              ...item,
+              product: null,
+            });
+          }
+        }
 
 
         setCartItems(itemsWithProduct.filter(item => item.product !== null));
