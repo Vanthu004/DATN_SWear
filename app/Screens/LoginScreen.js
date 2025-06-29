@@ -120,6 +120,23 @@ export default function LoginScreen({ navigation }) {
           };
           console.log('Full user data from profile endpoint:', fullUserData);
           await login(token, fullUserData, true);
+
+          //tạo giỏ hàng đăng nhập lần đầu
+           try {
+      const userId = fullUserData._id || fullUserData.id;
+      console.log("🔐 ID người dùng:", userId);
+
+      const cartRes = await api.get(`/cart/user/${userId}`);
+      if (!cartRes?.data || !cartRes?.data?._id) {
+        const createCartRes = await api.post("/cart", { user_id: userId });
+        console.log("🛒 Đã tạo giỏ hàng mới:", createCartRes.data);
+      } else {
+        console.log("✅ Giỏ hàng đã tồn tại:", cartRes.data);
+      }
+    } catch (cartError) {
+      console.log("❌ Lỗi kiểm tra hoặc tạo giỏ hàng:", cartError?.response?.data || cartError.message);
+    }
+    
         } else {
           await login(token, userWithVerification, true);
         }
