@@ -22,6 +22,7 @@ const renderStars = (rating) => (
                 color="#facc15"
             />
         ))}
+
     </View>
 );
 
