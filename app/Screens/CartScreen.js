@@ -362,9 +362,10 @@ const styles = StyleSheet.create({
 
   removeIcon: {
   position: "absolute",
-  top: 6,
-  right: 6,
+  top: 3,
+  right: 3,
   zIndex: 1,
+  bottom: 3,
 },
 
 });
