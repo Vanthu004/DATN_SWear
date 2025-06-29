@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import {
-  ActivityIndicator,
-  Alert,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Alert,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 import api from '../utils/api'; // đảm bảo bạn đã import axios cấu hình sẵn
 
@@ -32,7 +32,7 @@ const ForgotPasswordScreen = ({ navigation }) => {
 
     setIsLoading(true);
     try {
-      await api.post('/forgot-password', { email });
+      await api.post('/users/forgot-password', { email });
       Alert.alert("Thành công", "OTP đã được gửi về email của bạn");
       navigation.navigate("ResetPassword", { email }); // chuyển sang màn Reset
     } catch (error) {

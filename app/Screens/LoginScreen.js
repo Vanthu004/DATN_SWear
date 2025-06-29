@@ -1,14 +1,14 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    Image,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  Image,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { useAuth } from "../context/AuthContext";
 import api from "../utils/api";
@@ -22,7 +22,7 @@ export default function LoginScreen({ navigation }) {
 
   const checkEmailVerificationFromServer = async (email) => {
     try {
-      const response = await api.get(`/check-email-verification?email=${email}`);
+      const response = await api.get(`/users/check-email-verification?email=${email}`);
       return response.data.isEmailVerified;
     } catch (error) {
       console.log('Error checking email verification from server:', error);
@@ -32,7 +32,7 @@ export default function LoginScreen({ navigation }) {
 
   const checkEmailExists = async (email) => {
     try {
-      const response = await api.get(`/check-email-exists?email=${email}`);
+      const response = await api.get(`/users/check-email-exists?email=${email}`);
       return response.data.exists;
     } catch (error) {
       console.log('Error checking email exists:', error);
@@ -51,7 +51,7 @@ export default function LoginScreen({ navigation }) {
       console.log('Attempting login with email:', email);
       
       // Tiến hành đăng nhập trước
-      const res = await api.post("/login", { email, password });
+      const res = await api.post("/users/login", { email, password });
       console.log('Login response:', res.data);
       
       const { token, user, isEmailVerified: serverEmailVerified } = res.data;
@@ -112,7 +112,7 @@ export default function LoginScreen({ navigation }) {
       
       // Thử lấy thông tin user đầy đủ từ server nếu có endpoint
       try {
-        const userProfileResponse = await api.get('/profile');
+        const userProfileResponse = await api.get('/users/profile');
         if (userProfileResponse?.data?.user) {
           const fullUserData = {
             ...userWithVerification,
@@ -157,7 +157,7 @@ export default function LoginScreen({ navigation }) {
       } else if (error.response?.status === 401) {
         // Kiểm tra xem email có tồn tại không
         try {
-          const checkResponse = await api.get(`/check-email-exists?email=${email}`);
+          const checkResponse = await api.get(`/users/check-email-exists?email=${email}`);
           if (checkResponse.data.exists) {
             Alert.alert(
               "Email chưa xác nhận", 

@@ -35,20 +35,23 @@ export default function ProductCard({
     }).start();
   };
 
-  // Tính phần trăm giảm giá
-  let discount = null;
-  if (product.oldPrice) {
-    const oldP = parseInt(product.oldPrice.replace(/\D/g, ""));
-    const newP = parseInt(product.price.replace(/\D/g, ""));
-    if (oldP && newP) {
-      discount = `-${Math.round(100 - (newP / oldP) * 100)}%`;
-    }
-  }
+  // Lấy ảnh sản phẩm
+  const imageSource = product.image_url
+    ? { uri: product.image_url }
+    : product.image
+    ? { uri: product.image }
+    : require("../../assets/images/box-icon.png");
+
+  // Giá và tên
+  const price = product.price || "";
+  const name = product.name || "";
+
+  // Rating demo nếu chưa có dữ liệu
+  const rating = product.rating || 5.0;
+  const ratingCount = product.ratingCount || 1000;
 
   return (
-    <Animated.View
-      style={[styles.productCard, { transform: [{ scale: scaleAnim }] }]}
-    >
+    <Animated.View style={[styles.card, { transform: [{ scale: scaleAnim }] }]}>  
       <TouchableOpacity
         activeOpacity={0.8}
         onPress={() =>
@@ -60,48 +63,42 @@ export default function ProductCard({
         onPressOut={handlePressOut}
         style={{ flex: 1 }}
       >
+        {/* Ảnh sản phẩm */}
         <View style={styles.imageWrap}>
-          <Image source={{ uri: product.image }} style={styles.productImage} />
-          {discount && (
-            <View style={styles.badgeDiscount}>
-              <Text style={styles.badgeText}>{discount}</Text>
-            </View>
-          )}
-          {showFavoriteIcon && (
-            <TouchableOpacity
-              style={styles.heartIcon}
-              onPress={onToggleFavorite}
-              activeOpacity={0.7}
-            >
-              <Ionicons
-                name={isFavorite ? "heart" : "heart-outline"}
-                size={16}
-                color={isFavorite ? "#e74c3c" : "#bbb"}
-              />
-            </TouchableOpacity>
-          )}
+          <Image source={imageSource} style={styles.productImage} />
         </View>
-        <Text numberOfLines={2} style={styles.productName}>
-          {product.name}
-        </Text>
-        <Text style={styles.productPrice}>{product.price}</Text>
-        {product.oldPrice && (
-          <Text style={styles.oldPrice}>{product.oldPrice}</Text>
-        )}
+        {/* Giá */}
+        <Text style={styles.productPrice}>{price}</Text>
+        <Text style={styles.productPrice}>.</Text>
+        {/* Tên sản phẩm */}
+        <Text numberOfLines={2} style={styles.productName}>{name}</Text>
+        {/* Rating và icon khoá */}
+        <View style={styles.ratingRow}>
+          <Ionicons name="star" size={14} color="#222" style={{ marginRight: 2 }} />
+          <Text style={styles.ratingText}>{rating.toFixed(1)}</Text>
+          <Text style={styles.ratingCount}>({ratingCount})</Text>
+          <View style={{ flex: 1 }} />
+          <TouchableOpacity
+          style={styles.cartBtn}
+           onPress={() => navigation.navigate('Cart')}>
+          <Image source={require('../../assets/images/moreCart.png')} style={{width:20, height:20}} />
+          </TouchableOpacity>
+        </View>
       </TouchableOpacity>
     </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
-  productCard: {
-    width: 150,
-    minHeight: 210,
+  card: {
+    width: 170,
+    minHeight: 250,
     marginRight: 16,
     backgroundColor: "#fff",
-    borderRadius: 22,
-    padding: 12,
+    padding: 0,
+    marginTop: 10,
     marginBottom: 16,
+    overflow: "hidden",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
@@ -110,61 +107,52 @@ const styles = StyleSheet.create({
   },
   imageWrap: {
     width: "100%",
-    height: 120,
-    borderRadius: 16,
+    height: 150,
     backgroundColor: "#f8f8f8",
-    marginBottom: 8,
-    overflow: "hidden",
     justifyContent: "center",
     alignItems: "center",
+    overflow: "hidden",
   },
   productImage: {
     width: "100%",
     height: "100%",
-    borderRadius: 16,
-    resizeMode: "cover",
+    resizeMode: "contain",
+  },
+  productPrice: {
+    fontWeight: "500",
+    fontSize: 18,
+    color: "#222",
+    marginTop: 2,
+    marginLeft: 10,
   },
   productName: {
-    fontSize: 14,
-    marginVertical: 2,
+    fontSize: 15,
     color: "#222",
+    marginHorizontal: 10,
+    marginTop: 0,
+    marginBottom: 6,
+    fontWeight: "400",
+  },
+  ratingRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginHorizontal: 10,
+    marginBottom: 8,
+  },
+  ratingText: {
+    fontSize: 14,
+    color: "#222",
+    marginLeft: 2,
     fontWeight: "500",
   },
-  productPrice: { fontWeight: "bold", fontSize: 14, color: "#222" },
-  oldPrice: {
-    fontSize: 12,
-    textDecorationLine: "line-through",
-    color: "#bbb",
-  },
-  heartIcon: {
-    position: "absolute",
-    top: 10,
-    right: 10,
-    zIndex: 2,
-    backgroundColor: "#fff",
-    borderRadius: 12,
-    padding: 4,
-    elevation: 2,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.08,
-    shadowRadius: 2,
-  },
-  badgeDiscount: {
-    position: "absolute",
-    top: 10,
-    left: 10,
-    backgroundColor: "#FF4D4F",
-    borderRadius: 10,
-    paddingHorizontal: 7,
-    paddingVertical: 2,
-    zIndex: 2,
-    minWidth: 32,
-    alignItems: "center",
-  },
-  badgeText: {
-    color: "#fff",
-    fontWeight: "bold",
+  ratingCount: {
     fontSize: 13,
+    color: "#888",
+    marginLeft: 4,
+  },
+  cartBtn: {
+    backgroundColor: "#F6F6F6",
+    borderRadius: 20,
+    padding: 8,
   },
 });

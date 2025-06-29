@@ -1,13 +1,13 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import api from '../utils/api';
 
@@ -54,10 +54,11 @@ const RegisterScreen = ({ navigation }) => {
 
     setIsLoading(true);
     try {
-      const res = await api.post('/register', {
+      const res = await api.post('/users/register', {
         name,
         email,
         password,
+        confirmPassword,
       });
 
       console.log('Register response:', res.data);

@@ -1,5 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, { createContext, useContext, useEffect, useState } from "react";
+import api from "../utils/api";
 
 const AuthContext = createContext();
 
@@ -114,22 +115,14 @@ export const AuthProvider = ({ children }) => {
     try {
       console.log('Refreshing user data from server...');
       
-      // Thêm token vào header
-      const response = await fetch('http://192.168.52.106:3000/api/users/profile', {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${userToken}`,
-          'Content-Type': 'application/json',
-        },
-      });
+
+      // Sử dụng api instance thay vì fetch trực tiếp
+      const response = await api.get('/users/profile');
       
-      if (response.ok) {
-        const data = await response.json();
-        if (data.user) {
-          console.log('Fresh user data from server:', data.user);
-          await updateUserInfo(data.user);
-          return data.user;
-        }
+      if (response.data && response.data.user) {
+        console.log('Fresh user data from server:', response.data.user);
+        await updateUserInfo(response.data.user);
+        return response.data.user;
       }
     } catch (error) {
       console.log('Error refreshing user data:', error);
