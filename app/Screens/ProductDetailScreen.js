@@ -1,16 +1,18 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import {
-  Dimensions,
-  Image,
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    Alert,
+    Dimensions,
+    Image,
+    SafeAreaView,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from 'react-native';
-
+import { useAuth } from '../context/AuthContext';
+import api from '../utils/api';
 const renderStars = (rating) => (
     <View style={{ flexDirection: 'row' }}>
         {Array.from({ length: 5 }).map((_, idx) => (
@@ -21,11 +23,13 @@ const renderStars = (rating) => (
                 color="#facc15"
             />
         ))}
+
     </View>
 );
 
 export default function ProductDetailScreen({ route, navigation }) {
     const { product } = route.params || {};
+    const { userInfo } = useAuth();
     // Fallback nếu thiếu dữ liệu
     if (!product) return <Text>Không có dữ liệu sản phẩm</Text>;
 
@@ -33,6 +37,50 @@ export default function ProductDetailScreen({ route, navigation }) {
     const [color, setColor] = useState(product.colors?.[0] || 'black');
     const [quantity, setQuantity] = useState(1);
 
+    const [loadingAddCart, setLoadingAddCart] = useState(false);
+
+    const handleAddToCart = async () => {
+    if (!userInfo || !userInfo._id) {
+      Alert.alert("Lỗi", "Vui lòng đăng nhập để thêm sản phẩm vào giỏ hàng");
+      return;
+    }
+
+    setLoadingAddCart(true);
+
+    try {
+      // 1. Lấy giỏ hàng hiện tại của user
+      const cartRes = await api.get(`/carts/user/${userInfo._id}`);
+      let cart = cartRes.data;
+
+      // Nếu chưa có giỏ hàng, tạo mới
+      if (!cart || !cart._id) {
+        const createCartRes = await api.post('/carts', { user_id: userInfo._id });
+        cart = createCartRes.data;
+        console.log('🛒 Giỏ hàng mới đã được tạo:', cart);
+      }
+
+      // 2. Thêm sản phẩm vào cart_items
+      
+      const addItemRes = await api.post('/cart-items', {
+        cart_id: cart._id,
+        product_id: product._id,
+        quantity,
+        size,
+        color,
+      });
+
+      Alert.alert("Thành công", "Sản phẩm đã được thêm vào giỏ hàng");
+      console.log("🛒 Thêm sản phẩm vào giỏ hàng:", addItemRes.data);
+
+      
+
+    } catch (error) {
+      console.error('Lỗi thêm sản phẩm vào giỏ hàng:', error.response?.data || error.message);
+      Alert.alert("Lỗi", "Không thể thêm sản phẩm vào giỏ hàng");
+    } finally {
+      setLoadingAddCart(false);
+    }
+  };
     return (
         <SafeAreaView style={styles.container}>
             {/* Header với nút back và giỏ hàng */}
@@ -146,9 +194,16 @@ export default function ProductDetailScreen({ route, navigation }) {
             {/* Footer */}
             <View style={styles.footer}>
                 <Text style={styles.footerPrice}>{product.price?.toLocaleString('vi-VN') || ''} VND</Text>
-                <TouchableOpacity style={styles.addToCartBtn}>
-                    <Text style={styles.cartBtnText}>Thêm vào Giỏ hàng</Text>
-                </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.addToCartBtn, loadingAddCart && { opacity: 0.6 }]}
+          onPress={handleAddToCart}
+          disabled={loadingAddCart}
+        >
+          <Text style={styles.cartBtnText}>
+            {loadingAddCart ? 'Đang thêm...' : 'Thêm vào Giỏ hàng'}
+          </Text>
+        </TouchableOpacity>
+
             </View>
         </SafeAreaView>
     );

@@ -115,6 +115,7 @@ export const AuthProvider = ({ children }) => {
     try {
       console.log('Refreshing user data from server...');
       
+
       // Sử dụng api instance thay vì fetch trực tiếp
       const response = await api.get('/users/profile');
       

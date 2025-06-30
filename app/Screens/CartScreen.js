@@ -1,42 +1,153 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
+import React, { useEffect, useMemo, useState } from "react";
 import {
+  ActivityIndicator,
+  Alert,
   Image,
   ScrollView,
-  StyleSheet,
   Text,
   TouchableOpacity,
-  View,
+  View
 } from "react-native";
-
-const cartItems = [
-  {
-    name: "Áo Polo Nam thêu chữ rã",
-    image: require("../../assets/images/anhtt1.png"),
-    price: 249000,
-  },
-  {
-    name: "Áo thể thao Nam Recycle",
-    image: require("../../assets/images/anhtt2.png"),
-    price: 269000,
-  },
-];
+import { useAuth } from '../context/AuthContext';
+import api from '../utils/api';
 
 const CartScreen = () => {
   const navigation = useNavigation();
-  const subtotal = cartItems.reduce((sum, item) => sum + item.price, 0);
-  const shipping = 0;
-  const tax = 0;
-  const total = subtotal + shipping + tax;
+  const [cartItems, setCartItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  //lấy id user
+  const { userInfo } = useAuth();
+  const USER_ID = userInfo?._id || userInfo?.id;
+  // ✅ B1-3: Gọi dữ liệu
+  useEffect(() => {
+    const fetchCartData = async () => {
+      try {
+        console.log("🧪 Gọi API cart của user:", USER_ID);
+
+        // 1. Lấy Cart theo user_id
+        const cartRes = await api.get(`/carts/user/${USER_ID}`);
+        const cart = cartRes.data;
+        console.log("📦 Cart:", cart);
+
+        // 2. Lấy CartItem theo cart_id
+        const cartItemRes = await api.get(`/cart-items/cart/${cart._id}`);
+        const items = cartItemRes.data;
+        console.log("CartItem:", items);
+
+        // 3. Lấy Product cho từng CartItem
+        const itemsWithProduct = [];
+
+        for (const item of items) {
+          try {
+            // Có thể item.product_id là object hoặc id string
+            const productId = item.product_id._id || item.product_id.toString();
+            console.log("📦 Đang lấy sản phẩm với ID:", productId);
+
+            const productRes = await api.get(`/products/${productId}`);
+            const product = productRes.data;
+            console.log("✅ Sản phẩm lấy được:", product.name);
+
+            itemsWithProduct.push({
+              ...item,
+              product: product,
+            });
+          } catch (err) {
+            console.error(`❌ Không thể lấy sản phẩm ID ${item.product_id}:`, err.message);
+            itemsWithProduct.push({
+              ...item,
+              product: null,
+            });
+          }
+        }
+
+
+        setCartItems(itemsWithProduct.filter(item => item.product !== null));
+      } catch (err) {
+        console.error(err);
+        Alert.alert("Lỗi", "Không thể tải dữ liệu giỏ hàng");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCartData();
+  }, []);
+
+  const handleRemoveItem = async (itemId) => {
+  Alert.alert(
+    "Xác nhận",
+    "Bạn có chắc muốn xoá sản phẩm khỏi giỏ hàng?",
+    [
+      { text: "Huỷ", style: "cancel" },
+      {
+        text: "Xoá",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            await api.delete(`/cart-items/${itemId}`);
+            setCartItems((prev) => prev.filter((item) => item._id !== itemId));
+          } catch (err) {
+            console.error("❌ Lỗi xoá sản phẩm:", err.message);
+            Alert.alert("Lỗi", "Không thể xoá sản phẩm khỏi giỏ hàng");
+          }
+        },
+      },
+    ]
+  );
+};
+
+  // ✅ Tính tổng
+  const subtotal = useMemo(() => {
+    return cartItems.reduce(
+      (sum, item) => sum + item.product.price * item.quantity,
+      0
+    );
+  }, [cartItems]);
+
+  const shipping = 15000;
+const tax = Math.round(subtotal * 0.05);
+const total = subtotal + shipping + tax;
+
+  // ✅ Tăng/giảm số lượng
+  const changeQuantity = async (index, delta) => {
+    const item = cartItems[index];
+    const newQty = item.quantity + delta;
+    if (newQty < 1) return;
+
+    try {
+      await api.put(`/cart-items/${item._id}`, {
+        quantity: newQty,
+      });
+
+      // Cập nhật local state
+      setCartItems((prev) => {
+        const updated = [...prev];
+        updated[index] = { ...item, quantity: newQty };
+        return updated;
+      });
+    } catch (err) {
+      console.error("Lỗi cập nhật số lượng", err);
+      Alert.alert("Lỗi", "Không thể cập nhật số lượng");
+    }
+  };
+
+  if (loading) {
+    return (
+      <View style={styles.center}>
+        <ActivityIndicator size="large" color="#007BFF" />
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
-      {/* Custom Header */}
+      {/* Header */}
       <View style={styles.customHeader}>
         <TouchableOpacity
           style={styles.backBtn}
           onPress={() => navigation.goBack()}
-          activeOpacity={0.7}
         >
           <View style={styles.backIconWrap}>
             <Ionicons name="arrow-back" size={22} color="#222" />
@@ -45,26 +156,36 @@ const CartScreen = () => {
         <Text style={styles.headerTitle}>Giỏ hàng</Text>
       </View>
 
-      {/* Product List */}
+      {/* List sản phẩm */}
       <ScrollView style={styles.productList}>
         {cartItems.map((item, index) => (
-          <View key={index} style={styles.item}>
-            <Image source={item.image} style={styles.image} />
+          <View key={item._id} style={styles.item}>
+            <Image source={{ uri: item.product.image_url }} style={styles.image} />
+            <TouchableOpacity
+            style={styles.removeIcon}
+            onPress={() => handleRemoveItem(item._id)}
+             >
+            <Ionicons name="close-circle" size={20} color="#ef4444" />
+            </TouchableOpacity>
+
             <View style={styles.itemInfo}>
-              <Text style={styles.itemName}>{item.name}</Text>
-              <Text style={styles.itemDetail}>
-                Kích cỡ - <Text style={styles.bold}>M</Text> Màu -{" "}
-                <Text style={styles.bold}>Trắng</Text>
-              </Text>
+              <Text style={styles.itemName}>{item.product.name}</Text>
               <Text style={styles.price}>
-                {item.price.toLocaleString()} VND
+                {(item.product.price * item.quantity).toLocaleString()} VND
               </Text>
+              <Text style={styles.label}>Số lượng: {item.quantity}</Text>
             </View>
             <View style={styles.quantityControl}>
-              <TouchableOpacity style={styles.qtyButton}>
+              <TouchableOpacity
+                style={styles.qtyButton}
+                onPress={() => changeQuantity(index, +1)}
+              >
                 <Text style={styles.qtyText}>+</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.qtyButton}>
+              <TouchableOpacity
+                style={styles.qtyButton}
+                onPress={() => changeQuantity(index, -1)}
+              >
                 <Text style={styles.qtyText}>-</Text>
               </TouchableOpacity>
             </View>
@@ -72,7 +193,7 @@ const CartScreen = () => {
         ))}
       </ScrollView>
 
-      {/* Summary */}
+      {/* Tổng */}
       <View style={styles.summary}>
         <View style={styles.summaryRow}>
           <Text style={styles.label}>Tạm tính</Text>
@@ -80,11 +201,11 @@ const CartScreen = () => {
         </View>
         <View style={styles.summaryRow}>
           <Text style={styles.label}>Phí vận chuyển</Text>
-          <Text>{shipping.toFixed(2)} VND</Text>
+          <Text>{shipping.toFixed(0)} VND</Text>
         </View>
         <View style={styles.summaryRow}>
           <Text style={styles.label}>Thuế</Text>
-          <Text>{tax.toFixed(2)} VND</Text>
+          <Text>{tax.toFixed(0)} VND</Text>
         </View>
         <View style={styles.summaryRow}>
           <Text style={styles.totalLabel}>Tổng</Text>
@@ -92,7 +213,7 @@ const CartScreen = () => {
         </View>
       </View>
 
-      {/* Checkout */}
+      {/* Nút thanh toán */}
       <TouchableOpacity
         style={styles.checkoutButton}
         onPress={() => navigation.navigate("Checkout")}
@@ -105,6 +226,8 @@ const CartScreen = () => {
 
 export default CartScreen;
 
+import { StyleSheet } from "react-native";
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -114,17 +237,17 @@ const styles = StyleSheet.create({
   },
   customHeader: {
     height: 64,
+    paddingTop: 24,
+    marginBottom: 8,
+    backgroundColor: "#fff",
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "white",
     position: "relative",
-    marginBottom: 8,
-    paddingTop: 24,
   },
   backBtn: {
     position: "absolute",
-    left: 16,
     top: 24,
+    left: 16,
     zIndex: 2,
   },
   backIconWrap: {
@@ -141,6 +264,7 @@ const styles = StyleSheet.create({
     color: "#222",
     textAlign: "center",
   },
+
   productList: {
     marginTop: 20,
   },
@@ -160,27 +284,28 @@ const styles = StyleSheet.create({
   },
   itemInfo: {
     flex: 1,
+    justifyContent: "center",
   },
   itemName: {
     fontSize: 14,
     fontWeight: "500",
-  },
-  itemDetail: {
-    color: "#666",
-    fontSize: 13,
-    marginTop: 4,
-  },
-  bold: {
-    fontWeight: "bold",
     color: "#000",
   },
   price: {
     marginTop: 4,
     fontWeight: "600",
+    color: "#222",
   },
+  label: {
+    marginTop: 4,
+    fontSize: 13,
+    color: "#666",
+  },
+
   quantityControl: {
     flexDirection: "column",
     alignItems: "center",
+    justifyContent: "center",
   },
   qtyButton: {
     backgroundColor: "#007BFF",
@@ -196,25 +321,29 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "bold",
   },
+
   summary: {
     marginTop: 10,
     paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: "#eee",
   },
   summaryRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     marginVertical: 4,
   },
-  label: {
-    color: "#999",
-  },
   totalLabel: {
     fontWeight: "bold",
+    fontSize: 16,
+    color: "#000",
   },
   totalAmount: {
     fontWeight: "bold",
     fontSize: 16,
+    color: "#000",
   },
+
   checkoutButton: {
     backgroundColor: "#007BFF",
     paddingVertical: 14,
@@ -227,4 +356,22 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "500",
   },
+
+  center: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  removeIcon: {
+  position: "absolute",
+  top: 3,
+  right: 3,
+  zIndex: 1,
+  bottom: 3,
+},
+
 });
+
+
+

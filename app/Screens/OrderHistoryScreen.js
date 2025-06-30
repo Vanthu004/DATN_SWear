@@ -71,6 +71,22 @@ export default function OrderDetail() {
           18/9 Hồ Duy Dung, Cao Duyên, TP. Hà Tây, Việt Nam{"\n"}09473747534
         </Text>
       </View>
+
+
+      <TouchableOpacity
+        style={styles.reviewButton}
+        onPress={() =>
+          navigation.navigate("RatingReviews", {
+            productId: "60d5f8c8b1f9c70b3c4d8f8f",
+            userId: "60d5f8c8b1f9c70b3c4d8f8e"
+          })
+        }
+      >
+        <Text style={styles.reviewButtonText}>
+          Chuyển sang phần đánh giá sản phẩm
+        </Text>
+      </TouchableOpacity>
+
     </ScrollView>
   );
 }
@@ -166,4 +182,19 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: "#333",
   },
+    reviewButton: {
+    backgroundColor: '#3b82f6',
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 32,
+  },
+  reviewButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+
 });
