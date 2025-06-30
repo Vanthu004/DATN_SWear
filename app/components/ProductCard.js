@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { useCart } from '../hooks/useCart';
 
 export default function ProductCard({
   product,
@@ -15,8 +16,10 @@ export default function ProductCard({
   isFavorite,
   onToggleFavorite,
   showFavoriteIcon = true,
+  fixedHeight = false,
 }) {
   const scaleAnim = useRef(new Animated.Value(1)).current;
+  const { addToCart, isInCart } = useCart();
 
   const handlePressIn = () => {
     Animated.spring(scaleAnim, {
@@ -35,6 +38,11 @@ export default function ProductCard({
     }).start();
   };
 
+  const handleAddToCart = async (e) => {
+    e.stopPropagation();
+    await addToCart(product, 1);
+  };
+
   // Lấy ảnh sản phẩm
   const imageSource = product.image_url
     ? { uri: product.image_url }
@@ -51,7 +59,7 @@ export default function ProductCard({
   const ratingCount = product.ratingCount || 1000;
 
   return (
-    <Animated.View style={[styles.card, { transform: [{ scale: scaleAnim }] }]}>  
+    <Animated.View style={[styles.card, fixedHeight && styles.fixedCard, { transform: [{ scale: scaleAnim }] }]}>  
       <TouchableOpacity
         activeOpacity={0.8}
         onPress={() =>
@@ -69,9 +77,9 @@ export default function ProductCard({
         </View>
         {/* Giá */}
         <Text style={styles.productPrice}>{price}</Text>
-        <Text style={styles.productPrice}>.</Text>
+        <Text style={styles.productPrice}></Text>
         {/* Tên sản phẩm */}
-        <Text numberOfLines={2} style={styles.productName}>{name}</Text>
+        <Text numberOfLines={2} ellipsizeMode="tail" style={styles.productName}>{name}</Text>
         {/* Rating và icon khoá */}
         <View style={styles.ratingRow}>
           <Ionicons name="star" size={14} color="#222" style={{ marginRight: 2 }} />
@@ -79,9 +87,15 @@ export default function ProductCard({
           <Text style={styles.ratingCount}>({ratingCount})</Text>
           <View style={{ flex: 1 }} />
           <TouchableOpacity
-          style={styles.cartBtn}
-           onPress={() => navigation.navigate('Cart')}>
-          <Image source={require('../../assets/images/moreCart.png')} style={{width:20, height:20}} />
+            style={[styles.cartBtn, isInCart(product._id) && styles.cartBtnActive]}
+            onPress={handleAddToCart}
+          >
+            {/* <Ionicons 
+              name={isInCart(product._id) ? "checkmark" : "add"} 
+              size={16} 
+              color={isInCart(product._id) ? "#fff" : "#222"} 
+            /> */}
+            <Image source={require("../../assets/images/moreCart.png")} style={{ width: 20, height: 20 }} />
           </TouchableOpacity>
         </View>
       </TouchableOpacity>
@@ -92,7 +106,7 @@ export default function ProductCard({
 const styles = StyleSheet.create({
   card: {
     width: 170,
-    minHeight: 250,
+    minHeight: 300,
     marginRight: 16,
     backgroundColor: "#fff",
     padding: 0,
@@ -104,6 +118,9 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.06,
     shadowRadius: 12,
     elevation: 2,
+  },
+  fixedCard: {
+    height: 260,
   },
   imageWrap: {
     width: "100%",
@@ -122,7 +139,7 @@ const styles = StyleSheet.create({
     fontWeight: "500",
     fontSize: 18,
     color: "#222",
-    marginTop: 2,
+    marginTop: 5,
     marginLeft: 10,
   },
   productName: {
@@ -155,4 +172,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     padding: 8,
   },
+  // cartBtnActive: {
+  //   backgroundColor: "#007BFF",
+  // },
 });
