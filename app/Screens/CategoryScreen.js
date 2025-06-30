@@ -32,7 +32,17 @@ const CategoryScreen = ({ route, navigation }) => {
   }, [category]);
 
   const handleProductPress = (product) => {
-    navigation.navigate('ProductDetail', { product });
+    const productData = {
+      ...product,
+      images: product.images && product.images.length > 0
+        ? product.images
+        : product.image_url
+          ? [product.image_url]
+          : product.image
+            ? [product.image]
+            : [],
+    };
+    navigation.navigate('ProductDetail', { product: productData });
   };
 
   // Header tuỳ chỉnh
@@ -83,7 +93,7 @@ const CategoryScreen = ({ route, navigation }) => {
         data={products}
         keyExtractor={item => item._id}
         renderItem={({ item }) => (
-          <ProductCard product={item} navigation={navigation} />
+          <ProductCard product={item} navigation={navigation} onPress={handleProductPress} />
         )}
         numColumns={2}
         columnWrapperStyle={styles.columnWrapperStyle}

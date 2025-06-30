@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import {
   FlatList,
   Image,
@@ -19,6 +19,7 @@ import {
   fetchBestSellers,
   fetchCategories,
 } from "../reudx/homeSlice";
+import { addFavorite, getFavoritesByUser, removeFavorite } from "../utils/api";
 
 const bannerImg = require("../../assets/sp1.png");
 const defaultAvatar = require("../../assets/images/default-avatar.png");
@@ -29,11 +30,42 @@ export default function HomeScreen() {
   const { userInfo } = useAuth();
   const { categories, bestSellers, loading } = useSelector((state) => state.home);
   const { cartCount } = useCart();
+  const userId = userInfo?._id;
+  const [favoriteIds, setFavoriteIds] = useState([]);
 
   useEffect(() => {
     dispatch(fetchCategories());
     dispatch(fetchBestSellers());
   }, [dispatch]);
+
+  // Lấy danh sách sản phẩm yêu thích khi vào Home
+  useEffect(() => {
+    if (!userId) return;
+    const fetchFavorites = async () => {
+      try {
+        const data = await getFavoritesByUser(userId);
+        setFavoriteIds(data.map(fav => fav.product_id?._id));
+      } catch (err) {
+        setFavoriteIds([]);
+      }
+    };
+    fetchFavorites();
+  }, [userId]);
+
+  // Xử lý toggle yêu thích
+  const handleToggleFavorite = async (product) => {
+    if (!userId || !product?._id) return;
+    const isFav = favoriteIds.includes(product._id);
+    try {
+      if (isFav) {
+        await removeFavorite(userId, product._id);
+        setFavoriteIds(favoriteIds.filter(id => id !== product._id));
+      } else {
+        await addFavorite(userId, product._id);
+        setFavoriteIds([...favoriteIds, product._id]);
+      }
+    } catch (err) {}
+  };
 
   // Hiển thị 5 danh mục đầu tiên
   const displayedCategories = categories.slice(0, 5);
@@ -117,7 +149,14 @@ export default function HomeScreen() {
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={{paddingBottom: 12, }}
           renderItem={({ item }) => (
-            <ProductCard product={item} navigation={navigation} fixedHeight />
+            <ProductCard
+              product={item}
+              navigation={navigation}
+              fixedHeight
+              isFavorite={favoriteIds.includes(item._id)}
+              onToggleFavorite={handleToggleFavorite}
+              showFavoriteIcon={true}
+            />
           )}
           ListEmptyComponent={loading ? (
             <Text style={{ color: '#888', marginLeft: 16 }}>Đang tải...</Text>
