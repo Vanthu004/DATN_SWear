@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import {
+    Alert,
     Dimensions,
     Image,
     SafeAreaView,
@@ -11,7 +12,8 @@ import {
     View,
 } from 'react-native';
 import { useAuth } from '../context/AuthContext';
-import api from '../utils/api';
+import { useCart } from '../hooks/useCart';
+
 const renderStars = (rating) => (
     <View style={{ flexDirection: 'row' }}>
         {Array.from({ length: 5 }).map((_, idx) => (
@@ -27,59 +29,37 @@ const renderStars = (rating) => (
 );
 
 export default function ProductDetailScreen({ route, navigation }) {
-    const { product } = route.params || {};
-    const { userInfo } = useAuth();
-    // Fallback nếu thiếu dữ liệu
-    if (!product) return <Text>Không có dữ liệu sản phẩm</Text>;
-
-    const [size, setSize] = useState(product.sizes?.[0] || 'S');
-    const [color, setColor] = useState(product.colors?.[0] || 'black');
+    const { product } = route.params;
+    const [size, setSize] = useState(product.sizes?.[0] || null);
+    const [color, setColor] = useState(product.colors?.[0] || null);
     const [quantity, setQuantity] = useState(1);
-
-    const [loadingAddCart, setLoadingAddCart] = useState(false);
+    const { addToCart, cartCount, isInCart } = useCart();
+    const { userInfo } = useAuth();
 
     const handleAddToCart = async () => {
-    if (!userInfo || !userInfo._id) {
-      Alert.alert("Lỗi", "Vui lòng đăng nhập để thêm sản phẩm vào giỏ hàng");
-      return;
-    }
+        if (!userInfo) {
+            Alert.alert("Lỗi", "Vui lòng đăng nhập để thêm sản phẩm vào giỏ hàng");
+            return;
+        }
 
-    setLoadingAddCart(true);
+        const success = await addToCart(product, quantity, size, color);
+        if (success) {
+            // Có thể navigate đến cart hoặc hiển thị thông báo
+        }
+    };
 
-    try {
-      // 1. Lấy giỏ hàng hiện tại của user
-      const cartRes = await api.get(`/carts/user/${userInfo._id}`);
-      let cart = cartRes.data;
+    const handleBuyNow = async () => {
+        if (!userInfo) {
+            Alert.alert("Lỗi", "Vui lòng đăng nhập để mua sản phẩm");
+            return;
+        }
 
-      // Nếu chưa có giỏ hàng, tạo mới
-      if (!cart || !cart._id) {
-        const createCartRes = await api.post('/carts', { user_id: userInfo._id });
-        cart = createCartRes.data;
-        console.log('🛒 Giỏ hàng mới đã được tạo:', cart);
-      }
+        const success = await addToCart(product, quantity, size, color);
+        if (success) {
+            navigation.navigate('Cart');
+        }
+    };
 
-      // 2. Thêm sản phẩm vào cart_items
-      
-      const addItemRes = await api.post('/cart-items', {
-        cart_id: cart._id,
-        product_id: product._id,
-        quantity,
-        size,
-        color,
-      });
-
-      Alert.alert("Thành công", "Sản phẩm đã được thêm vào giỏ hàng");
-      console.log("🛒 Thêm sản phẩm vào giỏ hàng:", addItemRes.data);
-
-      
-
-    } catch (error) {
-      console.error('Lỗi thêm sản phẩm vào giỏ hàng:', error.response?.data || error.message);
-      Alert.alert("Lỗi", "Không thể thêm sản phẩm vào giỏ hàng");
-    } finally {
-      setLoadingAddCart(false);
-    }
-  };
     return (
         <SafeAreaView style={styles.container}>
             {/* Header với nút back và giỏ hàng */}
@@ -90,6 +70,11 @@ export default function ProductDetailScreen({ route, navigation }) {
                 <View style={{ flex: 1 }} />
                 <TouchableOpacity onPress={() => navigation.navigate('Cart')} style={styles.headerBtn}>
                     <Ionicons name="cart-outline" size={26} color="#222" />
+                    {cartCount > 0 && (
+                        <View style={styles.cartBadge}>
+                            <Text style={styles.cartBadgeText}>{cartCount}</Text>
+                        </View>
+                    )}
                 </TouchableOpacity>
             </View>
             <ScrollView contentContainerStyle={{ padding: 16 }} showsVerticalScrollIndicator={false}>
@@ -146,7 +131,7 @@ export default function ProductDetailScreen({ route, navigation }) {
                     </>
                 )}
                 {/* Số lượng còn lại */}
-                {typeof product.stock === 'number' && (
+                {product.stock !== undefined && (
                     <Text style={styles.stock}>Còn lại: {product.stock} sản phẩm</Text>
                 )}
                 {/* Số lượng chọn */}
@@ -178,40 +163,58 @@ export default function ProductDetailScreen({ route, navigation }) {
                     <Text style={{ marginLeft: 8, color: '#888' }}>{product.rating || 5} điểm ({product.rating_count || 0} đánh giá)</Text>
                 </View>
                 {/* Danh sách đánh giá (nếu có) */}
-                {product.reviews && product.reviews.length > 0 ? (
-                    product.reviews.map((review, idx) => (
-                        <View key={idx} style={{ marginBottom: 10 }}>
-                            <Text style={{ fontWeight: 'bold' }}>{review.name}</Text>
-                            {renderStars(review.rating)}
-                            <Text style={{ color: '#4b5563' }}>{review.comment}</Text>
-                        </View>
-                    ))
-                ) : (
-                    <Text style={{ color: '#aaa', fontStyle: 'italic' }}>Chưa có đánh giá nào</Text>
+                {product.reviews && product.reviews.length > 0 && (
+                    <View style={{ marginTop: 8 }}>
+                        {product.reviews.slice(0, 3).map((review, idx) => (
+                            <View key={idx} style={{ marginBottom: 8, padding: 8, backgroundColor: '#f9f9f9', borderRadius: 8 }}>
+                                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+                                    {renderStars(review.rating)}
+                                    <Text style={{ marginLeft: 8, fontWeight: '500' }}>{review.user_name}</Text>
+                                </View>
+                                <Text style={{ color: '#666', fontSize: 14 }}>{review.comment}</Text>
+                            </View>
+                        ))}
+                    </View>
                 )}
             </ScrollView>
-            {/* Footer */}
-            <View style={styles.footer}>
-                <Text style={styles.footerPrice}>{product.price?.toLocaleString('vi-VN') || ''} VND</Text>
-        <TouchableOpacity
-          style={[styles.addToCartBtn, loadingAddCart && { opacity: 0.6 }]}
-          onPress={handleAddToCart}
-          disabled={loadingAddCart}
-        >
-          <Text style={styles.cartBtnText}>
-            {loadingAddCart ? 'Đang thêm...' : 'Thêm vào Giỏ hàng'}
-          </Text>
-        </TouchableOpacity>
 
+            {/* Footer với nút thêm vào giỏ hàng và mua ngay */}
+            <View style={styles.footer}>
+                <View>
+                    <Text style={styles.footerPrice}>
+                        {(product.price * quantity)?.toLocaleString('vi-VN')} VND
+                    </Text>
+                    <Text style={styles.footerSubtext}>
+                        {isInCart(product._id) ? 'Đã có trong giỏ hàng' : 'Chưa có trong giỏ hàng'}
+                    </Text>
+                </View>
+                <View style={styles.footerButtons}>
+                    <TouchableOpacity
+                        style={[styles.addToCartBtn, isInCart(product._id) && styles.addToCartBtnActive]}
+                        onPress={handleAddToCart}
+                        disabled={isInCart(product._id)}
+                    >
+                        <Text style={[styles.cartBtnText, isInCart(product._id) && styles.cartBtnTextActive]}>
+                            {isInCart(product._id) ? 'Đã thêm' : 'Thêm vào giỏ'}
+                        </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        style={styles.buyNowBtn}
+                        onPress={handleBuyNow}
+                    >
+                        <Text style={styles.buyNowText}>Mua ngay</Text>
+                    </TouchableOpacity>
+                </View>
             </View>
         </SafeAreaView>
     );
 }
+
 const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#fff',
-        marginTop: 60,
+        marginTop: 35,
         
     },
     headerRow: {
@@ -225,6 +228,24 @@ const styles = StyleSheet.create({
         padding: 8,
         borderRadius: 20,
         backgroundColor: '#f6f6f6',
+        position: 'relative',
+    },
+    cartBadge: {
+        position: 'absolute',
+        top: -6,
+        right: -6,
+        backgroundColor: '#FF5252',
+        borderRadius: 8,
+        minWidth: 16,
+        height: 16,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    cartBadgeText: {
+        color: '#fff',
+        fontSize: 10,
+        fontWeight: 'bold',
+        paddingHorizontal: 2,
     },
     image: {
         height: 250,
@@ -308,15 +329,41 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         color: '#3b82f6',
     },
+    footerSubtext: {
+        fontSize: 12,
+        color: '#888',
+        marginTop: 2,
+    },
+    footerButtons: {
+        flexDirection: 'row',
+        gap: 8,
+    },
     addToCartBtn: {
         backgroundColor: '#3b82f6',
         paddingVertical: 12,
-        paddingHorizontal: 24,
+        paddingHorizontal: 16,
         borderRadius: 10,
+    },
+    addToCartBtnActive: {
+        backgroundColor: '#e5e7eb',
     },
     cartBtnText: {
         color: '#fff',
         fontWeight: 'bold',
-        fontSize: 16,
+        fontSize: 14,
+    },
+    cartBtnTextActive: {
+        color: '#666',
+    },
+    buyNowBtn: {
+        backgroundColor: '#16a34a',
+        paddingVertical: 12,
+        paddingHorizontal: 16,
+        borderRadius: 10,
+    },
+    buyNowText: {
+        color: '#fff',
+        fontWeight: 'bold',
+        fontSize: 14,
     },
 });
