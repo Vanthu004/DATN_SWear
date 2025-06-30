@@ -1,6 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
-import axios from "axios";
 import React, { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
@@ -30,7 +29,7 @@ const CartScreen = () => {
         // 1. Lấy Cart theo user_id
         const cartRes = await api.get(`/carts/user/${USER_ID}`);
         const cart = cartRes.data;
-        console.log("Cart:", cart);
+        console.log("📦 Cart:", cart);
 
         // 2. Lấy CartItem theo cart_id
         const cartItemRes = await api.get(`/cart-items/cart/${cart._id}`);
@@ -46,7 +45,7 @@ const CartScreen = () => {
             const productId = item.product_id._id || item.product_id.toString();
             console.log("📦 Đang lấy sản phẩm với ID:", productId);
 
-            const productRes = await api.get(`/products/api/products/${productId}`);
+            const productRes = await api.get(`/products/${productId}`);
             const product = productRes.data;
             console.log("✅ Sản phẩm lấy được:", product.name);
 
@@ -87,7 +86,7 @@ const CartScreen = () => {
         style: "destructive",
         onPress: async () => {
           try {
-            await axios.delete(`${API_BASE}/cart-items/api/cart-items/${itemId}`);
+            await api.delete(`/cart-items/${itemId}`);
             setCartItems((prev) => prev.filter((item) => item._id !== itemId));
           } catch (err) {
             console.error("❌ Lỗi xoá sản phẩm:", err.message);
@@ -118,7 +117,7 @@ const total = subtotal + shipping + tax;
     if (newQty < 1) return;
 
     try {
-      await axios.put(`${API_BASE}/cart-items/api/cart-items/${item._id}`, {
+      await api.put(`/cart-items/${item._id}`, {
         quantity: newQty,
       });
 
