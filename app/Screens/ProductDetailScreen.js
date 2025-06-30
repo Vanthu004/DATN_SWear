@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
     Alert,
     Dimensions,
@@ -32,6 +32,22 @@ export default function ProductDetailScreen({ route, navigation }) {
     const { userInfo } = useAuth();
 
     const [isFavorite, setIsFavorite] = useState(false);
+
+    useEffect(() => {
+  const checkIsFavorite = async () => {
+    if (!userInfo || !userInfo._id || !product?._id) return;
+    try {
+      const res = await api.get(`/favorites/${userInfo._id}`);
+      const favoriteList = res.data || [];
+      const isFav = favoriteList.some((item) => item.product_id === product._id || item.product_id?._id === product._id);
+      setIsFavorite(isFav);
+    } catch (err) {
+      console.error('❌ Lỗi kiểm tra yêu thích:', err.message);
+    }
+  };
+
+  checkIsFavorite();
+}, [userInfo, product]);
 
 const handleToggleFavorite = async () => {
   if (!userInfo || !userInfo._id) {

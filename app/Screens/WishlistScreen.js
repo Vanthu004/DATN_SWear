@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
-import React, { useEffect, useState } from 'react';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import React, { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -23,10 +23,11 @@ export default function WishlistScreen() {
   const [favorites, setFavorites] = useState([]);
   const [loading, setLoading] = useState(true);
   const { userInfo } = useAuth();
-  useEffect(() => {
+  useFocusEffect(
+  useCallback(() => {
     const fetchFavorites = async () => {
       try {
-        const res = await api.get(`/favorites/${userInfo._id||userInfo.id}`);
+        const res = await api.get(`/favorites/${userInfo._id || userInfo.id}`);
         setFavorites(res.data);
       } catch (err) {
         console.error("❌ Lỗi khi lấy favorite:", err.message);
@@ -35,9 +36,9 @@ export default function WishlistScreen() {
         setLoading(false);
       }
     };
-
     fetchFavorites();
-  }, []);
+  }, [userInfo])
+);
 const handleRemoveFavorite = async (productId) => {
   try {
     await api.delete(`/favorites/${userInfo._id}/${productId}`);
