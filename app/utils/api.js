@@ -175,4 +175,35 @@ export const updateUserAvatar = async (uploadId) => {
   }
 };
 
+// Favorite Product APIs
+export const getFavoritesByUser = async (userId) => {
+  try {
+    const response = await api.get(`/favorites/${userId}`);
+    return response.data;
+  } catch (error) {
+    console.error('Get favorites error:', error);
+    throw error;
+  }
+};
+
+export const addFavorite = async (userId, productId) => {
+  try {
+    const response = await api.post(`/favorites`, { user_id: userId, product_id: productId });
+    return response.data;
+  } catch (error) {
+    console.error('Add favorite error:', error);
+    throw error;
+  }
+};
+
+export const removeFavorite = async (userId, productId) => {
+  try {
+    const response = await api.delete(`/favorites/${userId}/${productId}`);
+    return response.data;
+  } catch (error) {
+    console.error('Remove favorite error:', error);
+    throw error;
+  }
+};
+
 export default api;

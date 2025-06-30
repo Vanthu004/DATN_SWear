@@ -1,6 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import axios from 'axios';
 import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -13,21 +12,24 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
+import { useAuth } from '../context/AuthContext';
+import { getFavoritesByUser, removeFavorite } from '../utils/api';
 
-const USER_ID = "684fff1dca202e28f58ddaf9";
-const API_BASE = "http://192.168.52.106:3000/api";
 const CARD_WIDTH = (Dimensions.get('window').width - 48) / 2;
 
 export default function WishlistScreen() {
   const navigation = useNavigation();
+  const { userInfo } = useAuth();
+  const userId = userInfo?._id;
   const [favorites, setFavorites] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchFavorites = async () => {
+      if (!userId) return;
       try {
-        const res = await axios.get(`${API_BASE}/favorites/api/favorites/${USER_ID}`);
-        setFavorites(res.data);
+        const data = await getFavoritesByUser(userId);
+        setFavorites(data);
       } catch (err) {
         console.error("❌ Lỗi khi lấy favorite:", err.message);
         Alert.alert("Lỗi", "Không thể tải dữ liệu yêu thích");
@@ -37,52 +39,65 @@ export default function WishlistScreen() {
     };
 
     fetchFavorites();
-  }, []);
-const handleRemoveFavorite = async (productId) => {
-  try {
-    await axios.delete(`${API_BASE}/favorites/api/favorites/${USER_ID}/${productId}`);
-    // Sau khi xóa, cập nhật lại danh sách
-    const updatedFavorites = favorites.filter(
-      (item) => item.product_id._id !== productId
-    );
-    setFavorites(updatedFavorites);
-  } catch (err) {
-    console.error("❌ Lỗi khi xóa sản phẩm yêu thích:", err.message);
-    Alert.alert("Lỗi", "Không thể xóa sản phẩm khỏi danh sách yêu thích");
-  }
-};
+  }, [userId]);
+
+  const handleRemoveFavorite = async (productId) => {
+    if (!userId) return;
+    try {
+      await removeFavorite(userId, productId);
+      // Sau khi xóa, cập nhật lại danh sách
+      const updatedFavorites = favorites.filter(
+        (item) => item.product_id._id !== productId
+      );
+      setFavorites(updatedFavorites);
+    } catch (err) {
+      console.error("❌ Lỗi khi xóa sản phẩm yêu thích:", err.message);
+      Alert.alert("Lỗi", "Không thể xóa sản phẩm khỏi danh sách yêu thích");
+    }
+  };
 
   const renderItem = ({ item }) => {
     const product = item.product_id;
     if (!product) return null;
 
     return (
-      <View style={styles.card}>
+      <TouchableOpacity style={styles.card} onPress={() => {
+        // Đảm bảo luôn có images là mảng
+        const productData = {
+          ...product,
+          images: product.images && product.images.length > 0
+            ? product.images
+            : product.image_url
+              ? [product.image_url]
+              : [],
+        };
+        navigation.navigate('ProductDetail', { product: productData });
+      }}>
         <Image source={{ uri: product.image_url }} style={styles.image} />
         <TouchableOpacity style={styles.heartIcon}
-        onPress={() =>
-  Alert.alert(
-    "Xác nhận",
-    "Bạn có chắc muốn xoá sản phẩm khỏi yêu thích?",
-    [
-      { text: "Huỷ", style: "cancel" },
-      {
-        text: "Xoá",
-        onPress: () => handleRemoveFavorite(product._id),
-        style: "destructive",
-      },
-    ]
-  )
-}
-
+          onPress={(e) => {
+            e.stopPropagation && e.stopPropagation();
+            Alert.alert(
+              "Xác nhận",
+              "Bạn có chắc muốn xoá sản phẩm khỏi yêu thích?",
+              [
+                { text: "Huỷ", style: "cancel" },
+                {
+                  text: "Xoá",
+                  onPress: () => handleRemoveFavorite(product._id),
+                  style: "destructive",
+                },
+              ]
+            );
+          }}
         >
-          <Ionicons name="heart" size={20} color="#f87171" />
+          <Ionicons name="heart" size={20} color="#1e90ff" />
         </TouchableOpacity>
         <Text style={styles.name}>{product.name}</Text>
         <Text style={styles.price}>
           {product.price.toLocaleString('vi-VN')} VND
         </Text>
-      </View>
+      </TouchableOpacity>
     );
   };
 
