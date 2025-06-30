@@ -30,6 +30,36 @@ const renderStars = (rating) => (
 export default function ProductDetailScreen({ route, navigation }) {
     const { product } = route.params || {};
     const { userInfo } = useAuth();
+
+    const [isFavorite, setIsFavorite] = useState(false);
+
+const handleToggleFavorite = async () => {
+  if (!userInfo || !userInfo._id) {
+    Alert.alert("Lỗi", "Vui lòng đăng nhập để thêm vào yêu thích");
+    return;
+  }
+
+  try {
+    if (isFavorite) {
+      // Xoá khỏi yêu thích
+      await api.delete(`/favorites/${userInfo._id}/${product._id}`);
+      setIsFavorite(false);
+      Alert.alert("Đã xoá khỏi yêu thích");
+    } else {
+      // Thêm vào yêu thích
+      await api.post('/favorites', {
+        user_id: userInfo._id,
+        product_id: product._id
+      });
+      setIsFavorite(true);
+      Alert.alert("Đã thêm vào yêu thích");
+    }
+  } catch (error) {
+    console.log("❌ Lỗi khi thêm/xoá yêu thích:", error.message);
+    Alert.alert("Lỗi", "Không thể thực hiện thao tác");
+  }
+};
+
     // Fallback nếu thiếu dữ liệu
     if (!product) return <Text>Không có dữ liệu sản phẩm</Text>;
 
@@ -89,6 +119,14 @@ export default function ProductDetailScreen({ route, navigation }) {
                     <Ionicons name="arrow-back" size={24} color="#222" />
                 </TouchableOpacity>
                 <View style={{ flex: 1 }} />
+                  {/* Nút yêu thích */}
+                <TouchableOpacity onPress={handleToggleFavorite} style={styles.headerBtn}>
+                <Ionicons
+                name={isFavorite ? 'heart' : 'heart-outline'}
+                size={24}
+                color={isFavorite ? 'red' : '#222'}
+                />
+                </TouchableOpacity>
                 <TouchableOpacity onPress={() => navigation.navigate('Cart')} style={styles.headerBtn}>
                     <Ionicons name="cart-outline" size={26} color="#222" />
                 </TouchableOpacity>

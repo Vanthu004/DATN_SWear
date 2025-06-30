@@ -1,6 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import axios from 'axios';
 import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -14,19 +13,20 @@ import {
   View
 } from 'react-native';
 
-const USER_ID = "684fff1dca202e28f58ddaf9";
-const API_BASE = "http://192.168.52.106:3000/api";
+import { useAuth } from '../context/AuthContext';
+import api from '../utils/api';
+
 const CARD_WIDTH = (Dimensions.get('window').width - 48) / 2;
 
 export default function WishlistScreen() {
   const navigation = useNavigation();
   const [favorites, setFavorites] = useState([]);
   const [loading, setLoading] = useState(true);
-
+  const { userInfo } = useAuth();
   useEffect(() => {
     const fetchFavorites = async () => {
       try {
-        const res = await axios.get(`${API_BASE}/favorites/api/favorites/${USER_ID}`);
+        const res = await api.get(`/favorites/${userInfo._id||userInfo.id}`);
         setFavorites(res.data);
       } catch (err) {
         console.error("❌ Lỗi khi lấy favorite:", err.message);
@@ -40,7 +40,7 @@ export default function WishlistScreen() {
   }, []);
 const handleRemoveFavorite = async (productId) => {
   try {
-    await axios.delete(`${API_BASE}/favorites/api/favorites/${USER_ID}/${productId}`);
+    await api.delete(`/favorites/${userInfo._id}/${productId}`);
     // Sau khi xóa, cập nhật lại danh sách
     const updatedFavorites = favorites.filter(
       (item) => item.product_id._id !== productId
