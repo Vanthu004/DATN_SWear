@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useRoute } from "@react-navigation/native";
 import {
+  Image,
   ScrollView,
   StyleSheet,
   Text,
@@ -9,10 +10,14 @@ import {
 } from "react-native";
 
 const CheckoutScreen = () => {
-  const subtotal = 518000;
-  const shipping = 0;
-  const tax = 0;
-  const total = subtotal + shipping + tax;
+  const route = useRoute();
+  const {
+    checkedItems = [],
+    subtotal = 0,
+    shipping = 0,
+    tax = 0,
+    total = 0,
+  } = route.params || {};
   const navigation = useNavigation();
 
   return (
@@ -33,6 +38,52 @@ const CheckoutScreen = () => {
 
       {/* Content */}
       <ScrollView style={styles.content}>
+        {/* Danh sách sản phẩm đã chọn */}
+        {checkedItems.length > 0 && (
+          <View style={{ marginBottom: 16 }}>
+            <Text style={{ fontWeight: "bold", fontSize: 16, marginBottom: 8 }}>
+              Sản phẩm đã chọn
+            </Text>
+            {checkedItems.map((item) => (
+              <View
+                key={item._id}
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  marginBottom: 10,
+                  backgroundColor: "#f9f9f9",
+                  borderRadius: 8,
+                  padding: 8,
+                }}
+              >
+                <Image
+                  source={
+                    item.product?.image_url
+                      ? { uri: item.product.image_url }
+                      : require("../../assets/images/box-icon.png")
+                  }
+                  style={{
+                    width: 50,
+                    height: 50,
+                    borderRadius: 8,
+                    marginRight: 12,
+                  }}
+                />
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontWeight: "500", fontSize: 15 }}>
+                    {item.product?.name}
+                  </Text>
+                  <Text style={{ color: "#888", fontSize: 13 }}>
+                    Số lượng: {item.quantity}
+                  </Text>
+                  <Text style={{ color: "#222", fontSize: 13 }}>
+                    {item.product?.price?.toLocaleString()} đ
+                  </Text>
+                </View>
+              </View>
+            ))}
+          </View>
+        )}
         {/* Địa chỉ giao hàng */}
         <TouchableOpacity style={styles.card}>
           <Text style={styles.cardTitle}>Địa chỉ Giao hàng</Text>

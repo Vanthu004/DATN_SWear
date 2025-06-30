@@ -11,9 +11,9 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  View
+  View,
 } from "react-native";
-import { useCart } from '../hooks/useCart';
+import { useCart } from "../hooks/useCart";
 
 const COLORS = ["XANH DENIM", "ĐEN", "XÁM"];
 const SIZES = ["L", "M", "S", "XL"];
@@ -27,24 +27,43 @@ function CartItem({ item, checked, onCheck, onRemove, onUpdate }) {
   console.log("Cart item product:", item.product);
 
   return (
-    <View style={{ backgroundColor: "#fff", marginBottom: 12, borderRadius: 8, padding: 12, flexDirection: "row" }}>
+    <View
+      style={{
+        backgroundColor: "#fff",
+        marginBottom: 12,
+        borderRadius: 8,
+        padding: 12,
+        flexDirection: "row",
+      }}
+    >
       {/* Checkbox */}
-      <TouchableOpacity onPress={onCheck} style={{ marginRight: 8, alignSelf: "flex-start",marginTop:20 }}>
-        <Ionicons name={checked ? "checkbox" : "square-outline"} size={24} color="#2979FF" />
+      <TouchableOpacity
+        onPress={onCheck}
+        style={{ marginRight: 8, alignSelf: "flex-start", marginTop: 20 }}
+      >
+        <Ionicons
+          name={checked ? "checkbox" : "square-outline"}
+          size={24}
+          color="#2979FF"
+        />
       </TouchableOpacity>
       {/* Ảnh */}
       <Image
         source={
           item.product.image_url
-            ? { uri: item.product.image_url}
+            ? { uri: item.product.image_url }
             : require("../../assets/images/box-icon.png")
         }
         style={{ width: 70, height: 70, borderRadius: 8, marginRight: 10 }}
       />
       {/* Thông tin */}
       <View style={{ flex: 1 }}>
-        <Text style={{ fontWeight: "bold", fontSize: 15 }}>{item.product.name}</Text>
-        <Text style={{ fontWeight: "bold", color: "#222", marginVertical: 2 }}>{item.product.price.toLocaleString()} đ</Text>
+        <Text style={{ fontWeight: "bold", fontSize: 15 }}>
+          {item.product.name}
+        </Text>
+        <Text style={{ fontWeight: "bold", color: "#222", marginVertical: 2 }}>
+          {item.product.price.toLocaleString()} đ
+        </Text>
         {/* Dropdowns */}
         <View style={{ flexDirection: "row", marginTop: 4 }}>
           {/* Màu */}
@@ -55,7 +74,9 @@ function CartItem({ item, checked, onCheck, onRemove, onUpdate }) {
               style={{ height: 30, width: "100%" }}
               onValueChange={setSelectedColor}
             >
-              {COLORS.map(c => <Picker.Item key={c} label={c} value={c} />)}
+              {COLORS.map((c) => (
+                <Picker.Item key={c} label={c} value={c} />
+              ))}
             </Picker>
           </View>
           {/* Size */}
@@ -66,39 +87,84 @@ function CartItem({ item, checked, onCheck, onRemove, onUpdate }) {
               style={{ height: 30, width: "100%" }}
               onValueChange={setSelectedSize}
             >
-              {SIZES.map(s => <Picker.Item key={s} label={s} value={s} />)}
+              {SIZES.map((s) => (
+                <Picker.Item key={s} label={s} value={s} />
+              ))}
             </Picker>
           </View>
           {/* Số lượng */}
           <View style={{ flex: 1 }}>
             <Text style={{ fontSize: 12, color: "#888" }}>Số lượng</Text>
             <TouchableOpacity onPress={() => setShowQtyModal(true)}>
-              <Text style={{ borderWidth: 1, borderColor: "#ccc", borderRadius: 4, padding: 4, textAlign: "center" }}>{item.quantity}</Text>
+              <Text
+                style={{
+                  borderWidth: 1,
+                  borderColor: "#ccc",
+                  borderRadius: 4,
+                  padding: 4,
+                  textAlign: "center",
+                }}
+              >
+                {item.quantity}
+              </Text>
             </TouchableOpacity>
           </View>
         </View>
       </View>
       {/* Nút xóa */}
-      <TouchableOpacity onPress={onRemove} style={{ alignSelf: "flex-start", marginLeft: 8 }}>
+      <TouchableOpacity
+        onPress={onRemove}
+        style={{ alignSelf: "flex-start", marginLeft: 8 }}
+      >
         <Ionicons name="trash-outline" size={22} color="#ef4444" />
       </TouchableOpacity>
 
       {/* Modal nhập số lượng */}
       <Modal visible={showQtyModal} transparent animationType="fade">
-        <View style={{ flex: 1, backgroundColor: "#0008", justifyContent: "center", alignItems: "center" }}>
-          <View style={{ backgroundColor: "#fff", borderRadius: 8, padding: 20, width: 250 }}>
-            <Text style={{ fontWeight: "bold", marginBottom: 8 }}>Nhập số lượng</Text>
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: "#0008",
+            justifyContent: "center",
+            alignItems: "center",
+          }}
+        >
+          <View
+            style={{
+              backgroundColor: "#fff",
+              borderRadius: 8,
+              padding: 20,
+              width: 250,
+            }}
+          >
+            <Text style={{ fontWeight: "bold", marginBottom: 8 }}>
+              Nhập số lượng
+            </Text>
             <TextInput
               keyboardType="number-pad"
               value={String(newQty)}
-              onChangeText={txt => setNewQty(Number(txt))}
-              style={{ borderWidth: 1, borderColor: "#ccc", borderRadius: 4, padding: 8, marginBottom: 12 }}
+              onChangeText={(txt) => setNewQty(Number(txt))}
+              style={{
+                borderWidth: 1,
+                borderColor: "#ccc",
+                borderRadius: 4,
+                padding: 8,
+                marginBottom: 12,
+              }}
             />
             <View style={{ flexDirection: "row", justifyContent: "flex-end" }}>
-              <TouchableOpacity onPress={() => setShowQtyModal(false)} style={{ marginRight: 12 }}>
+              <TouchableOpacity
+                onPress={() => setShowQtyModal(false)}
+                style={{ marginRight: 12 }}
+              >
                 <Text>Hủy</Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={() => { setShowQtyModal(false); onUpdate(newQty, selectedColor, selectedSize); }}>
+              <TouchableOpacity
+                onPress={() => {
+                  setShowQtyModal(false);
+                  onUpdate(newQty, selectedColor, selectedSize);
+                }}
+              >
                 <Text style={{ color: "#2979FF" }}>OK</Text>
               </TouchableOpacity>
             </View>
@@ -111,7 +177,8 @@ function CartItem({ item, checked, onCheck, onRemove, onUpdate }) {
 
 const CartScreen = () => {
   const navigation = useNavigation();
-  const { cartItems, loading, updateQuantity, removeFromCart, getTotal } = useCart();
+  const { cartItems, loading, updateQuantity, removeFromCart, getTotal } =
+    useCart();
 
   // State lưu trạng thái checked cho từng item
   const [checkedItems, setCheckedItems] = useState({}); // { [item._id]: true/false }
@@ -121,24 +188,22 @@ const CartScreen = () => {
   };
 
   const handleRemoveItem = (itemId) => {
-    Alert.alert(
-      "Xác nhận",
-      "Bạn có chắc muốn xoá sản phẩm khỏi giỏ hàng?",
-      [
-        { text: "Huỷ", style: "cancel" },
-        {
-          text: "Xoá",
-          style: "destructive",
-          onPress: () => removeFromCart(itemId),
-        },
-      ]
-    );
+    Alert.alert("Xác nhận", "Bạn có chắc muốn xoá sản phẩm khỏi giỏ hàng?", [
+      { text: "Huỷ", style: "cancel" },
+      {
+        text: "Xoá",
+        style: "destructive",
+        onPress: () => removeFromCart(itemId),
+      },
+    ]);
   };
 
   // Tính tổng chỉ cho các item được chọn
   const subtotal = cartItems.reduce(
     (sum, item) =>
-      checkedItems[item._id] ? sum + (item.product?.price || 0) * item.quantity : sum,
+      checkedItems[item._id]
+        ? sum + (item.product?.price || 0) * item.quantity
+        : sum,
     0
   );
   const shipping = 15000;
@@ -178,8 +243,8 @@ const CartScreen = () => {
 
         {/* Empty state */}
         <View style={styles.emptyContainer}>
-          <Image 
-            source={require("../../assets/images/empty-box.png")} 
+          <Image
+            source={require("../../assets/images/empty-box.png")}
             style={styles.emptyImage}
           />
           <Text style={styles.emptyTitle}>Giỏ hàng trống</Text>
@@ -215,7 +280,7 @@ const CartScreen = () => {
       {/* List sản phẩm */}
       <FlatList
         data={cartItems}
-        keyExtractor={item => item._id}
+        keyExtractor={(item) => item._id}
         renderItem={({ item }) => (
           <CartItem
             item={item}
@@ -254,7 +319,15 @@ const CartScreen = () => {
       {/* Nút thanh toán */}
       <TouchableOpacity
         style={styles.checkoutButton}
-        onPress={() => navigation.navigate("Checkout")}
+        onPress={() =>
+          navigation.navigate("Checkout", {
+            checkedItems: cartItems.filter((item) => checkedItems[item._id]),
+            subtotal,
+            shipping,
+            tax,
+            total,
+          })
+        }
       >
         <Text style={styles.checkoutText}>Thanh toán</Text>
       </TouchableOpacity>
@@ -438,6 +511,3 @@ const styles = StyleSheet.create({
     bottom: 3,
   },
 });
-
-
-
