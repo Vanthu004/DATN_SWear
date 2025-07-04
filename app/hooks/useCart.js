@@ -46,28 +46,36 @@ export const useCart = () => {
       const items = cartItemRes.data;
       console.log("CartItem:", items);
 
+      // Kiểm tra và log các items có product_id null
+      const invalidItems = items.filter(item => item.product_id === null || item.product_id === undefined);
+      if (invalidItems.length > 0) {
+        console.log("⚠️ Phát hiện", invalidItems.length, "items có product_id null:", invalidItems.map(item => item._id));
+      }
+
       // 3. Xử lý cart items mà không cần lấy thông tin sản phẩm từ API
-      const processedItems = items.map(item => {
-        // Nếu item.product_id là object (đã được populate), sử dụng luôn
-        if (typeof item.product_id === 'object' && item.product_id._id) {
+      const processedItems = items
+        .filter(item => item.product_id !== null && item.product_id !== undefined) // Lọc bỏ items có product_id null
+        .map(item => {
+          // Nếu item.product_id là object (đã được populate), sử dụng luôn
+          if (typeof item.product_id === 'object' && item.product_id._id) {
+            return {
+              ...item,
+              product: item.product_id, // Sử dụng dữ liệu đã có
+              product_id: item.product_id._id // Chuẩn hóa product_id
+            };
+          }
+          
+          // Nếu item.product_id là string, tạo object product giả
           return {
             ...item,
-            product: item.product_id, // Sử dụng dữ liệu đã có
-            product_id: item.product_id._id // Chuẩn hóa product_id
+            product: {
+              _id: item.product_id,
+              name: `Product ${item.product_id}`,
+              price: 0,
+              image_url: null
+            }
           };
-        }
-        
-        // Nếu item.product_id là string, tạo object product giả
-        return {
-          ...item,
-          product: {
-            _id: item.product_id,
-            name: `Product ${item.product_id}`,
-            price: 0,
-            image_url: null
-          }
-        };
-      });
+        });
 
       setCartItems(processedItems);
       setCartCount(processedItems.length);

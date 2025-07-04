@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -41,14 +41,35 @@ export default function WishlistScreen() {
     fetchFavorites();
   }, [userId]);
 
+  // Refresh danh sách yêu thích mỗi khi màn hình được focus
+  useFocusEffect(
+    React.useCallback(() => {
+      if (userId) {
+        const fetchFavorites = async () => {
+          try {
+            const data = await getFavoritesByUser(userId);
+            setFavorites(data);
+          } catch (err) {
+            console.error("❌ Lỗi khi refresh favorite:", err.message);
+          }
+        };
+        fetchFavorites();
+      }
+    }, [userId])
+  );
+
   const handleRemoveFavorite = async (productId) => {
     if (!userId) return;
     try {
       await removeFavorite(userId, productId);
       // Sau khi xóa, cập nhật lại danh sách
-      const updatedFavorites = favorites.filter(
-        (item) => item.product_id._id !== productId
-      );
+      const updatedFavorites = favorites.filter((item) => {
+        // Kiểm tra item.product_id có tồn tại và có _id không
+        if (!item.product_id || !item.product_id._id) {
+          return false; // Loại bỏ items không hợp lệ
+        }
+        return item.product_id._id !== productId;
+      });
       setFavorites(updatedFavorites);
     } catch (err) {
       console.error("❌ Lỗi khi xóa sản phẩm yêu thích:", err.message);
@@ -95,7 +116,7 @@ export default function WishlistScreen() {
         </TouchableOpacity>
         <Text style={styles.name}>{product.name}</Text>
         <Text style={styles.price}>
-          {product.price.toLocaleString('vi-VN')} VND
+          {product.price.toLocaleString('vi-VN')} ₫
         </Text>
       </TouchableOpacity>
     );
