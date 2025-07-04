@@ -91,7 +91,7 @@ export default function ProductDetailScreen({ route, navigation }) {
                 </ScrollView>
                 {/* Tên, giá, danh mục */}
                 <Text style={styles.title}>{product.name}</Text>
-                <Text style={styles.price}>{product.price?.toLocaleString('vi-VN') || ''} VND</Text>
+                <Text style={styles.price}>{product.price?.toLocaleString('vi-VN') || ''} ₫</Text>
                 {product.category && (
                     <Text style={styles.category}>Danh mục: {product.category.name || product.category}</Text>
                 )}

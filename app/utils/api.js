@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
-const API_BASE_URL = 'http://192.168.1.6:3000/api'; //
+const API_BASE_URL = 'http://192.168.1.7:3000/api'; //
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -204,6 +204,23 @@ export const removeFavorite = async (userId, productId) => {
     console.error('Remove favorite error:', error);
     throw error;
   }
+};
+
+// Lấy loại danh mục public
+export const fetchCategoryTypes = async () => {
+  try {
+    const response = await api.get('/category-types/public');
+    return response.data
+  } catch (error) {
+    console.error('Fetch category types error:', error);
+    throw error;
+  }
+};
+
+// Lấy loại danh mục theo id
+export const getCategoriesById = async (categoryTypeId) => {
+  const response = await api.get(`/categories/by-category-type/${categoryTypeId}`);
+  return response.data;
 };
 
 export default api;

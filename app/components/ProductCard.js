@@ -92,7 +92,7 @@ export default function ProductCard({
           )}
         </View>
         {/* Giá */}
-        <Text style={styles.productPrice}>{price}</Text>
+        <Text style={styles.productPrice}>{price?.toLocaleString('vi-VN') || ''} ₫</Text>
         <Text style={styles.productPrice}></Text>
         {/* Tên sản phẩm */}
         <Text numberOfLines={2} ellipsizeMode="tail" style={styles.productName}>{name}</Text>
