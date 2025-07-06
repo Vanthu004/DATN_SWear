@@ -1,31 +1,31 @@
 import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect, useState } from "react";
 import {
-  ActivityIndicator,
-  FlatList,
-  SafeAreaView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View
+    ActivityIndicator,
+    FlatList,
+    SafeAreaView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View
 } from "react-native";
 import { useDispatch, useSelector } from "react-redux";
 import ProductCard from "../components/ProductCard";
+import { useCart } from "../hooks/useCart";
 import {
-  clearSearchResults,
-  searchProducts
+    clearSearchResults,
+    searchProducts
 } from "../reudx/homeSlice";
-import api from '../utils/api';
 // ... import và các hook như cũ ...
 
 export default function SearchSc({ route, navigation }) {
   const dispatch = useDispatch();
+  const { cartCount } = useCart();
   const keywordFromNav = route?.params?.keyword || "";
   const [input, setInput] = useState(keywordFromNav);
   const [sortVisible, setSortVisible] = useState(false);
   const [filterVisible, setFilterVisible] = useState(false);
-  const [cartCount, setCartCount] = useState(0);
 
   const { searchResults, searchLoading, searchError } = useSelector((state) => state.home);
 
@@ -33,14 +33,8 @@ export default function SearchSc({ route, navigation }) {
     if (keywordFromNav) {
       dispatch(searchProducts(keywordFromNav));
     }
-    // Lấy số lượng sản phẩm trong giỏ hàng
-    let isMounted = true;
-    api.get('/cart/count').then(res => {
-      if (isMounted) setCartCount(res.data?.count || 0);
-    });
     return () => {
       dispatch(clearSearchResults());
-      isMounted = false;
     };
   }, [dispatch, keywordFromNav]);
 
