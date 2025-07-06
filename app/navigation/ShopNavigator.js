@@ -6,7 +6,7 @@ import CartScreen from "../Screens/CartScreen";
 import CheckoutScreen from "../Screens/CheckoutScreen";
 import HomeScreen from "../Screens/HomeScreen";
 import ProductDetailScreen from "../Screens/ProductDetailScreen";
-import SearchSc from '../Screens/SearchSc';
+import SearchSc from "../Screens/SearchSc";
 
 const ShopStack = createNativeStackNavigator();
 

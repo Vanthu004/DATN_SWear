@@ -336,4 +336,128 @@ export const deleteCartItem = async (itemId) => {
   }
 };
 
+// ===== ORDER SYSTEM APIs =====
+
+// Order APIs
+export const createOrder = async (orderData) => {
+  try {
+    const response = await api.post("/orders", orderData);
+    return response.data;
+  } catch (error) {
+    console.error("Create order error:", error);
+    throw error;
+  }
+};
+
+export const getAllOrders = async () => {
+  try {
+    const response = await api.get("/orders");
+    return response.data;
+  } catch (error) {
+    console.error("Get all orders error:", error);
+    throw error;
+  }
+};
+
+export const getOrderById = async (orderId) => {
+  try {
+    const response = await api.get(`/orders/${orderId}`);
+    return response.data;
+  } catch (error) {
+    console.error("Get order by ID error:", error);
+    throw error;
+  }
+};
+
+export const getOrdersByUser = async (userId) => {
+  try {
+    const response = await api.get(`/orders/user/${userId}`);
+    return response.data;
+  } catch (error) {
+    console.error("Get orders by user error:", error);
+    throw error;
+  }
+};
+
+export const updateOrder = async (orderId, updateData) => {
+  try {
+    const response = await api.put(`/orders/${orderId}`, updateData);
+    return response.data;
+  } catch (error) {
+    console.error("Update order error:", error);
+    throw error;
+  }
+};
+
+export const deleteOrder = async (orderId) => {
+  try {
+    const response = await api.delete(`/orders/${orderId}`);
+    return response.data;
+  } catch (error) {
+    console.error("Delete order error:", error);
+    throw error;
+  }
+};
+
+export const createOrderWithDetails = async (orderData) => {
+  try {
+    const response = await api.post("/orders/full", orderData);
+    return response.data;
+  } catch (error) {
+    console.error("Create order with details error:", error);
+    throw error;
+  }
+};
+
+// OrderDetail APIs
+export const createOrderDetail = async (orderDetailData) => {
+  try {
+    const response = await api.post("/order-details", orderDetailData);
+    return response.data;
+  } catch (error) {
+    console.error("Create order detail error:", error);
+    throw error;
+  }
+};
+
+export const getAllOrderDetails = async () => {
+  try {
+    const response = await api.get("/order-details");
+    return response.data;
+  } catch (error) {
+    console.error("Get all order details error:", error);
+    throw error;
+  }
+};
+
+export const getOrderDetailById = async (orderDetailId) => {
+  try {
+    const response = await api.get(`/order-details/${orderDetailId}`);
+    return response.data;
+  } catch (error) {
+    console.error("Get order detail by ID error:", error);
+    throw error;
+  }
+};
+
+export const getOrderDetailsByOrderId = async (orderId) => {
+  try {
+    const response = await api.get(`/order-details/order/${orderId}`);
+    return response.data;
+  } catch (error) {
+    console.error("Get order details by order ID error:", error);
+    throw error;
+  }
+};
+
+export const deleteOrderDetail = async (orderDetailId) => {
+  try {
+    const response = await api.delete(`/order-details/${orderDetailId}`);
+    return response.data;
+  } catch (error) {
+    console.error("Delete order detail error:", error);
+    throw error;
+  }
+};
+
 export default api;

@@ -286,18 +286,29 @@ const CartScreen = () => {
 
       {/* Nút thanh toán */}
       <TouchableOpacity
-        style={styles.checkoutButton}
-        onPress={() =>
+        style={[
+          styles.checkoutButton,
+          Object.keys(checkedItems).length === 0 && styles.checkoutButtonDisabled
+        ]}
+        onPress={() => {
+          const selectedItems = cartItems.filter((item) => checkedItems[item._id]);
+          if (selectedItems.length === 0) {
+            Alert.alert("Thông báo", "Vui lòng chọn ít nhất một sản phẩm để thanh toán");
+            return;
+          }
           navigation.navigate("Checkout", {
-            checkedItems: cartItems.filter((item) => checkedItems[item._id]),
+            checkedItems: selectedItems,
             subtotal,
             shipping,
             tax,
             total,
-          })
-        }
+          });
+        }}
+        disabled={Object.keys(checkedItems).length === 0}
       >
-        <Text style={styles.checkoutText}>Thanh toán</Text>
+        <Text style={styles.checkoutText}>
+          Thanh toán ({Object.keys(checkedItems).length})
+        </Text>
       </TouchableOpacity>
     </View>
   );
@@ -460,6 +471,9 @@ const styles = StyleSheet.create({
     borderRadius: 25,
     marginTop: 20,
     alignItems: "center",
+  },
+  checkoutButtonDisabled: {
+    backgroundColor: "#ccc",
   },
   checkoutText: {
     color: "#fff",
