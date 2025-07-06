@@ -1,5 +1,4 @@
 import { Ionicons } from "@expo/vector-icons";
-import { Picker } from "@react-native-picker/picker";
 import { useNavigation } from "@react-navigation/native";
 import React, { useState } from "react";
 import {
@@ -21,10 +20,8 @@ const SIZES = ["L", "M", "S", "XL"];
 function CartItem({ item, checked, onCheck, onRemove, onUpdate }) {
   const [showQtyModal, setShowQtyModal] = useState(false);
   const [newQty, setNewQty] = useState(item.quantity);
-  const [selectedColor, setSelectedColor] = useState(item.color || COLORS[0]);
-  const [selectedSize, setSelectedSize] = useState(item.size || SIZES[0]);
 
-  console.log("Cart item product:", item.product);
+  console.log("Cart item:", item);
 
   return (
     <View
@@ -50,7 +47,7 @@ function CartItem({ item, checked, onCheck, onRemove, onUpdate }) {
       {/* Ảnh */}
       <Image
         source={
-          item.product.image_url
+          item.product?.image_url
             ? { uri: item.product.image_url }
             : require("../../assets/images/box-icon.png")
         }
@@ -59,56 +56,32 @@ function CartItem({ item, checked, onCheck, onRemove, onUpdate }) {
       {/* Thông tin */}
       <View style={{ flex: 1 }}>
         <Text style={{ fontWeight: "bold", fontSize: 15 }}>
-          {item.product.name}
+          {item.product?.name || "Sản phẩm không xác định"}
         </Text>
         <Text style={{ fontWeight: "bold", color: "#222", marginVertical: 2 }}>
-          {item.product.price.toLocaleString()} đ
+          {item.price_at_time?.toLocaleString() || "0"} đ
         </Text>
-        {/* Dropdowns */}
-        <View style={{ flexDirection: "row", marginTop: 4 }}>
-          {/* Màu */}
-          <View style={{ flex: 1 }}>
-            <Text style={{ fontSize: 12, color: "#888" }}>Màu</Text>
-            <Picker
-              selectedValue={selectedColor}
-              style={{ height: 30, width: "100%" }}
-              onValueChange={setSelectedColor}
+        {/* Số lượng */}
+        <View
+          style={{ flexDirection: "row", marginTop: 4, alignItems: "center" }}
+        >
+          <Text style={{ fontSize: 12, color: "#888", marginRight: 8 }}>
+            Số lượng:
+          </Text>
+          <TouchableOpacity onPress={() => setShowQtyModal(true)}>
+            <Text
+              style={{
+                borderWidth: 1,
+                borderColor: "#ccc",
+                borderRadius: 4,
+                padding: 4,
+                textAlign: "center",
+                minWidth: 40,
+              }}
             >
-              {COLORS.map((c) => (
-                <Picker.Item key={c} label={c} value={c} />
-              ))}
-            </Picker>
-          </View>
-          {/* Size */}
-          <View style={{ flex: 1 }}>
-            <Text style={{ fontSize: 12, color: "#888" }}>Kích cỡ</Text>
-            <Picker
-              selectedValue={selectedSize}
-              style={{ height: 30, width: "100%" }}
-              onValueChange={setSelectedSize}
-            >
-              {SIZES.map((s) => (
-                <Picker.Item key={s} label={s} value={s} />
-              ))}
-            </Picker>
-          </View>
-          {/* Số lượng */}
-          <View style={{ flex: 1 }}>
-            <Text style={{ fontSize: 12, color: "#888" }}>Số lượng</Text>
-            <TouchableOpacity onPress={() => setShowQtyModal(true)}>
-              <Text
-                style={{
-                  borderWidth: 1,
-                  borderColor: "#ccc",
-                  borderRadius: 4,
-                  padding: 4,
-                  textAlign: "center",
-                }}
-              >
-                {item.quantity}
-              </Text>
-            </TouchableOpacity>
-          </View>
+              {item.quantity}
+            </Text>
+          </TouchableOpacity>
         </View>
       </View>
       {/* Nút xóa */}
@@ -143,7 +116,7 @@ function CartItem({ item, checked, onCheck, onRemove, onUpdate }) {
             <TextInput
               keyboardType="number-pad"
               value={String(newQty)}
-              onChangeText={(txt) => setNewQty(Number(txt))}
+              onChangeText={(txt) => setNewQty(Number(txt) || 1)}
               style={{
                 borderWidth: 1,
                 borderColor: "#ccc",
@@ -162,7 +135,7 @@ function CartItem({ item, checked, onCheck, onRemove, onUpdate }) {
               <TouchableOpacity
                 onPress={() => {
                   setShowQtyModal(false);
-                  onUpdate(newQty, selectedColor, selectedSize);
+                  onUpdate(newQty);
                 }}
               >
                 <Text style={{ color: "#2979FF" }}>OK</Text>
@@ -202,7 +175,7 @@ const CartScreen = () => {
   const subtotal = cartItems.reduce(
     (sum, item) =>
       checkedItems[item._id]
-        ? sum + (item.product?.price || 0) * item.quantity
+        ? sum + (item.price_at_time || 0) * item.quantity
         : sum,
     0
   );
@@ -210,9 +183,8 @@ const CartScreen = () => {
   const tax = Math.round(subtotal * 0.05);
   const total = subtotal + shipping + tax;
 
-  // Tăng/giảm số lượng
-  const changeQuantity = (itemId, currentQuantity, delta) => {
-    const newQty = currentQuantity + delta;
+  // Cập nhật số lượng
+  const handleUpdateQuantity = (itemId, newQty) => {
     if (newQty < 1) return;
     updateQuantity(itemId, newQty);
   };
@@ -287,11 +259,7 @@ const CartScreen = () => {
             checked={!!checkedItems[item._id]}
             onCheck={() => handleCheck(item._id)}
             onRemove={() => handleRemoveItem(item._id)}
-            onUpdate={(newQty, color, size) => {
-              changeQuantity(item._id, item.quantity, newQty - item.quantity);
-              // Assuming you want to update the color and size
-              // You might want to implement this part to actually update the item
-            }}
+            onUpdate={(newQty) => handleUpdateQuantity(item._id, newQty)}
           />
         )}
       />
