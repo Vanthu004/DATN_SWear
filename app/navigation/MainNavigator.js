@@ -1,16 +1,20 @@
 import { Ionicons } from "@expo/vector-icons";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { ROUTES } from "../constants/routes";
 import { navigationConfig } from "./config";
 
 import NotificationsScreen from "../Screens/NotificationsScreen";
+import OrderDetailScreen from "../Screens/OrderDetailScreen";
+import OrderSuccessScreen from "../Screens/OrderSuccessScreen";
 import OrderNavigator from "./OrderNavigator";
 import ProfileNavigator from "./ProfileNavigator";
 import ShopNavigator from "./ShopNavigator";
 
 const Tab = createBottomTabNavigator();
+const Stack = createNativeStackNavigator();
 
-export default function MainNavigator() {
+function TabNavigator() {
   return (
     <Tab.Navigator
       screenOptions={{
@@ -62,5 +66,27 @@ export default function MainNavigator() {
         }}
       />
     </Tab.Navigator>
+  );
+}
+
+export default function MainNavigator() {
+  return (
+    <Stack.Navigator screenOptions={navigationConfig.screenOptions}>
+      <Stack.Screen
+        name="TabNavigator"
+        component={TabNavigator}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name={ROUTES.ORDER_SUCCESS}
+        component={OrderSuccessScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name={ROUTES.ORDER_DETAIL}
+        component={OrderDetailScreen}
+        options={{ headerShown: false }}
+      />
+    </Stack.Navigator>
   );
 }
