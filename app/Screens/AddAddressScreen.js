@@ -12,7 +12,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { createAddress } from "../utils/api";
+import { createAddress, updateAddress } from "../utils/api";
 const AddAddressScreen = ({ navigation, route }) => {
   const editAddress = route.params?.address;
   const isEdit = !!editAddress;
@@ -20,7 +20,7 @@ const AddAddressScreen = ({ navigation, route }) => {
   const [formData, setFormData] = useState({
     name: editAddress?.name || "",
     phone: editAddress?.phone || "",
-    address: editAddress?.address || "",
+    address: editAddress?.street || "",
     city: editAddress?.province || "",
     district: editAddress?.district || "",
     ward: editAddress?.ward || "",
@@ -28,6 +28,8 @@ const AddAddressScreen = ({ navigation, route }) => {
     is_default: editAddress?.is_default || false, //  Mặc định là false
   });
 
+
+  // Hàm xử lý lưu hoặc cập nhật địa chỉ
   const handleSave = async () => {
     try {
       if (!formData.name || !formData.phone || !formData.address || !formData.city || !formData.district) {
@@ -47,13 +49,18 @@ const AddAddressScreen = ({ navigation, route }) => {
         is_default: formData.is_default,
       };
 
+      if (isEdit) {
+        await updateAddress(editAddress._id, addressPayload);
+        Alert.alert("Thành công", "Địa chỉ đã được cập nhật.");
+      } else {
+        await createAddress(addressPayload);
+        Alert.alert("Thành công", "Địa chỉ đã được lưu.");
+      }
 
-      await createAddress(addressPayload);
-      Alert.alert("Thành công", "Địa chỉ đã được lưu.");
       navigation.goBack();
     } catch (error) {
-      console.error("Lỗi khi lưu địa chỉ:", error);
-      Alert.alert("Lỗi", "Không thể lưu địa chỉ. Vui lòng thử lại.");
+      console.error("Lỗi khi lưu/cập nhật địa chỉ:", error);
+      Alert.alert("Lỗi", "Không thể lưu/cập nhật địa chỉ. Vui lòng thử lại.");
     }
   };
 

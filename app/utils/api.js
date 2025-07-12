@@ -244,4 +244,16 @@ export const getAddressList = async () => {
   }
 };
 
+export const updateAddress = async (id, addressData) => {
+  try {
+    const response = await api.put(`/addresses/${id}`, addressData);
+    return response.data;
+  } catch (error) {
+    console.error("Error updating address:", error);
+    throw error;
+  }
+};
+
+
+
 export default api;
