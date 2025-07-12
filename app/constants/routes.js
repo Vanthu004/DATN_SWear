@@ -15,6 +15,7 @@ export const ROUTES = {
   HOME_TAB: "HomeTab",
   NOTIFICATIONS_TAB: "NotificationsTab",
   ORDERS_TAB: "OrdersTab",
+  WISHLIST_TAB: "WishlistTab",
   PROFILE_TAB: "ProfileTab",
 
   // Shop routes
@@ -22,6 +23,8 @@ export const ROUTES = {
   PRODUCT_DETAIL: "ProductDetail",
   CART: "Cart",
   CHECKOUT: "Checkout",
+  CATEGORY_SCREEN: "CategoryScreen",
+  SEARCH_SCREEN: "SearchSc",
 
   // Profile routes
   PROFILE: "Profile",
@@ -37,7 +40,8 @@ export const ROUTES = {
   ORDER_HISTORY: "OrderHistory",
   ORDER_STATUS: "OrderStatus",
   ORDERS_EMPTY: "OrdersEmpty",
-    RATING_REVIEWS: "RatingReviews",
+  ORDER_SUCCESS: "OrderSuccess",
+  RATING_REVIEWS: "RatingReviews",
   WRITE_REVIEW: "WriteReview",
-
+  ORDER_DETAIL: "OrderDetail",
 };

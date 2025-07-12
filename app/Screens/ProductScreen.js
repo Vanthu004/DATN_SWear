@@ -1,12 +1,31 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
-import { Image, ScrollView, Text, TouchableOpacity, View } from "react-native";
+import {
+  Alert,
+  Image,
+  ScrollView,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useCart } from "../hooks/useCart";
 
-const ProductScreen = () => {
+const ProductScreen = ({ route }) => {
   const [size, setSize] = useState("S");
   const [color, setColor] = useState("black");
   const [quantity, setQuantity] = useState(1);
+  const { addToCart, isInCart } = useCart();
+
+  // Lấy thông tin sản phẩm từ route params
+  const product = route.params?.product || {
+    _id: "1",
+    name: "Áo bơi Rash Guard nữ",
+    price: 341000,
+    image_url: "https://example.com/image1.jpg",
+    description:
+      "• Rash Guard là áo bơi nữ dài tay form ôm, chống nắng tốt.\n• Chất liệu: 90% Polyester, 10% Spandex, mềm mại, co giãn tốt.",
+  };
 
   const sizes = ["S", "M", "L", "XL"];
   const colors = ["black", "white"];
@@ -43,13 +62,22 @@ const ProductScreen = () => {
     );
   };
 
+  const handleAddToCart = async () => {
+    const success = await addToCart(product, quantity, size, color);
+    if (success) {
+      Alert.alert("Thành công", "Đã thêm sản phẩm vào giỏ hàng");
+    }
+  };
+
+  const isProductInCart = isInCart(product._id);
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }}>
       <ScrollView style={{ padding: 16 }}>
         {/* Ảnh sản phẩm */}
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
           <Image
-            source={{ uri: "https://example.com/image1.jpg" }}
+            source={{ uri: product.image_url }}
             style={{
               width: 300,
               height: 300,
@@ -65,10 +93,10 @@ const ProductScreen = () => {
 
         {/* Tên và giá */}
         <Text style={{ fontSize: 20, fontWeight: "bold", marginTop: 16 }}>
-          Áo bơi Rash Guard nữ
+          {product.name}
         </Text>
         <Text style={{ color: "#3b82f6", fontWeight: "bold", marginTop: 4 }}>
-          341.000 VND
+          {product.price.toLocaleString()} VND
         </Text>
 
         {/* Kích cỡ */}
@@ -143,13 +171,12 @@ const ProductScreen = () => {
 
         {/* Mô tả sản phẩm */}
         <Text style={{ marginTop: 16, color: "#6b7280" }}>
-          • Rash Guard là áo bơi nữ dài tay form ôm, chống nắng tốt.{"\n"}• Chất
-          liệu: 90% Polyester, 10% Spandex, mềm mại, co giãn tốt.
+          {product.description}
         </Text>
 
         {/* Vận chuyển */}
         <Text style={{ marginTop: 16, fontWeight: "bold" }}>
-          Vận chuyển & Tả hàng
+          Vận chuyển & Trả hàng
         </Text>
         <Text style={{ color: "#6b7280" }}>
           Miễn phí giao hàng. Trả hàng miễn phí trong 10 ngày.
@@ -183,18 +210,20 @@ const ProductScreen = () => {
         }}
       >
         <Text style={{ fontSize: 18, fontWeight: "bold", color: "#3b82f6" }}>
-          341.000 VND
+          {product.price.toLocaleString()} VND
         </Text>
         <TouchableOpacity
           style={{
-            backgroundColor: "#3b82f6",
+            backgroundColor: isProductInCart ? "#10b981" : "#3b82f6",
             paddingVertical: 12,
             paddingHorizontal: 20,
             borderRadius: 10,
           }}
+          onPress={handleAddToCart}
+          disabled={isProductInCart}
         >
           <Text style={{ color: "#fff", fontWeight: "bold" }}>
-            Thêm vào Giỏ hàng
+            {isProductInCart ? "Đã có trong giỏ" : "Thêm vào Giỏ hàng"}
           </Text>
         </TouchableOpacity>
       </View>
