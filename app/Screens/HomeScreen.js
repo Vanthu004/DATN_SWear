@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useNavigation } from "@react-navigation/native";
-import React, { useEffect } from "react";
+import { useFocusEffect, useNavigation } from "@react-navigation/native";
+import React, { useEffect, useState } from "react";
 import {
   FlatList,
   Image,
@@ -18,32 +18,194 @@ import { useCart } from "../hooks/useCart";
 import {
   fetchBestSellers,
   fetchCategories,
+  fetchNewest,
+  fetchPopular
 } from "../reudx/homeSlice";
+import { addFavorite, getCategoriesById, getFavoritesByUser, removeFavorite } from "../utils/api";
 
 const bannerImg = require("../../assets/sp1.png");
 const defaultAvatar = require("../../assets/images/default-avatar.png");
-
+const HOTCATEGORY_TYPE_ID = '6864066dc14992d3a8d28826';
+const POPULAR_SPORTS_TYPE_ID = '686406c0c14992d3a8d2882a'
+const DAILY_ESSENTIALS_TYPE_ID = '686406f6c14992d3a8d2882e'
 export default function HomeScreen() {
   const dispatch = useDispatch();
   const navigation = useNavigation();
   const { userInfo } = useAuth();
-  const { categories, bestSellers, loading } = useSelector((state) => state.home);
+  const { categories, bestSellers, loading, popular, newest } = useSelector((state) => state.home);
   const { cartCount } = useCart();
-
+  const userId = userInfo?._id;
+  const [favoriteIds, setFavoriteIds] = useState([]);
+  const [hotCategories, setHotCategories] = useState([]);// list categorycategory
+  const [popularSportsCategories, setPopularSportsCategories] = useState([]);
+  const [dailyEssentialsCategories, setDailyEssentialsCategories] = useState([]);
   useEffect(() => {
     dispatch(fetchCategories());
     dispatch(fetchBestSellers());
+    dispatch(fetchPopular());
+    dispatch(fetchNewest());
   }, [dispatch]);
 
+  // Lấy danh sách sản phẩm yêu thích khi vào Home
+  useEffect(() => {
+    if (!userId) return;
+    const fetchFavorites = async () => {
+      try {
+        const data = await getFavoritesByUser(userId);
+        setFavoriteIds(data.map(fav => fav.product_id?._id));
+      } catch (err) {
+        setFavoriteIds([]);
+      }
+    };
+    fetchFavorites();
+  }, [userId]);
+
+  // Refresh danh sách yêu thích mỗi khi màn hình được focus
+  useFocusEffect(
+    React.useCallback(() => {
+      if (userId) {
+        const fetchFavorites = async () => {
+          try {
+            const data = await getFavoritesByUser(userId);
+            setFavoriteIds(data.map(fav => fav.product_id?._id));
+          } catch (err) {
+            setFavoriteIds([]);
+          }
+        };
+        fetchFavorites();
+      }
+    }, [userId])
+  );
+
+  // Xử lý toggle yêu thích
+  const handleToggleFavorite = async (product) => {
+    if (!userId || !product?._id) return;
+    const isFav = favoriteIds.includes(product._id);
+    try {
+      if (isFav) {
+        await removeFavorite(userId, product._id);
+        setFavoriteIds(favoriteIds.filter(id => id !== product._id));
+      } else {
+        await addFavorite(userId, product._id);
+        setFavoriteIds([...favoriteIds, product._id]);
+      }
+    } catch (err) {}
+  };
+ 
+// state và gọi api cho danh mục hot
+  useEffect(() => {
+    getCategoriesById(HOTCATEGORY_TYPE_ID)
+      .then(data => setHotCategories(data))
+      .catch(() => setHotCategories([]));
+    getCategoriesById(POPULAR_SPORTS_TYPE_ID)
+      .then(data => setPopularSportsCategories(data))
+      .catch(() => setPopularSportsCategories([]));
+    getCategoriesById(DAILY_ESSENTIALS_TYPE_ID)
+      .then(data => setDailyEssentialsCategories(data))
+      .catch(() => setDailyEssentialsCategories([]));
+  }, []);
+
   // Hiển thị 5 danh mục đầu tiên
-  const displayedCategories = categories.slice(0, 5);
+  const displayedCategories = categories.slice(0, 100);
+// hiển thị danh mục hot
+  const HotCategoryList = ({ categories }) => (
+    <View style={{ marginTop: 15, marginBottom: 24 }}>
+      <Text style={{ fontWeight: 'bold', fontSize: 20, marginLeft: 16, marginBottom: 12 }}>
+        Khám phá môn thể thao đang HOT
+      </Text>
+      <FlatList
+        horizontal
+        data={categories}
+        keyExtractor={item => item._id}
+        contentContainerStyle={{ paddingHorizontal: 8 }}
+        renderItem={({ item }) => (
+          <TouchableOpacity
+            style={{ alignItems: 'center', marginRight: 16 }}
+            onPress={() => navigation.navigate('CategoryScreen', { category: item })}
+          >
+            <Image
+              source={item.image_url ? { uri: item.image_url } : require('../../assets/images/box-icon.png')}
+              style={{ width: 100, height: 100 }}
+            />
+            <Text style={{ marginTop: 8, fontSize: 15, fontWeight: '500' }}>{item.name}</Text>
+          </TouchableOpacity>
+        )}
+        showsHorizontalScrollIndicator={false}
+        ListEmptyComponent={loading ? (
+          <Text style={{ color: '#888', marginLeft: 16 }}>Đang tải...</Text>
+        ) : null}
+      />
+    </View>
+  );
+
+  // hiển thị danh mục phổ biến
+  const PopularCategoryList = ({ categories }) => (
+    <View style={{ marginTop: 15, marginBottom: 24 }}>
+      <Text style={{ fontWeight: 'bold', fontSize: 20, marginLeft: 16, marginBottom: 12 }}>
+        Khám phá môn thể thao phổ biến
+      </Text>
+      <FlatList
+        horizontal
+        data={categories}
+        keyExtractor={item => item._id}
+        contentContainerStyle={{ paddingHorizontal: 8 }}
+        renderItem={({ item }) => (
+          <TouchableOpacity
+            style={{ alignItems: 'center', marginRight: 16 }}
+            onPress={() => navigation.navigate('CategoryScreen', { category: item })}
+          >
+            <Image
+              source={item.image_url ? { uri: item.image_url } : require('../../assets/images/box-icon.png')}
+              style={{ width: 100, height: 100 }}
+            />
+            <Text style={{ marginTop: 8, fontSize: 15, fontWeight: '500' }}>{item.name}</Text>
+          </TouchableOpacity>
+        )}
+        showsHorizontalScrollIndicator={false}
+        ListEmptyComponent={loading ? (
+          <Text style={{ color: '#888', marginLeft: 16 }}>Đang tải...</Text>
+        ) : null}
+      />
+    </View>
+  );
+
+// hiển thị danh mục hằng ngàyngày
+const DaylyCategoryList = ({ categories }) => (
+  <View style={{ marginTop: 15, marginBottom: 24 }}>
+    <Text style={{ fontWeight: 'bold', fontSize: 20, marginLeft: 16, marginBottom: 12 }}>
+      Khám phá môn thể thao hằng ngày 
+    </Text>
+    <FlatList
+      horizontal
+      data={categories}
+      keyExtractor={item => item._id}
+      contentContainerStyle={{ paddingHorizontal: 8 }}
+      renderItem={({ item }) => (
+        <TouchableOpacity
+          style={{ alignItems: 'center', marginRight: 16 }}
+          onPress={() => navigation.navigate('CategoryScreen', { category: item })}
+        >
+          <Image
+            source={item.image_url ? { uri: item.image_url } : require('../../assets/images/box-icon.png')}
+            style={{ width: 350, height: 200, }}
+          />
+  
+        </TouchableOpacity>
+      )}
+      showsHorizontalScrollIndicator={false}
+      ListEmptyComponent={loading ? (
+        <Text style={{ color: '#888', marginLeft: 16 }}>Đang tải...</Text>
+      ) : null}
+    />
+  </View>
+);
 
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.navigate("Profile")}
+          <TouchableOpacity onPress={() => navigation.navigate("ProfileScreen")}
             style={styles.avatarWrap}
           >
             <Image
@@ -115,9 +277,70 @@ export default function HomeScreen() {
           keyExtractor={(item) => item._id || item.id}
           horizontal
           showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{paddingHorizontal: 18 }}
+          renderItem={({ item }) => (
+            <ProductCard
+              product={item}
+              navigation={navigation}
+              fixedHeight
+              isFavorite={favoriteIds.includes(item._id)}
+              onToggleFavorite={handleToggleFavorite}
+              showFavoriteIcon={true}
+            />
+          )}
+          ListEmptyComponent={loading ? (
+            <Text style={{ color: '#888', marginLeft: 16 }}>Đang tải...</Text>
+          ) : null}
+        />
+        {/* danh mục hot */}
+        <HotCategoryList categories={hotCategories} />
+        {/* sản phẩm phổ biến nhất */}
+        <View style={styles.sectionRow}>
+          <Text style={styles.sectionTitle}>Sản phẩm phổ biến nhất</Text>
+        </View>
+        <FlatList
+          data={popular}
+          keyExtractor={(item) => item._id || item.id}
+          horizontal
+          showsHorizontalScrollIndicator={false}
           contentContainerStyle={{paddingBottom: 12, }}
           renderItem={({ item }) => (
-            <ProductCard product={item} navigation={navigation} fixedHeight />
+            <ProductCard
+              product={item}
+              navigation={navigation}
+              fixedHeight
+              isFavorite={favoriteIds.includes(item._id)}
+              onToggleFavorite={handleToggleFavorite}
+              showFavoriteIcon={true}
+            />
+          )}
+          ListEmptyComponent={loading ? (
+            <Text style={{ color: '#888', marginLeft: 16 }}>Đang tải...</Text>
+          ) : null}
+        />
+        {/* danh mục popular */}
+        <PopularCategoryList categories={popularSportsCategories} />
+        {/* danh mục daily essentials */}
+        <DaylyCategoryList categories={dailyEssentialsCategories} />
+        {/* sản phẩm mới nhất */}
+        <View style={styles.sectionRow}>
+          <Text style={styles.sectionTitle}>Sản phẩm mới nhất</Text>
+        </View>
+        <FlatList
+          data={newest}
+          keyExtractor={(item) => item._id || item.id}
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{paddingBottom: 12, }}
+          renderItem={({ item }) => (
+            <ProductCard
+              product={item}
+              navigation={navigation}
+              fixedHeight
+              isFavorite={favoriteIds.includes(item._id)}
+              onToggleFavorite={handleToggleFavorite}
+              showFavoriteIcon={true}
+            />
           )}
           ListEmptyComponent={loading ? (
             <Text style={{ color: '#888', marginLeft: 16 }}>Đang tải...</Text>
@@ -205,7 +428,7 @@ const styles = StyleSheet.create({
 
   },
   sectionTitle: {
-    fontSize: 16,
+    fontSize: 20,
     fontWeight: "bold",
     color: "#222",
   },

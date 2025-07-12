@@ -69,7 +69,7 @@ export default function ProductDetailScreen({ route, navigation }) {
                 </TouchableOpacity>
                 <View style={{ flex: 1 }} />
                 <TouchableOpacity onPress={() => navigation.navigate('Cart')} style={styles.headerBtn}>
-                    <Ionicons name="cart-outline" size={26} color="#222" />
+                    <Ionicons name="cart-outline" size={26} color="#000" />
                     {cartCount > 0 && (
                         <View style={styles.cartBadge}>
                             <Text style={styles.cartBadgeText}>{cartCount}</Text>
@@ -91,7 +91,7 @@ export default function ProductDetailScreen({ route, navigation }) {
                 </ScrollView>
                 {/* Tên, giá, danh mục */}
                 <Text style={styles.title}>{product.name}</Text>
-                <Text style={styles.price}>{product.price?.toLocaleString('vi-VN') || ''} VND</Text>
+                <Text style={styles.price}>{product.price?.toLocaleString('vi-VN') || ''} ₫</Text>
                 {product.category && (
                     <Text style={styles.category}>Danh mục: {product.category.name || product.category}</Text>
                 )}

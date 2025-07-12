@@ -17,6 +17,7 @@ export default function ProductCard({
   onToggleFavorite,
   showFavoriteIcon = true,
   fixedHeight = false,
+  onPress,
 }) {
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const { addToCart, isInCart } = useCart();
@@ -62,7 +63,7 @@ export default function ProductCard({
     <Animated.View style={[styles.card, fixedHeight && styles.fixedCard, { transform: [{ scale: scaleAnim }] }]}>  
       <TouchableOpacity
         activeOpacity={0.8}
-        onPress={() =>
+        onPress={onPress ? () => onPress(product) : () =>
           navigation &&
           navigation.navigate &&
           navigation.navigate("ProductDetail", { product })
@@ -74,9 +75,24 @@ export default function ProductCard({
         {/* Ảnh sản phẩm */}
         <View style={styles.imageWrap}>
           <Image source={imageSource} style={styles.productImage} />
+          {showFavoriteIcon && (
+            <TouchableOpacity
+              style={styles.heartIcon}
+              onPress={(e) => {
+                e.stopPropagation && e.stopPropagation();
+                onToggleFavorite && onToggleFavorite(product);
+              }}
+            >
+              <Ionicons
+                name={isFavorite ? "heart" : "heart-outline"}
+                size={15}
+                color={isFavorite ? "#1e90ff" : "#bbb"}
+              />
+            </TouchableOpacity>
+          )}
         </View>
         {/* Giá */}
-        <Text style={styles.productPrice}>{price}</Text>
+        <Text style={styles.productPrice}>{price?.toLocaleString('vi-VN') || ''} ₫</Text>
         <Text style={styles.productPrice}></Text>
         {/* Tên sản phẩm */}
         <Text numberOfLines={2} ellipsizeMode="tail" style={styles.productName}>{name}</Text>
@@ -119,12 +135,9 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     elevation: 2,
   },
-  fixedCard: {
-    height: 260,
-  },
   imageWrap: {
     width: "100%",
-    height: 150,
+    height: 170,
     backgroundColor: "#f8f8f8",
     justifyContent: "center",
     alignItems: "center",
@@ -175,4 +188,13 @@ const styles = StyleSheet.create({
   // cartBtnActive: {
   //   backgroundColor: "#007BFF",
   // },
+  heartIcon: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    backgroundColor: '#fff',
+    borderRadius: 999,
+    padding: 4,
+    zIndex: 2,
+  },
 });

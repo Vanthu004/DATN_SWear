@@ -1,5 +1,5 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
-import api from '../utils/api';
+import api, { fetchCategoryTypes as fetchCategoryTypesApi } from '../utils/api';
 
 export const fetchCategories = createAsyncThunk('home/fetchCategories', async () => {
   const res = await api.get('/categories');
@@ -13,7 +13,7 @@ export const fetchBestSellers = createAsyncThunk('home/fetchBestSellers', async 
 
 export const fetchNewest = createAsyncThunk('home/fetchNewest', async () => {
   const res = await api.get('/products/newest');
-  return res.data;
+  return res.data.data;
 });
 
 export const fetchPopular = createAsyncThunk('home/fetchPopular', async () => {
@@ -31,11 +31,16 @@ export const searchProducts = createAsyncThunk('home/searchProducts', async (key
   return res.data;
 });
 
+export const fetchCategoryTypes = createAsyncThunk('home/fetchCategoryTypes', async () => {
+  const res = await fetchCategoryTypesApi();
+  return res.data;
+});
+
 const homeSlice = createSlice({
   name: 'home',
   initialState: {
     categories: [],
-    bestSellers: [],
+    bestSellers:[],
     newest: [],
     popular: [],
     selectedCategoryProducts: [],
@@ -45,6 +50,7 @@ const homeSlice = createSlice({
     searchResults: [],
     searchLoading: false,
     searchError: null,
+    categoryTypes: [],
   },
   reducers: {
     setSearchKeyword(state, action) {
@@ -104,8 +110,19 @@ const homeSlice = createSlice({
       .addCase(searchProducts.rejected, (state, action) => {
         state.searchLoading = false;
         state.searchError = action.error.message;
+      })
+      .addCase(fetchCategoryTypes.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchCategoryTypes.fulfilled, (state, action) => {
+        state.loading = false;
+        state.categoryTypes = action.payload;
+      })
+      .addCase(fetchCategoryTypes.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error.message;
       });
-      
   },
 });
 

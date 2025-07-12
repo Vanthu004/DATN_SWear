@@ -1,9 +1,10 @@
 import React from "react";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-import { Provider } from 'react-redux';
+import Toast from "react-native-toast-message";
+import { Provider } from "react-redux";
 import { AuthProvider } from "./app/context/AuthContext";
 import AppNavigator from "./app/navigation/AppNavigator";
-import store from './app/reudx/store';
+import store from "./app/reudx/store";
 
 export default function App() {
   return (
@@ -11,6 +12,7 @@ export default function App() {
       <AuthProvider>
         <SafeAreaProvider>
           <AppNavigator />
+          <Toast />
         </SafeAreaProvider>
       </AuthProvider>
     </Provider>
