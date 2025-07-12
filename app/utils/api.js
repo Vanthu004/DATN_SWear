@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
-const API_BASE_URL = 'http://192.168.1.7:3000/api'; //
+const API_BASE_URL = 'http://192.168.1.112:3000/api'; //http://192.168.1.112:3000/api
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -221,6 +221,26 @@ export const fetchCategoryTypes = async () => {
 export const getCategoriesById = async (categoryTypeId) => {
   const response = await api.get(`/categories/by-category-type/${categoryTypeId}`);
   return response.data;
+};
+
+// api.js
+export const createAddress = async (addressData) => {
+  try {
+    const response = await api.post("/addresses", addressData);
+    return response.data;
+  } catch (error) {
+    console.error("Error creating address:", error);
+    throw error;
+  }
+};
+export const getAddressList = async (userId) => {
+  try {
+    const response = await api.get(`/addresses/${userId}`);
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching address list:", error);
+    throw error;
+  }
 };
 
 export default api;
