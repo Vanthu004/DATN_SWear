@@ -205,7 +205,7 @@ const DaylyCategoryList = ({ categories }) => (
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.navigate("Profile")}
+          <TouchableOpacity onPress={() => navigation.navigate("ProfileScreen")}
             style={styles.avatarWrap}
           >
             <Image

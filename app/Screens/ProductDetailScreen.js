@@ -69,7 +69,7 @@ export default function ProductDetailScreen({ route, navigation }) {
                 </TouchableOpacity>
                 <View style={{ flex: 1 }} />
                 <TouchableOpacity onPress={() => navigation.navigate('Cart')} style={styles.headerBtn}>
-                    <Ionicons name="cart-outline" size={26} color="#222" />
+                    <Ionicons name="cart-outline" size={26} color="#000" />
                     {cartCount > 0 && (
                         <View style={styles.cartBadge}>
                             <Text style={styles.cartBadgeText}>{cartCount}</Text>

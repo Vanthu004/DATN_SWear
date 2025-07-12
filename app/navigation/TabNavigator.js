@@ -14,9 +14,11 @@ import CheckoutScreen from "../Screens/CheckoutScreen";
 import EditProfileScreen from "../Screens/EditProfileScreen";
 import HomeScreen from "../Screens/HomeScreen";
 import NotificationsScreen from "../Screens/NotificationsScreen";
+import OrderDetailScreen from "../Screens/OrderDetailScreen";
 import OrderHistoryScreen from "../Screens/OrderHistoryScreen";
 import OrdersEmptyScreen from "../Screens/OrdersEmptyScreen";
 import OrderStatusScreen from "../Screens/OrderStatusScreen";
+import OrderSuccessScreen from "../Screens/OrderSuccessScreen";
 import PaymentScreen from "../Screens/PaymentScreen";
 import ProductDetailScreen from "../Screens/ProductDetailScreen";
 import ProductScreen from "../Screens/ProductScreen";
@@ -24,6 +26,7 @@ import ProfileScreen from "../Screens/ProfileScreen";
 import SearchSc from '../Screens/SearchSc';
 import UserInfoScreen from "../Screens/UserInfoScreen";
 import WishlistScreen from "../Screens/WishlistScreen.js";
+
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
 
@@ -44,7 +47,7 @@ function HomeStack() {
       <Stack.Screen
         name="Notifications"
         component={NotificationsScreen}
-        options={{ title: "Thông báo" }}
+        options={{ headerShown: false }}
       />
       <Stack.Screen
         name="Cart"
@@ -60,42 +63,6 @@ function HomeStack() {
         name="CategoryScreen"
         component={CategoryScreen}
         options={{ title: "Danh mục" }}
-      />
-    </Stack.Navigator>
-  );
-}
-
-// Stack Navigator cho Products
-function ProductStack() {
-  return (
-    <Stack.Navigator>
-      <Stack.Screen
-        name="ProductScreen"
-        component={ProductScreen}
-        options={{ title: "Sản phẩm" }}
-      />
-      <Stack.Screen
-        name="ProductDetail"
-        component={ProductDetailScreen}
-        options={{ title: "Chi tiết sản phẩm" }}
-      />
-      <Stack.Screen
-        name="CategoryScreen"
-        component={CategoryScreen}
-        options={{ title: "Danh mục" }}
-      />
-    </Stack.Navigator>
-  );
-}
-
-// Stack Navigator cho Cart
-function CartStack() {
-  return (
-    <Stack.Navigator>
-      <Stack.Screen
-        name="CartScreen"
-        component={CartScreen}
-        options={{ headerShown: false }}
       />
       <Stack.Screen
         name="Checkout"
@@ -121,6 +88,39 @@ function CartStack() {
         name="AddBankCard"
         component={AddBankCardScreen}
         options={{ title: "Thêm thẻ" }}
+      />
+      <Stack.Screen
+        name="OrderSuccess"
+        component={OrderSuccessScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="OrderDetail"
+        component={OrderDetailScreen}
+        options={{ headerShown: false }}
+      />
+    </Stack.Navigator>
+  );
+}
+
+// Stack Navigator cho Products
+function ProductStack() {
+  return (
+    <Stack.Navigator>
+      <Stack.Screen
+        name="ProductScreen"
+        component={ProductScreen}
+        options={{ title: "Sản phẩm" }}
+      />
+      <Stack.Screen
+        name="ProductDetail"
+        component={ProductDetailScreen}
+        options={{ title: "Chi tiết sản phẩm" }}
+      />
+      <Stack.Screen
+        name="CategoryScreen"
+        component={CategoryScreen}
+        options={{ title: "Danh mục" }}
       />
     </Stack.Navigator>
   );
@@ -204,8 +204,18 @@ function ProfileStack() {
         options={{ title: "Trạng thái đơn hàng" }}
       />
       <Stack.Screen
+        name="OrdersEmpty"
+        component={OrdersEmptyScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
         name="CartScreen"
         component={CartScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="OrderDetail"
+        component={OrderDetailScreen}
         options={{ headerShown: false }}
       />
     </Stack.Navigator>
@@ -239,14 +249,11 @@ export default function TabNavigator() {
             case "Home":
               iconName = "home-outline";
               break;
-            case "Cart":
-              iconName = "cart-outline";
+            case "Wishlist":
+              iconName = "heart-outline";
               break;
             case "Notifications":
               iconName = "notifications-outline";
-              break;
-            case "Wishlist":
-              iconName = "heart-outline";
               break;
             case "Profile":
               iconName = "person-outline";
@@ -257,7 +264,7 @@ export default function TabNavigator() {
         },
         tabBarActiveTintColor: "#007AFF",
         tabBarInactiveTintColor: "#8e8e93",
-        tabBarShowLabel: false,
+        tabBarShowLabel: true,
         headerShown: false,
         tabBarStyle: {
           paddingTop: 20,
@@ -273,6 +280,11 @@ export default function TabNavigator() {
           shadowRadius: 8,
           elevation: 8,
         },
+        tabBarLabelStyle: {
+          fontSize: 12,
+          fontWeight: "500",
+          marginTop: 4,
+        },
       })}
     >
       <Tab.Screen
@@ -280,12 +292,13 @@ export default function TabNavigator() {
         component={HomeStack}
         options={{ title: "Trang chủ" }}
       />
+
       <Tab.Screen
         name="Notifications"
         component={NotificationsStack}
         options={{ title: "Thông báo" }}
       />
-      <Tab.Screen
+            <Tab.Screen
         name="Wishlist"
         component={WishlistScreen}
         options={{ title: "Yêu thích" }}
