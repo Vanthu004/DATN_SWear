@@ -253,6 +253,15 @@ export const updateAddress = async (id, addressData) => {
     throw error;
   }
 };
+export const deleteAddress = async (id) => {
+  try {
+    const response = await api.delete(`/addresses/${id}`);
+    return response.data;
+  } catch (error) {
+    console.error("Error deleting address:", error);
+    throw error;
+  }
+};
 
 
 
