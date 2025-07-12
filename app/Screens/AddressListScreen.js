@@ -67,12 +67,11 @@ const AddressListScreen = ({ navigation }) => {
               </View>
               <TouchableOpacity
                 style={styles.editButton}
-                onPress={() =>
-                  navigation.navigate("AddAddress", { address: item })
-                }
+                onPress={() => navigation.navigate("AddAddress", { address: item })}
               >
                 <Ionicons name="pencil" size={20} color="#007AFF" />
               </TouchableOpacity>
+
             </View>
           )}
           contentContainerStyle={styles.listContainer}

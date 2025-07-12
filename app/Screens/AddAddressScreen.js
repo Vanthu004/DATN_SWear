@@ -2,6 +2,9 @@ import { Ionicons } from "@expo/vector-icons";
 import React, { useState } from "react";
 import {
   Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -12,15 +15,17 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { createAddress } from "../utils/api";
 const AddAddressScreen = ({ navigation, route }) => {
   const editAddress = route.params?.address;
-  const isEditing = !!editAddress;
+  const isEdit = !!editAddress;
 
   const [formData, setFormData] = useState({
     name: editAddress?.name || "",
     phone: editAddress?.phone || "",
     address: editAddress?.address || "",
-    city: editAddress?.city || "",
+    city: editAddress?.province || "",
     district: editAddress?.district || "",
     ward: editAddress?.ward || "",
+    type: editAddress?.type || "home",         //  Mặc định là "home"
+    is_default: editAddress?.is_default || false, //  Mặc định là false
   });
 
   const handleSave = async () => {
@@ -38,9 +43,10 @@ const AddAddressScreen = ({ navigation, route }) => {
         district: formData.district,
         province: formData.city,
         country: "Việt Nam",
-        type: "home",
-        is_default: true,
+        type: formData.type,
+        is_default: formData.is_default,
       };
+
 
       await createAddress(addressPayload);
       Alert.alert("Thành công", "Địa chỉ đã được lưu.");
@@ -64,83 +70,153 @@ const AddAddressScreen = ({ navigation, route }) => {
             <Ionicons name="arrow-back" size={22} color="#222" />
           </View>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Thêm địa chỉ</Text>
+        <Text style={styles.headerTitle}>
+          {isEdit ? "Chỉnh sửa địa chỉ" : "Thêm địa chỉ"}
+        </Text>
       </View>
 
-      <View style={styles.form}>
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Tên người nhận</Text>
-          <TextInput
-            style={styles.input}
-            value={formData.name}
-            onChangeText={(text) => setFormData({ ...formData, name: text })}
-            placeholder="Nhập tên người nhận"
-          />
-        </View>
+      {/* Bọc phần nội dung trong ScrollView để có thể cuộn */}
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        keyboardVerticalOffset={80}
+      >
+        <ScrollView contentContainerStyle={styles.scrollContent}>
+          <View style={styles.form}>
 
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Số điện thoại</Text>
-          <TextInput
-            style={styles.input}
-            value={formData.phone}
-            onChangeText={(text) => setFormData({ ...formData, phone: text })}
-            placeholder="Nhập số điện thoại"
-            keyboardType="phone-pad"
-          />
-        </View>
+            {/* Tên người nhận */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Tên người nhận</Text>
+              <TextInput
+                style={styles.input}
+                value={formData.name}
+                onChangeText={(text) => setFormData({ ...formData, name: text })}
+                placeholder="Nhập tên người nhận"
+              />
+            </View>
 
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Tên đường</Text>
-          <TextInput
-            style={styles.input}
-            value={formData.address}
-            onChangeText={(text) => setFormData({ ...formData, address: text })}
-            placeholder="Nhập tên đường"
-            multiline
-          />
-        </View>
+            {/* Số điện thoại */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Số điện thoại</Text>
+              <TextInput
+                style={styles.input}
+                value={formData.phone}
+                onChangeText={(text) => setFormData({ ...formData, phone: text })}
+                placeholder="Nhập số điện thoại"
+                keyboardType="phone-pad"
+              />
+            </View>
 
-           <View style={styles.inputGroup}>
-          <Text style={styles.label}>Phường/Xã</Text>
-          <TextInput
-            style={styles.input}
-            value={formData.ward}
-            onChangeText={(text) => setFormData({ ...formData, ward: text })}
-            placeholder="Chọn phường/xã"
-          />
-        </View>
+            {/* Địa chỉ */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Tên đường</Text>
+              <TextInput
+                style={styles.input}
+                value={formData.address}
+                onChangeText={(text) => setFormData({ ...formData, address: text })}
+                placeholder="Nhập tên đường"
+                multiline
+              />
+            </View>
 
-        <View style={styles.row}>
+            {/* Phường/Xã */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Phường/Xã</Text>
+              <TextInput
+                style={styles.input}
+                value={formData.ward}
+                onChangeText={(text) => setFormData({ ...formData, ward: text })}
+                placeholder="Chọn phường/xã"
+              />
+            </View>
 
-           <View style={[styles.inputGroup, { flex: 1 , marginRight: 10 }]}>
-            <Text style={styles.label}>Quận/Huyện</Text>
-            <TextInput
-              style={styles.input}
-              value={formData.district}
-              onChangeText={(text) =>
-                setFormData({ ...formData, district: text })
-              }
-              placeholder="Chọn quận/huyện"
-            />
+
+            {/* Quận/Huyện và Tỉnh/Thành phố */}
+            <View style={styles.row}>
+
+              <View style={[styles.inputGroup, { flex: 1, marginRight: 10 }]}>
+                <Text style={styles.label}>Quận/Huyện</Text>
+                <TextInput
+                  style={styles.input}
+                  value={formData.district}
+                  onChangeText={(text) =>
+                    setFormData({ ...formData, district: text })
+                  }
+                  placeholder="Chọn quận/huyện"
+                />
+              </View>
+
+              <View style={[styles.inputGroup, { flex: 1 }]}>
+                <Text style={styles.label}>Tỉnh/Thành phố</Text>
+                <TextInput
+                  style={styles.input}
+                  value={formData.city}
+                  onChangeText={(text) => setFormData({ ...formData, city: text })}
+                  placeholder="Chọn tỉnh/thành phố"
+                />
+              </View>
+            </View>
+
+
           </View>
+          <View style={styles.form}>
 
-          <View style={[styles.inputGroup, { flex: 1}]}>
-            <Text style={styles.label}>Tỉnh/Thành phố</Text>
-            <TextInput
-              style={styles.input}
-              value={formData.city}
-              onChangeText={(text) => setFormData({ ...formData, city: text })}
-              placeholder="Chọn tỉnh/thành phố"
-            />
+            {/* Loại địa chỉ (type) */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Loại địa chỉ</Text>
+              <View style={styles.typeSelector}>
+                {["home", "office", "other"].map((typeOption) => (
+                  <TouchableOpacity
+                    key={typeOption}
+                    style={[
+                      styles.typeOption,
+                      formData.type === typeOption && styles.selectedType,
+                    ]}
+                    onPress={() => setFormData({ ...formData, type: typeOption })}
+                  >
+                    <Text
+                      style={[
+                        styles.typeText,
+                        formData.type === typeOption && styles.selectedTypeText,
+                      ]}
+                    >
+                      {typeOption === "home"
+                        ? "Nhà riêng"
+                        : typeOption === "office"
+                          ? "Công ty"
+                          : "Khác"}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+
+            {/* Checkbox Địa chỉ mặc định */}
+            <View style={styles.inputGroup}>
+              <TouchableOpacity
+                style={styles.checkboxRow}
+                onPress={() =>
+                  setFormData((prev) => ({ ...prev, is_default: !prev.is_default }))
+                }
+              >
+                <Ionicons
+                  name={formData.is_default ? "checkbox" : "square-outline"}
+                  size={22}
+                  color="#007AFF"
+                />
+                <Text style={{ marginLeft: 10, fontSize: 16 }}>
+                  Đặt làm địa chỉ mặc định
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
-
-         
-        </View>
-
-      </View>
-
+        </ScrollView>
+      </KeyboardAvoidingView>
+      {/* Nút tạo ở dưới */}
       <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-        <Text style={styles.saveButtonText}>Lưu địa chỉ</Text>
+        <Text style={styles.saveButtonText}>
+          {isEdit ? "Cập nhật địa chỉ" : "Lưu địa chỉ"}
+        </Text>
       </TouchableOpacity>
     </SafeAreaView>
   );
@@ -205,6 +281,40 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "bold",
   },
+  typeSelector: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    gap: 10,
+  },
+  typeOption: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: "#ccc",
+    padding: 10,
+    borderRadius: 8,
+    alignItems: "center",
+    backgroundColor: "#f2f2f2",
+  },
+  selectedType: {
+    backgroundColor: "#007AFF",
+    borderColor: "#007AFF",
+  },
+  typeText: {
+    color: "#333",
+  },
+  selectedTypeText: {
+    color: "#fff",
+    fontWeight: "600",
+  },
+  checkboxRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  scrollContent: {
+    paddingBottom: 100, // để tránh che nút phía dưới
+  },
+
+
 });
 
 export default AddAddressScreen;
