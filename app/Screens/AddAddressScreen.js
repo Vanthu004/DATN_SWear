@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import React, { useState } from "react";
 import {
+  Alert,
   StyleSheet,
   Text,
   TextInput,
@@ -8,7 +9,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-
+import { createAddress } from "../utils/api";
 const AddAddressScreen = ({ navigation, route }) => {
   const editAddress = route.params?.address;
   const isEditing = !!editAddress;
@@ -22,9 +23,32 @@ const AddAddressScreen = ({ navigation, route }) => {
     ward: editAddress?.ward || "",
   });
 
-  const handleSave = () => {
-    // Here we would typically save to Redux/API
-    navigation.goBack();
+  const handleSave = async () => {
+    try {
+      if (!formData.name || !formData.phone || !formData.address || !formData.city || !formData.district) {
+        Alert.alert("Thiếu thông tin", "Vui lòng điền đầy đủ các trường bắt buộc.");
+        return;
+      }
+
+      const addressPayload = {
+        name: formData.name,
+        phone: formData.phone,
+        street: formData.address,
+        ward: formData.ward,
+        district: formData.district,
+        province: formData.city,
+        country: "Việt Nam",
+        type: "home",
+        is_default: true,
+      };
+
+      await createAddress(addressPayload);
+      Alert.alert("Thành công", "Địa chỉ đã được lưu.");
+      navigation.goBack();
+    } catch (error) {
+      console.error("Lỗi khi lưu địa chỉ:", error);
+      Alert.alert("Lỗi", "Không thể lưu địa chỉ. Vui lòng thử lại.");
+    }
   };
 
   return (
@@ -66,28 +90,29 @@ const AddAddressScreen = ({ navigation, route }) => {
         </View>
 
         <View style={styles.inputGroup}>
-          <Text style={styles.label}>Địa chỉ</Text>
+          <Text style={styles.label}>Tên đường</Text>
           <TextInput
             style={styles.input}
             value={formData.address}
             onChangeText={(text) => setFormData({ ...formData, address: text })}
-            placeholder="Nhập địa chỉ"
+            placeholder="Nhập tên đường"
             multiline
           />
         </View>
 
-        <View style={styles.row}>
-          <View style={[styles.inputGroup, { flex: 1, marginRight: 10 }]}>
-            <Text style={styles.label}>Tỉnh/Thành phố</Text>
-            <TextInput
-              style={styles.input}
-              value={formData.city}
-              onChangeText={(text) => setFormData({ ...formData, city: text })}
-              placeholder="Chọn tỉnh/thành phố"
-            />
-          </View>
+           <View style={styles.inputGroup}>
+          <Text style={styles.label}>Phường/Xã</Text>
+          <TextInput
+            style={styles.input}
+            value={formData.ward}
+            onChangeText={(text) => setFormData({ ...formData, ward: text })}
+            placeholder="Chọn phường/xã"
+          />
+        </View>
 
-          <View style={[styles.inputGroup, { flex: 1 }]}>
+        <View style={styles.row}>
+
+           <View style={[styles.inputGroup, { flex: 1 , marginRight: 10 }]}>
             <Text style={styles.label}>Quận/Huyện</Text>
             <TextInput
               style={styles.input}
@@ -98,17 +123,20 @@ const AddAddressScreen = ({ navigation, route }) => {
               placeholder="Chọn quận/huyện"
             />
           </View>
+
+          <View style={[styles.inputGroup, { flex: 1}]}>
+            <Text style={styles.label}>Tỉnh/Thành phố</Text>
+            <TextInput
+              style={styles.input}
+              value={formData.city}
+              onChangeText={(text) => setFormData({ ...formData, city: text })}
+              placeholder="Chọn tỉnh/thành phố"
+            />
+          </View>
+
+         
         </View>
 
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Phường/Xã</Text>
-          <TextInput
-            style={styles.input}
-            value={formData.ward}
-            onChangeText={(text) => setFormData({ ...formData, ward: text })}
-            placeholder="Chọn phường/xã"
-          />
-        </View>
       </View>
 
       <TouchableOpacity style={styles.saveButton} onPress={handleSave}>

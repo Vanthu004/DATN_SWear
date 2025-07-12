@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
-const API_BASE_URL = 'http://192.168.1.112:3000/api'; //http://192.168.1.112:3000/api
+const API_BASE_URL = 'http://192.168.1.112:3000/api'; //http://192.168.1.7:3000/api
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -233,9 +233,10 @@ export const createAddress = async (addressData) => {
     throw error;
   }
 };
-export const getAddressList = async (userId) => {
+// Không cần truyền userId vì đã lấy từ token
+export const getAddressList = async () => {
   try {
-    const response = await api.get(`/addresses/${userId}`);
+    const response = await api.get(`/addresses`);
     return response.data;
   } catch (error) {
     console.error("Error fetching address list:", error);
