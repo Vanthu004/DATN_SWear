@@ -1,136 +1,187 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  FlatList,
   Image,
-  ScrollView,
+  Modal,
+  StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
-  View
+  View,
 } from "react-native";
-import { useAuth } from '../context/AuthContext';
-import api from '../utils/api';
+import { useCart } from "../hooks/useCart";
+
+function CartItem({ item, checked, onCheck, onRemove, onUpdate }) {
+  const [showQtyModal, setShowQtyModal] = useState(false);
+  const [newQty, setNewQty] = useState(item.quantity);
+
+  return (
+    <View
+      style={{
+        backgroundColor: "#fff",
+        marginBottom: 12,
+        borderRadius: 8,
+        padding: 12,
+        flexDirection: "row",
+      }}
+    >
+      {/* Checkbox */}
+      <TouchableOpacity
+        onPress={onCheck}
+        style={{ marginRight: 8, alignSelf: "flex-start", marginTop: 20 }}
+      >
+        <Ionicons
+          name={checked ? "checkbox" : "square-outline"}
+          size={24}
+          color="#2979FF"
+        />
+      </TouchableOpacity>
+      {/* Ảnh */}
+      <Image
+        source={
+          item.product?.image_url
+            ? { uri: item.product.image_url }
+            : require("../../assets/images/box-icon.png")
+        }
+        style={{ width: 70, height: 70, borderRadius: 8, marginRight: 10 }}
+      />
+      {/* Thông tin */}
+      <View style={{ flex: 1 }}>
+        <Text style={{ fontWeight: "bold", fontSize: 15 }}>
+          {item.product?.name || "Sản phẩm không xác định"}
+        </Text>
+        <Text style={{ fontWeight: "bold", color: "#222", marginVertical: 2 }}>
+          {(item.price_at_time || 0).toLocaleString()} đ
+        </Text>
+        {/* Số lượng */}
+        <View
+          style={{ flexDirection: "row", marginTop: 4, alignItems: "center" }}
+        >
+          <Text style={{ fontSize: 12, color: "#888", marginRight: 8 }}>
+            Số lượng:
+          </Text>
+          <TouchableOpacity onPress={() => setShowQtyModal(true)}>
+            <Text
+              style={{
+                borderWidth: 1,
+                borderColor: "#ccc",
+                borderRadius: 4,
+                padding: 4,
+                textAlign: "center",
+                minWidth: 40,
+              }}
+            >
+              {item.quantity}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+      {/* Nút xóa */}
+      <TouchableOpacity
+        onPress={onRemove}
+        style={{ alignSelf: "flex-start", marginLeft: 8 }}
+      >
+        <Ionicons name="trash-outline" size={22} color="#ef4444" />
+      </TouchableOpacity>
+
+      {/* Modal nhập số lượng */}
+      <Modal visible={showQtyModal} transparent animationType="fade">
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: "#0008",
+            justifyContent: "center",
+            alignItems: "center",
+          }}
+        >
+          <View
+            style={{
+              backgroundColor: "#fff",
+              borderRadius: 8,
+              padding: 20,
+              width: 250,
+            }}
+          >
+            <Text style={{ fontWeight: "bold", marginBottom: 8 }}>
+              Nhập số lượng
+            </Text>
+            <TextInput
+              keyboardType="number-pad"
+              value={String(newQty)}
+              onChangeText={(txt) => setNewQty(Number(txt) || 1)}
+              style={{
+                borderWidth: 1,
+                borderColor: "#ccc",
+                borderRadius: 4,
+                padding: 8,
+                marginBottom: 12,
+              }}
+            />
+            <View style={{ flexDirection: "row", justifyContent: "flex-end" }}>
+              <TouchableOpacity
+                onPress={() => setShowQtyModal(false)}
+                style={{ marginRight: 12 }}
+              >
+                <Text>Hủy</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => {
+                  setShowQtyModal(false);
+                  onUpdate(newQty);
+                }}
+              >
+                <Text style={{ color: "#2979FF" }}>OK</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+    </View>
+  );
+}
 
 const CartScreen = () => {
   const navigation = useNavigation();
-  const [cartItems, setCartItems] = useState([]);
-  const [loading, setLoading] = useState(true);
-  //lấy id user
-  const { userInfo } = useAuth();
-  const USER_ID = userInfo?._id || userInfo?.id;
-  // ✅ B1-3: Gọi dữ liệu
-  useEffect(() => {
-    const fetchCartData = async () => {
-      try {
-        console.log("🧪 Gọi API cart của user:", USER_ID);
+  const { cartItems, loading, updateQuantity, removeFromCart } = useCart();
 
-        // 1. Lấy Cart theo user_id
-        const cartRes = await api.get(`/carts/user/${USER_ID}`);
-        const cart = cartRes.data;
-        console.log("📦 Cart:", cart);
+  // State lưu trạng thái checked cho từng item
+  const [checkedItems, setCheckedItems] = useState({}); // { [item._id]: true/false }
 
-        // 2. Lấy CartItem theo cart_id
-        const cartItemRes = await api.get(`/cart-items/cart/${cart._id}`);
-        const items = cartItemRes.data;
-        console.log("CartItem:", items);
+  const handleCheck = (itemId) => {
+    setCheckedItems((prev) => ({ ...prev, [itemId]: !prev[itemId] }));
+  };
 
-        // 3. Lấy Product cho từng CartItem
-        const itemsWithProduct = [];
-
-        for (const item of items) {
-          try {
-            // Có thể item.product_id là object hoặc id string
-            const productId = item.product_id._id || item.product_id.toString();
-            console.log("📦 Đang lấy sản phẩm với ID:", productId);
-
-            const productRes = await api.get(`/products/${productId}`);
-            const product = productRes.data;
-            console.log("✅ Sản phẩm lấy được:", product.name);
-
-            itemsWithProduct.push({
-              ...item,
-              product: product,
-            });
-          } catch (err) {
-            console.error(`❌ Không thể lấy sản phẩm ID ${item.product_id}:`, err.message);
-            itemsWithProduct.push({
-              ...item,
-              product: null,
-            });
-          }
-        }
-
-
-        setCartItems(itemsWithProduct.filter(item => item.product !== null));
-      } catch (err) {
-        console.error(err);
-        Alert.alert("Lỗi", "Không thể tải dữ liệu giỏ hàng");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchCartData();
-  }, []);
-
-  const handleRemoveItem = async (itemId) => {
-  Alert.alert(
-    "Xác nhận",
-    "Bạn có chắc muốn xoá sản phẩm khỏi giỏ hàng?",
-    [
+  const handleRemoveItem = (itemId) => {
+    Alert.alert("Xác nhận", "Bạn có chắc muốn xoá sản phẩm khỏi giỏ hàng?", [
       { text: "Huỷ", style: "cancel" },
       {
         text: "Xoá",
         style: "destructive",
-        onPress: async () => {
-          try {
-            await api.delete(`/cart-items/${itemId}`);
-            setCartItems((prev) => prev.filter((item) => item._id !== itemId));
-          } catch (err) {
-            console.error("❌ Lỗi xoá sản phẩm:", err.message);
-            Alert.alert("Lỗi", "Không thể xoá sản phẩm khỏi giỏ hàng");
-          }
-        },
+        onPress: () => removeFromCart(itemId),
       },
-    ]
+    ]);
+  };
+
+  // Tính tổng chỉ cho các item được chọn
+  const subtotal = cartItems.reduce(
+    (sum, item) =>
+      checkedItems[item._id]
+        ? sum + (item.price_at_time || 0) * item.quantity
+        : sum,
+    0
   );
-};
-
-  // ✅ Tính tổng
-  const subtotal = useMemo(() => {
-    return cartItems.reduce(
-      (sum, item) => sum + item.product.price * item.quantity,
-      0
-    );
-  }, [cartItems]);
-
   const shipping = 15000;
-const tax = Math.round(subtotal * 0.05);
-const total = subtotal + shipping + tax;
+  const tax = Math.round(subtotal * 0.05);
+  const total = subtotal + shipping + tax;
 
-  // ✅ Tăng/giảm số lượng
-  const changeQuantity = async (index, delta) => {
-    const item = cartItems[index];
-    const newQty = item.quantity + delta;
+  // Cập nhật số lượng
+  const handleUpdateQuantity = (itemId, newQty) => {
     if (newQty < 1) return;
-
-    try {
-      await api.put(`/cart-items/${item._id}`, {
-        quantity: newQty,
-      });
-
-      // Cập nhật local state
-      setCartItems((prev) => {
-        const updated = [...prev];
-        updated[index] = { ...item, quantity: newQty };
-        return updated;
-      });
-    } catch (err) {
-      console.error("Lỗi cập nhật số lượng", err);
-      Alert.alert("Lỗi", "Không thể cập nhật số lượng");
-    }
+    updateQuantity(itemId, newQty);
   };
 
   if (loading) {
@@ -141,9 +192,43 @@ const total = subtotal + shipping + tax;
     );
   }
 
+  if (cartItems.length === 0) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.customHeader}>
+          <TouchableOpacity
+            style={styles.backBtn}
+            onPress={() => navigation.goBack()}
+          >
+            <View style={styles.backIconWrap}>
+              <Ionicons name="arrow-back" size={22} color="#222" />
+            </View>
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Giỏ hàng</Text>
+        </View>
+
+        <View style={styles.emptyContainer}>
+          <Image
+            source={require("../../assets/images/empty-box.png")}
+            style={styles.emptyImage}
+          />
+          <Text style={styles.emptyTitle}>Giỏ hàng trống</Text>
+          <Text style={styles.emptySubtitle}>
+            Bạn chưa có sản phẩm nào trong giỏ hàng
+          </Text>
+          <TouchableOpacity
+            style={styles.shopNowButton}
+            onPress={() => navigation.navigate("Home")}
+          >
+            <Text style={styles.shopNowText}>Mua sắm ngay</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
-      {/* Header */}
       <View style={styles.customHeader}>
         <TouchableOpacity
           style={styles.backBtn}
@@ -153,47 +238,23 @@ const total = subtotal + shipping + tax;
             <Ionicons name="arrow-back" size={22} color="#222" />
           </View>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Giỏ hàng</Text>
+        <Text style={styles.headerTitle}>Giỏ hàng ({cartItems.length})</Text>
       </View>
 
-      {/* List sản phẩm */}
-      <ScrollView style={styles.productList}>
-        {cartItems.map((item, index) => (
-          <View key={item._id} style={styles.item}>
-            <Image source={{ uri: item.product.image_url }} style={styles.image} />
-            <TouchableOpacity
-            style={styles.removeIcon}
-            onPress={() => handleRemoveItem(item._id)}
-             >
-            <Ionicons name="close-circle" size={20} color="#ef4444" />
-            </TouchableOpacity>
+      <FlatList
+        data={cartItems}
+        keyExtractor={(item) => item._id}
+        renderItem={({ item }) => (
+          <CartItem
+            item={item}
+            checked={!!checkedItems[item._id]}
+            onCheck={() => handleCheck(item._id)}
+            onRemove={() => handleRemoveItem(item._id)}
+            onUpdate={(newQty) => handleUpdateQuantity(item._id, newQty)}
+          />
+        )}
+      />
 
-            <View style={styles.itemInfo}>
-              <Text style={styles.itemName}>{item.product.name}</Text>
-              <Text style={styles.price}>
-                {(item.product.price * item.quantity).toLocaleString()} VND
-              </Text>
-              <Text style={styles.label}>Số lượng: {item.quantity}</Text>
-            </View>
-            <View style={styles.quantityControl}>
-              <TouchableOpacity
-                style={styles.qtyButton}
-                onPress={() => changeQuantity(index, +1)}
-              >
-                <Text style={styles.qtyText}>+</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.qtyButton}
-                onPress={() => changeQuantity(index, -1)}
-              >
-                <Text style={styles.qtyText}>-</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        ))}
-      </ScrollView>
-
-      {/* Tổng */}
       <View style={styles.summary}>
         <View style={styles.summaryRow}>
           <Text style={styles.label}>Tạm tính</Text>
@@ -213,26 +274,45 @@ const total = subtotal + shipping + tax;
         </View>
       </View>
 
-      {/* Nút thanh toán */}
       <TouchableOpacity
-        style={styles.checkoutButton}
-        onPress={() => navigation.navigate("Checkout")}
+        style={[
+          styles.checkoutButton,
+          Object.keys(checkedItems).length === 0 && styles.checkoutButtonDisabled,
+        ]}
+        onPress={() => {
+          const selectedItems = cartItems.filter(
+            (item) => checkedItems[item._id]
+          );
+          if (selectedItems.length === 0) {
+            Alert.alert(
+              "Thông báo",
+              "Vui lòng chọn ít nhất một sản phẩm để thanh toán"
+            );
+            return;
+          }
+          navigation.navigate("Checkout", {
+            checkedItems: selectedItems,
+            subtotal,
+            shipping,
+            tax,
+            total,
+          });
+        }}
+        disabled={Object.keys(checkedItems).length === 0}
       >
-        <Text style={styles.checkoutText}>Thanh toán</Text>
+        <Text style={styles.checkoutText}>
+          Thanh toán ({Object.keys(checkedItems).length})
+        </Text>
       </TouchableOpacity>
     </View>
   );
 };
 
-export default CartScreen;
-
-import { StyleSheet } from "react-native";
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#fff",
-    paddingTop: 50,
+    paddingTop: 30,
     paddingHorizontal: 20,
   },
   customHeader: {
@@ -264,64 +344,41 @@ const styles = StyleSheet.create({
     color: "#222",
     textAlign: "center",
   },
-
-  productList: {
-    marginTop: 20,
-  },
-  item: {
-    flexDirection: "row",
-    backgroundColor: "#F9F9F9",
-    borderRadius: 10,
-    padding: 10,
-    marginBottom: 15,
-    alignItems: "center",
-  },
-  image: {
-    width: 60,
-    height: 60,
-    borderRadius: 8,
-    marginRight: 10,
-  },
-  itemInfo: {
+  emptyContainer: {
     flex: 1,
     justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 40,
   },
-  itemName: {
-    fontSize: 14,
-    fontWeight: "500",
-    color: "#000",
+  emptyImage: {
+    width: 120,
+    height: 120,
+    marginBottom: 20,
+    opacity: 0.6,
   },
-  price: {
-    marginTop: 4,
-    fontWeight: "600",
-    color: "#222",
-  },
-  label: {
-    marginTop: 4,
-    fontSize: 13,
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
     color: "#666",
+    marginBottom: 8,
   },
-
-  quantityControl: {
-    flexDirection: "column",
-    alignItems: "center",
-    justifyContent: "center",
+  emptySubtitle: {
+    fontSize: 14,
+    color: "#999",
+    textAlign: "center",
+    marginBottom: 30,
   },
-  qtyButton: {
+  shopNowButton: {
     backgroundColor: "#007BFF",
-    borderRadius: 20,
-    width: 30,
-    height: 30,
-    justifyContent: "center",
-    alignItems: "center",
-    marginVertical: 2,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 25,
   },
-  qtyText: {
+  shopNowText: {
     color: "#fff",
     fontSize: 16,
-    fontWeight: "bold",
+    fontWeight: "500",
   },
-
   summary: {
     marginTop: 10,
     paddingTop: 10,
@@ -333,6 +390,10 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     marginVertical: 4,
   },
+  label: {
+    fontSize: 14,
+    color: "#666",
+  },
   totalLabel: {
     fontWeight: "bold",
     fontSize: 16,
@@ -343,7 +404,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#000",
   },
-
   checkoutButton: {
     backgroundColor: "#007BFF",
     paddingVertical: 14,
@@ -351,27 +411,19 @@ const styles = StyleSheet.create({
     marginTop: 20,
     alignItems: "center",
   },
+  checkoutButtonDisabled: {
+    backgroundColor: "#ccc",
+  },
   checkoutText: {
     color: "#fff",
     fontSize: 16,
     fontWeight: "500",
   },
-
   center: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
   },
-
-  removeIcon: {
-  position: "absolute",
-  top: 3,
-  right: 3,
-  zIndex: 1,
-  bottom: 3,
-},
-
 });
 
-
-
+export default CartScreen;

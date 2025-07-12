@@ -10,80 +10,105 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  View
+  View,
 } from 'react-native';
-
 import { useAuth } from '../context/AuthContext';
-import api from '../utils/api';
+import { getFavoritesByUser, removeFavorite } from '../utils/api';
 
 const CARD_WIDTH = (Dimensions.get('window').width - 48) / 2;
 
 export default function WishlistScreen() {
   const navigation = useNavigation();
+  const { userInfo } = useAuth();
+  const userId = userInfo?._id;
+
   const [favorites, setFavorites] = useState([]);
   const [loading, setLoading] = useState(true);
-  const { userInfo } = useAuth();
+
   useFocusEffect(
-  useCallback(() => {
-    const fetchFavorites = async () => {
-      try {
-        const res = await api.get(`/favorites/${userInfo._id || userInfo.id}`);
-        setFavorites(res.data);
-      } catch (err) {
-        console.error("❌ Lỗi khi lấy favorite:", err.message);
-        Alert.alert("Lỗi", "Không thể tải dữ liệu yêu thích");
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchFavorites();
-  }, [userInfo])
-);
-const handleRemoveFavorite = async (productId) => {
-  try {
-    await api.delete(`/favorites/${userInfo._id}/${productId}`);
-    // Sau khi xóa, cập nhật lại danh sách
-    const updatedFavorites = favorites.filter(
-      (item) => item.product_id._id !== productId
+    useCallback(() => {
+      const fetchFavorites = async () => {
+        if (!userId) {
+          setFavorites([]);
+          setLoading(false);
+          return;
+        }
+        setLoading(true);
+        try {
+          const res = await getFavoritesByUser(userId);
+          setFavorites(res.data || []);
+        } catch (err) {
+          console.error("❌ Lỗi khi lấy favorite:", err.message || err);
+          Alert.alert("Lỗi", "Không thể tải dữ liệu yêu thích");
+        } finally {
+          setLoading(false);
+        }
+      };
+      fetchFavorites();
+    }, [userId])
+  );
+
+  const handleRemoveFavorite = (productId) => {
+    Alert.alert(
+      "Xác nhận",
+      "Bạn có chắc muốn xoá sản phẩm khỏi yêu thích?",
+      [
+        { text: "Huỷ", style: "cancel" },
+        {
+          text: "Xoá",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await removeFavorite(userId, productId);
+              // Cập nhật lại danh sách favorites
+              setFavorites((prev) =>
+                prev.filter((item) => item.product_id._id !== productId)
+              );
+            } catch (err) {
+              console.error("❌ Lỗi khi xóa sản phẩm yêu thích:", err.message || err);
+              Alert.alert("Lỗi", "Không thể xóa sản phẩm khỏi danh sách yêu thích");
+            }
+          },
+        },
+      ]
     );
-    setFavorites(updatedFavorites);
-  } catch (err) {
-    console.error("❌ Lỗi khi xóa sản phẩm yêu thích:", err.message);
-    Alert.alert("Lỗi", "Không thể xóa sản phẩm khỏi danh sách yêu thích");
-  }
-};
+  };
 
   const renderItem = ({ item }) => {
     const product = item.product_id;
     if (!product) return null;
 
-    return (
-      <View style={styles.card}>
-        <Image source={{ uri: product.image_url }} style={styles.image} />
-        <TouchableOpacity style={styles.heartIcon}
-        onPress={() =>
-  Alert.alert(
-    "Xác nhận",
-    "Bạn có chắc muốn xoá sản phẩm khỏi yêu thích?",
-    [
-      { text: "Huỷ", style: "cancel" },
-      {
-        text: "Xoá",
-        onPress: () => handleRemoveFavorite(product._id),
-        style: "destructive",
-      },
-    ]
-  )
-}
+    // Chuẩn bị dữ liệu images cho màn chi tiết sản phẩm
+    const productData = {
+      ...product,
+      images:
+        product.images && product.images.length > 0
+          ? product.images
+          : product.image_url
+          ? [product.image_url]
+          : [],
+    };
 
+    return (
+      <TouchableOpacity
+        style={styles.card}
+        onPress={() => navigation.navigate('ProductDetail', { product: productData })}
+      >
+        <Image source={{ uri: product.image_url }} style={styles.image} />
+        <TouchableOpacity
+          style={styles.heartIcon}
+          onPress={(e) => {
+            e.stopPropagation && e.stopPropagation();
+            handleRemoveFavorite(product._id);
+          }}
         >
-          <Ionicons name="heart" size={20} color="#f87171" />
+          <Ionicons name="heart" size={20} color="#1e90ff" />
         </TouchableOpacity>
         <Text style={styles.name}>{product.name}</Text>
         <Text style={styles.price}>
-          {product.price.toLocaleString('vi-VN')} VND
+          {product.price?.toLocaleString('vi-VN')} ₫
         </Text>
-      </View>
+      </TouchableOpacity>
     );
   };
 
@@ -100,9 +125,7 @@ const handleRemoveFavorite = async (productId) => {
       <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
         <Ionicons name="chevron-back" size={24} />
       </TouchableOpacity>
-      <Text style={styles.title}>
-        Sản phẩm Yêu thích ({favorites.length})
-      </Text>
+      <Text style={styles.title}>Sản phẩm Yêu thích ({favorites.length})</Text>
       <FlatList
         data={favorites}
         numColumns={2}
@@ -110,6 +133,11 @@ const handleRemoveFavorite = async (productId) => {
         renderItem={renderItem}
         contentContainerStyle={styles.list}
         columnWrapperStyle={{ justifyContent: 'space-between' }}
+        ListEmptyComponent={
+          <View style={styles.center}>
+            <Text>Chưa có sản phẩm yêu thích nào.</Text>
+          </View>
+        }
       />
     </View>
   );
