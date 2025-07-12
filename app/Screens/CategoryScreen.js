@@ -110,7 +110,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between', 
     paddingHorizontal: 12, 
     height: 56,
-    marginTop: 60, 
+    marginTop: 30, 
     backgroundColor:"#fff"
   },
   headerTitle: { 
@@ -124,6 +124,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row', 
     alignItems: 'center',
     position: 'relative',
+    
   },
   cartBadge: {
     position: 'absolute', 

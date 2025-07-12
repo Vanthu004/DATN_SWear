@@ -11,7 +11,6 @@ import {
     View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { ROUTES } from "../constants/routes";
 import { useAuth } from "../context/AuthContext";
 
 const ProfileScreen = ({ navigation }) => {
@@ -41,25 +40,25 @@ const ProfileScreen = ({ navigation }) => {
       id: 1,
       title: "Địa chỉ",
       icon: "location-outline",
-      onPress: () => navigation.navigate(ROUTES.ADDRESS_LIST),
+      onPress: () => navigation.navigate("AddressList"),
     },
     {
       id: 2,
       title: "Đổi mật khẩu",
       icon: "lock-closed-outline",
-      onPress: () => navigation.navigate(ROUTES.CHANGE_PASSWORD),
+      onPress: () => navigation.navigate("ChangePassword"),
     },
     {
       id: 3,
       title: "Thanh toán",
       icon: "card-outline",
-      onPress: () => navigation.navigate(ROUTES.PAYMENT),
+      onPress: () => navigation.navigate("Payment"),
     },
     { 
       id: 4, 
       title: "Đơn hàng", 
       icon: "cube-outline", 
-      onPress: () => {} 
+      onPress: () => navigation.navigate("OrderHistory") 
     },
     { 
       id: 5, 
@@ -116,7 +115,7 @@ const ProfileScreen = ({ navigation }) => {
           </View>
           <View style={[styles.infoLine, { justifyContent: 'space-between' }]}>
             <Text style={styles.email}>{userInfo?.email}</Text>
-            <TouchableOpacity onPress={() => navigation.navigate(ROUTES.EDIT_PROFILE)}>
+            <TouchableOpacity onPress={() => navigation.navigate("EditProfile")}>
               <Text style={styles.editButtonText}>Chỉnh sửa</Text>
             </TouchableOpacity>
           </View>
