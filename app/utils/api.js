@@ -1,6 +1,6 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import axios from 'axios';
-const API_BASE_URL = 'http://192.168.1.7:3000/api'; //
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import axios from "axios";
+const API_BASE_URL = "http://192.168.1.7:3000/api"; //
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -230,6 +230,234 @@ export const getCategoriesById = async (categoryTypeId) => {
     `/categories/by-category-type/${categoryTypeId}`
   );
   return response.data;
+};
+
+// ===== CART SYSTEM APIs =====
+
+// Cart APIs
+export const createCart = async (userId) => {
+  try {
+    const response = await api.post("/carts", { user_id: userId });
+    return response.data;
+  } catch (error) {
+    console.error("Create cart error:", error);
+    throw error;
+  }
+};
+
+export const getAllCarts = async () => {
+  try {
+    const response = await api.get("/carts");
+    return response.data;
+  } catch (error) {
+    console.error("Get all carts error:", error);
+    throw error;
+  }
+};
+
+export const getCartById = async (cartId) => {
+  try {
+    const response = await api.get(`/carts/${cartId}`);
+    return response.data;
+  } catch (error) {
+    console.error("Get cart by ID error:", error);
+    throw error;
+  }
+};
+
+export const getCartByUser = async (userId) => {
+  try {
+    const response = await api.get(`/carts/user/${userId}`);
+    return response.data;
+  } catch (error) {
+    console.error("Get cart by user error:", error);
+    throw error;
+  }
+};
+
+export const deleteCart = async (cartId) => {
+  try {
+    const response = await api.delete(`/carts/${cartId}`);
+    return response.data;
+  } catch (error) {
+    console.error("Delete cart error:", error);
+    throw error;
+  }
+};
+
+export const createOrderFromCart = async (cartId, orderData) => {
+  try {
+    const response = await api.post(`/carts/${cartId}/checkout`, orderData);
+    return response.data;
+  } catch (error) {
+    console.error("Create order from cart error:", error);
+    throw error;
+  }
+};
+
+// Cart Item APIs
+export const addCartItem = async (cartItemData) => {
+  try {
+    const response = await api.post("/cart-items", cartItemData);
+    return response.data;
+  } catch (error) {
+    console.error("Add cart item error:", error);
+    throw error;
+  }
+};
+
+export const getCartItemsByCart = async (cartId) => {
+  try {
+    const response = await api.get(`/cart-items/cart/${cartId}`);
+    return response.data;
+  } catch (error) {
+    console.error("Get cart items by cart error:", error);
+    throw error;
+  }
+};
+
+export const updateCartItemQuantity = async (itemId, quantity) => {
+  try {
+    const response = await api.put(`/cart-items/${itemId}`, { quantity });
+    return response.data;
+  } catch (error) {
+    console.error("Update cart item quantity error:", error);
+    throw error;
+  }
+};
+
+export const deleteCartItem = async (itemId) => {
+  try {
+    const response = await api.delete(`/cart-items/${itemId}`);
+    return response.data;
+  } catch (error) {
+    console.error("Delete cart item error:", error);
+    throw error;
+  }
+};
+
+// ===== ORDER SYSTEM APIs =====
+
+// Order APIs
+export const createOrder = async (orderData) => {
+  try {
+    const response = await api.post("/orders", orderData);
+    return response.data;
+  } catch (error) {
+    console.error("Create order error:", error);
+    throw error;
+  }
+};
+
+export const getAllOrders = async () => {
+  try {
+    const response = await api.get("/orders");
+    return response.data;
+  } catch (error) {
+    console.error("Get all orders error:", error);
+    throw error;
+  }
+};
+
+export const getOrderById = async (orderId) => {
+  try {
+    const response = await api.get(`/orders/${orderId}`);
+    return response.data;
+  } catch (error) {
+    console.error("Get order by ID error:", error);
+    throw error;
+  }
+};
+
+export const getOrdersByUser = async (userId) => {
+  try {
+    const response = await api.get(`/orders/user/${userId}`);
+    return response.data;
+  } catch (error) {
+    console.error("Get orders by user error:", error);
+    throw error;
+  }
+};
+
+export const updateOrder = async (orderId, updateData) => {
+  try {
+    const response = await api.put(`/orders/${orderId}`, updateData);
+    return response.data;
+  } catch (error) {
+    console.error("Update order error:", error);
+    throw error;
+  }
+};
+
+export const deleteOrder = async (orderId) => {
+  try {
+    const response = await api.delete(`/orders/${orderId}`);
+    return response.data;
+  } catch (error) {
+    console.error("Delete order error:", error);
+    throw error;
+  }
+};
+
+export const createOrderWithDetails = async (orderData) => {
+  try {
+    const response = await api.post("/orders/full", orderData);
+    return response.data;
+  } catch (error) {
+    console.error("Create order with details error:", error);
+    throw error;
+  }
+};
+
+// OrderDetail APIs
+export const createOrderDetail = async (orderDetailData) => {
+  try {
+    const response = await api.post("/order-details", orderDetailData);
+    return response.data;
+  } catch (error) {
+    console.error("Create order detail error:", error);
+    throw error;
+  }
+};
+
+export const getAllOrderDetails = async () => {
+  try {
+    const response = await api.get("/order-details");
+    return response.data;
+  } catch (error) {
+    console.error("Get all order details error:", error);
+    throw error;
+  }
+};
+
+export const getOrderDetailById = async (orderDetailId) => {
+  try {
+    const response = await api.get(`/order-details/${orderDetailId}`);
+    return response.data;
+  } catch (error) {
+    console.error("Get order detail by ID error:", error);
+    throw error;
+  }
+};
+
+export const getOrderDetailsByOrderId = async (orderId) => {
+  try {
+    const response = await api.get(`/order-details/order/${orderId}`);
+    return response.data;
+  } catch (error) {
+    console.error("Get order details by order ID error:", error);
+    throw error;
+  }
+};
+
+export const deleteOrderDetail = async (orderDetailId) => {
+  try {
+    const response = await api.delete(`/order-details/${orderDetailId}`);
+    return response.data;
+  } catch (error) {
+    console.error("Delete order detail error:", error);
+    throw error;
+  }
 };
 
 export default api;
