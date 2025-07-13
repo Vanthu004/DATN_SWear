@@ -17,15 +17,18 @@ import {
   clearSearchResults,
   searchProducts
 } from "../reudx/homeSlice";
-// ... import và các hook như cũ ...
 
 export default function SearchSc({ route, navigation }) {
   const dispatch = useDispatch();
   const { cartCount } = useCart();
   const keywordFromNav = route?.params?.keyword || "";
+
   const [input, setInput] = useState(keywordFromNav);
   const [sortVisible, setSortVisible] = useState(false);
   const [filterVisible, setFilterVisible] = useState(false);
+  const [sortedProducts, setSortedProducts] = useState([]);
+  const [sortType, setSortType] = useState('none');
+  const [priceFilter, setPriceFilter] = useState(null); // 'under100' | 'between100_500' | 'above500'
 
   const { searchResults, searchLoading, searchError } = useSelector((state) => state.home);
 
@@ -37,6 +40,28 @@ export default function SearchSc({ route, navigation }) {
       dispatch(clearSearchResults());
     };
   }, [dispatch, keywordFromNav]);
+
+  useEffect(() => {
+    if (searchResults?.products) {
+      setSortedProducts(searchResults.products);
+    }
+  }, [searchResults]);
+
+  useEffect(() => {
+    if (!searchResults?.products) return;
+
+    let filtered = [...searchResults.products];
+
+    if (priceFilter === 'under100') {
+      filtered = filtered.filter(p => p.price < 100000);
+    } else if (priceFilter === 'between100_500') {
+      filtered = filtered.filter(p => p.price >= 100000 && p.price <= 500000);
+    } else if (priceFilter === 'above500') {
+      filtered = filtered.filter(p => p.price > 500000);
+    }
+
+    setSortedProducts(filtered);
+  }, [priceFilter, searchResults]);
 
   const handleSearch = () => {
     if (input.trim()) {
@@ -60,15 +85,39 @@ export default function SearchSc({ route, navigation }) {
   const handleSort = () => setSortVisible(!sortVisible);
   const handleFilter = () => setFilterVisible(!filterVisible);
 
-  console.log('searchResults:', searchResults);
+
+  const handleSort = () => {
+    setSortVisible(!sortVisible);
+  };
+
+  const handleSortType = (type) => {
+    setSortType(type);
+    setSortVisible(false);
+
+    if (!searchResults?.products) return;
+
+
+    let sorted = [...searchResults.products];
+
+    if (type === 'priceAsc') {
+      sorted.sort((a, b) => a.price - b.price);
+    } else if (type === 'priceDesc') {
+      sorted.sort((a, b) => b.price - a.price);
+    } else if (type === 'nameAZ') {
+      sorted.sort((a, b) => a.name.localeCompare(b.name));
+    }
+
+    setSortedProducts(type === 'none' ? searchResults.products : sorted);
+  };
+
+  const handleFilter = () => setFilterVisible(!filterVisible);
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Thanh tìm kiếm với nút close và giỏ hàng */}
       <View style={styles.searchBarRow}>
-      <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Ionicons name="arrow-back" size={26} color="#000" />
-          </TouchableOpacity>
+        <TouchableOpacity onPress={() => navigation.goBack()}>
+          <Ionicons name="arrow-back" size={26} color="#000" />
+        </TouchableOpacity>
         <View style={styles.searchBar}>
           <TextInput
             style={styles.input}
@@ -78,11 +127,11 @@ export default function SearchSc({ route, navigation }) {
             onSubmitEditing={handleSearch}
             returnKeyType="search"
           />
-        <TouchableOpacity onPress={() => {setInput(''); dispatch(clearSearchResults())}} style={styles.iconBtn}>
-          <Ionicons name="close" size={26} color="#000" />
-        </TouchableOpacity>
+          <TouchableOpacity onPress={() => { setInput(''); dispatch(clearSearchResults()); }} style={styles.iconBtn}>
+            <Ionicons name="close" size={26} color="#000" />
+          </TouchableOpacity>
         </View>
-        <TouchableOpacity onPress={() => navigation.navigate('Cart')} style={[styles.iconBtn, { marginLeft: 8 }]}> 
+        <TouchableOpacity onPress={() => navigation.navigate('Cart')} style={[styles.iconBtn, { marginLeft: 8 }]}>
           <Ionicons name="cart-outline" size={26} color="#000" />
           {cartCount > 0 && (
             <View style={styles.cartBadge}>
@@ -92,10 +141,9 @@ export default function SearchSc({ route, navigation }) {
         </TouchableOpacity>
       </View>
 
-      {/* Số lượng sản phẩm và các nút filter/sort */}
       <View style={styles.topBar}>
         <Text style={styles.resultCount}>
-          {searchResults?.total ? `${searchResults.total} Sản phẩm` : "0 Sản phẩm"}
+          {sortedProducts.length} Sản phẩm
         </Text>
         <View style={styles.actionBtns}>
           <TouchableOpacity style={styles.actionBtn} onPress={handleSort}>
@@ -109,17 +157,49 @@ export default function SearchSc({ route, navigation }) {
         </View>
       </View>
 
-      {/* Loading/Error/Empty */}
+      {sortVisible && (
+        <View style={styles.sortBox}>
+          <TouchableOpacity onPress={() => handleSortType('none')} style={styles.sortItem}>
+            <Text>Mặc định</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => handleSortType('priceAsc')} style={styles.sortItem}>
+            <Text>Giá tăng dần</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => handleSortType('priceDesc')} style={styles.sortItem}>
+            <Text>Giá giảm dần</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => handleSortType('nameAZ')} style={styles.sortItem}>
+            <Text>Tên (A–Z)</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {filterVisible && (
+        <View style={styles.sortBox}>
+          <TouchableOpacity onPress={() => { setPriceFilter('under100'); setFilterVisible(false); }} style={styles.sortItem}>
+            <Text>Giá dưới 100.000đ</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => { setPriceFilter('between100_500'); setFilterVisible(false); }} style={styles.sortItem}>
+            <Text>Từ 100.000đ đến 500.000đ</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => { setPriceFilter('above500'); setFilterVisible(false); }} style={styles.sortItem}>
+            <Text>Trên 500.000đ</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => { setPriceFilter(null); setFilterVisible(false); }} style={styles.sortItem}>
+            <Text>Hủy lọc</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
       {searchLoading && <ActivityIndicator size="large" color="#2979FF" style={{ marginTop: 20 }} />}
       {searchError && <Text style={{ color: "red", marginTop: 20 }}>{searchError}</Text>}
-      {!searchLoading && searchResults && searchResults.length === 0 && (
+      {!searchLoading && sortedProducts?.length === 0 && (
         <Text style={{ marginTop: 20, color: '#888', textAlign: 'center' }}>Không tìm thấy sản phẩm phù hợp.</Text>
       )}
 
-      {/* Danh sách sản phẩm */}
       <FlatList
-        data={searchResults?.products || []}
-        keyExtractor={(item) => item._id || item.id}
+        data={sortedProducts}
+        keyExtractor={(item, index) => item._id || item.id || index.toString()}
         renderItem={({ item }) => (
           <ProductCard product={item} navigation={navigation}  onPress={handleProductPress}/>
         )}
@@ -185,5 +265,20 @@ const styles = StyleSheet.create({
     marginLeft: 4,
     color: '#2979FF',
     fontWeight: '500',
+  },
+  sortBox: {
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    marginHorizontal: 16,
+    paddingVertical: 8,
+    marginBottom: 8,
+    zIndex: 10,
+    elevation: 3,
+  },
+  sortItem: {
+    paddingVertical: 10,
+    paddingHorizontal: 16,
   },
 });
