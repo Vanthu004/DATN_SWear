@@ -519,4 +519,3 @@ export const getShippingMethods = async () => {
 };
 
 export default api;
-
