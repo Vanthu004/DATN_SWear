@@ -1,6 +1,8 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import axios from 'axios';
-const API_BASE_URL = 'http://192.168.52.106:3000/api'; //
+
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import axios from "axios";
+const API_BASE_URL = "http://192.168.1.7:3000/api"; //
+
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -456,6 +458,44 @@ export const deleteOrderDetail = async (orderDetailId) => {
     return response.data;
   } catch (error) {
     console.error("Delete order detail error:", error);
+    throw error;
+  }
+};
+export const createAddress = async (addressData) => {
+  try {
+    const response = await api.post("/addresses", addressData);
+    return response.data;
+  } catch (error) {
+    console.error("Error creating address:", error);
+    throw error;
+  }
+};
+// Không cần truyền userId vì đã lấy từ token
+export const getAddressList = async () => {
+  try {
+    const response = await api.get(`/addresses`);
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching address list:", error);
+    throw error;
+  }
+};
+
+export const updateAddress = async (id, addressData) => {
+  try {
+    const response = await api.put(`/addresses/${id}`, addressData);
+    return response.data;
+  } catch (error) {
+    console.error("Error updating address:", error);
+    throw error;
+  }
+};
+export const deleteAddress = async (id) => {
+  try {
+    const response = await api.delete(`/addresses/${id}`);
+    return response.data;
+  } catch (error) {
+    console.error("Error deleting address:", error);
     throw error;
   }
 };

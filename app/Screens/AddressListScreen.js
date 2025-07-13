@@ -1,6 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
+  ActivityIndicator,
+  Alert,
   FlatList,
   StyleSheet,
   Text,
@@ -8,22 +10,52 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { deleteAddress, getAddressList } from "../utils/api"; // Đường dẫn tùy dự án của bạn
 
 const AddressListScreen = ({ navigation }) => {
-  const addresses = [
-    {
-      id: "1",
-      name: "Nhà riêng",
-      address: "123 Đường ABC, Quận XYZ, TP.HCM",
-      phone: "0123456789",
-    },
-    {
-      id: "2",
-      name: "Công ty",
-      address: "456 Đường DEF, Quận UVW, TP.HCM",
-      phone: "0987654321",
-    },
-  ];
+  const [addresses, setAddresses] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const handleDelete = (id) => {
+    Alert.alert(
+      "Xác nhận",
+      "Bạn có chắc chắn muốn xóa địa chỉ này?",
+      [
+        { text: "Hủy", style: "cancel" },
+        {
+          text: "Xóa",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await deleteAddress(id);
+              fetchAddresses(); // Cập nhật danh sách
+            } catch (error) {
+              console.error("Lỗi khi xóa địa chỉ:", error);
+              Alert.alert("Lỗi", "Không thể xóa địa chỉ.");
+            }
+          },
+        },
+      ],
+      { cancelable: true }
+    );
+  };
+
+
+  const fetchAddresses = async () => {
+    try {
+      const data = await getAddressList();
+      setAddresses(data);
+    } catch (error) {
+      console.error("Lỗi khi lấy địa chỉ:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const unsubscribe = navigation.addListener("focus", fetchAddresses);
+    return unsubscribe;
+  }, [navigation]);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -41,23 +73,50 @@ const AddressListScreen = ({ navigation }) => {
         <Text style={styles.headerTitle}>Địa chỉ</Text>
       </View>
 
-      <FlatList
-        data={addresses}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <View style={styles.addressCard}>
-            <View style={styles.addressInfo}>
-              <Text style={styles.addressName}>{item.name}</Text>
-              <Text style={styles.addressText}>{item.address}</Text>
-              <Text style={styles.phoneText}>{item.phone}</Text>
+      {loading ? (
+        <ActivityIndicator size="large" color="#007AFF" style={{ marginTop: 30 }} />
+      ) : (
+        <FlatList
+          data={addresses}
+          keyExtractor={(item) => item._id}
+          renderItem={({ item }) => (
+
+            // Hiển thị địa chỉ
+
+            <View style={styles.addressCard}>
+              <View style={styles.addressInfo}>
+                <Text style={styles.addressName}>{item.name}</Text>
+                <Text style={styles.addressText}>
+                  {item.street}, {item.ward}, {item.district}, {item.province}
+                </Text>
+                <Text style={styles.phoneText}>{item.phone}</Text>
+                {item.is_default && (
+                  <Text style={{ color: "green", marginTop: 4 }}>(Mặc định)</Text>
+                )}
+              </View>
+
+              <View style={styles.actionButtons}>
+                <TouchableOpacity
+                  style={styles.editButton}
+                  onPress={() => navigation.navigate("AddAddress", { address: item })}
+                >
+                  <Ionicons name="pencil" size={20} color="#007AFF" />
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.deleteButton}
+                  onPress={() => handleDelete(item._id)}
+                >
+                  <Ionicons name="trash" size={20} color="#FF3B30" />
+                </TouchableOpacity>
+              </View>
             </View>
-            <TouchableOpacity style={styles.editButton}>
-              <Ionicons name="pencil" size={20} color="#007AFF" />
-            </TouchableOpacity>
-          </View>
-        )}
-        contentContainerStyle={styles.listContainer}
-      />
+
+
+          )}
+          contentContainerStyle={styles.listContainer}
+        />
+      )}
 
       <TouchableOpacity
         style={styles.addButton}
@@ -135,6 +194,14 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
   },
+  actionButtons: {
+  flexDirection: "row",
+  alignItems: "center",
+},
+deleteButton: {
+  padding: 10,
+},
+
 });
 
 export default AddressListScreen;
