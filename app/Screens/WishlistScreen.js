@@ -1,16 +1,16 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
-    Dimensions,
-    FlatList,
-    Image,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View
+  ActivityIndicator,
+  Alert,
+  Dimensions,
+  FlatList,
+  Image,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import { getFavoritesByUser, removeFavorite } from '../utils/api';
@@ -21,102 +21,92 @@ export default function WishlistScreen() {
   const navigation = useNavigation();
   const { userInfo } = useAuth();
   const userId = userInfo?._id;
+
   const [favorites, setFavorites] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchFavorites = async () => {
-      if (!userId) return;
-      try {
-        const data = await getFavoritesByUser(userId);
-        setFavorites(data);
-      } catch (err) {
-        console.error("❌ Lỗi khi lấy favorite:", err.message);
-        Alert.alert("Lỗi", "Không thể tải dữ liệu yêu thích");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchFavorites();
-  }, [userId]);
-
-  // Refresh danh sách yêu thích mỗi khi màn hình được focus
   useFocusEffect(
-    React.useCallback(() => {
-      if (userId) {
-        const fetchFavorites = async () => {
-          try {
-            const data = await getFavoritesByUser(userId);
-            setFavorites(data);
-          } catch (err) {
-            console.error("❌ Lỗi khi refresh favorite:", err.message);
-          }
-        };
-        fetchFavorites();
-      }
+    useCallback(() => {
+      const fetchFavorites = async () => {
+        if (!userId) {
+          setFavorites([]);
+          setLoading(false);
+          return;
+        }
+        setLoading(true);
+        try {
+          const res = await getFavoritesByUser(userId);
+          setFavorites(res.data || []);
+        } catch (err) {
+          console.error("❌ Lỗi khi lấy favorite:", err.message || err);
+          Alert.alert("Lỗi", "Không thể tải dữ liệu yêu thích");
+        } finally {
+          setLoading(false);
+        }
+      };
+      fetchFavorites();
     }, [userId])
   );
 
-  const handleRemoveFavorite = async (productId) => {
-    if (!userId) return;
-    try {
-      await removeFavorite(userId, productId);
-      // Sau khi xóa, cập nhật lại danh sách
-      const updatedFavorites = favorites.filter((item) => {
-        // Kiểm tra item.product_id có tồn tại và có _id không
-        if (!item.product_id || !item.product_id._id) {
-          return false; // Loại bỏ items không hợp lệ
-        }
-        return item.product_id._id !== productId;
-      });
-      setFavorites(updatedFavorites);
-    } catch (err) {
-      console.error("❌ Lỗi khi xóa sản phẩm yêu thích:", err.message);
-      Alert.alert("Lỗi", "Không thể xóa sản phẩm khỏi danh sách yêu thích");
-    }
+  const handleRemoveFavorite = (productId) => {
+    Alert.alert(
+      "Xác nhận",
+      "Bạn có chắc muốn xoá sản phẩm khỏi yêu thích?",
+      [
+        { text: "Huỷ", style: "cancel" },
+        {
+          text: "Xoá",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await removeFavorite(userId, productId);
+              // Cập nhật lại danh sách favorites
+              setFavorites((prev) =>
+                prev.filter((item) => item.product_id._id !== productId)
+              );
+            } catch (err) {
+              console.error("❌ Lỗi khi xóa sản phẩm yêu thích:", err.message || err);
+              Alert.alert("Lỗi", "Không thể xóa sản phẩm khỏi danh sách yêu thích");
+            }
+          },
+        },
+      ]
+    );
   };
 
   const renderItem = ({ item }) => {
     const product = item.product_id;
     if (!product) return null;
 
+    // Chuẩn bị dữ liệu images cho màn chi tiết sản phẩm
+    const productData = {
+      ...product,
+      images:
+        product.images && product.images.length > 0
+          ? product.images
+          : product.image_url
+          ? [product.image_url]
+          : [],
+    };
+
     return (
-      <TouchableOpacity style={styles.card} onPress={() => {
-        // Đảm bảo luôn có images là mảng
-        const productData = {
-          ...product,
-          images: product.images && product.images.length > 0
-            ? product.images
-            : product.image_url
-              ? [product.image_url]
-              : [],
-        };
-        navigation.navigate('ProductDetail', { product: productData });
-      }}>
+      <TouchableOpacity
+        style={styles.card}
+        onPress={() => navigation.navigate('ProductDetail', { product: productData })}
+      >
         <Image source={{ uri: product.image_url }} style={styles.image} />
-        <TouchableOpacity style={styles.heartIcon}
+        <TouchableOpacity
+          style={styles.heartIcon}
           onPress={(e) => {
             e.stopPropagation && e.stopPropagation();
-            Alert.alert(
-              "Xác nhận",
-              "Bạn có chắc muốn xoá sản phẩm khỏi yêu thích?",
-              [
-                { text: "Huỷ", style: "cancel" },
-                {
-                  text: "Xoá",
-                  onPress: () => handleRemoveFavorite(product._id),
-                  style: "destructive",
-                },
-              ]
-            );
+            handleRemoveFavorite(product._id);
           }}
         >
           <Ionicons name="heart" size={20} color="#1e90ff" />
         </TouchableOpacity>
         <Text style={styles.name}>{product.name}</Text>
         <Text style={styles.price}>
-          {product.price.toLocaleString('vi-VN')} ₫
+          {product.price?.toLocaleString('vi-VN')} ₫
         </Text>
       </TouchableOpacity>
     );
@@ -135,9 +125,7 @@ export default function WishlistScreen() {
       <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
         <Ionicons name="chevron-back" size={24} />
       </TouchableOpacity>
-      <Text style={styles.title}>
-        Sản phẩm Yêu thích ({favorites.length})
-      </Text>
+      <Text style={styles.title}>Sản phẩm Yêu thích ({favorites.length})</Text>
       <FlatList
         data={favorites}
         numColumns={2}
@@ -145,6 +133,11 @@ export default function WishlistScreen() {
         renderItem={renderItem}
         contentContainerStyle={styles.list}
         columnWrapperStyle={{ justifyContent: 'space-between' }}
+        ListEmptyComponent={
+          <View style={styles.center}>
+            <Text>Chưa có sản phẩm yêu thích nào.</Text>
+          </View>
+        }
       />
     </View>
   );
