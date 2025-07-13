@@ -23,7 +23,7 @@ import {
 } from "../reudx/homeSlice";
 import { addFavorite, getCategoriesById, getFavoritesByUser, removeFavorite } from "../utils/api";
 
-const bannerImg = require("../../assets/sp1.png");
+const bannerImg = require("../../assets/images/bannerClose.jpg");
 const defaultAvatar = require("../../assets/images/default-avatar.png");
 const HOTCATEGORY_TYPE_ID = '6864066dc14992d3a8d28826';
 const POPULAR_SPORTS_TYPE_ID = '686406c0c14992d3a8d2882a'
@@ -91,6 +91,8 @@ export default function HomeScreen() {
       }
     } catch (err) {}
   };
+
+
  
 // state và gọi api cho danh mục hot
   useEffect(() => {
@@ -105,7 +107,7 @@ export default function HomeScreen() {
       .catch(() => setDailyEssentialsCategories([]));
   }, []);
 
-  // Hiển thị 5 danh mục đầu tiên
+  // Hiển thị số danh mục đầu tiên
   const displayedCategories = categories.slice(0, 100);
 // hiển thị danh mục hot
   const HotCategoryList = ({ categories }) => (

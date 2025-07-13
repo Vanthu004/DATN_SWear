@@ -8,16 +8,19 @@ export const fetchCategories = createAsyncThunk('home/fetchCategories', async ()
 
 export const fetchBestSellers = createAsyncThunk('home/fetchBestSellers', async () => {
   const res = await api.get('/products/best-sellers');
+  console.log('fetchBestSellers response:', res.data);
   return res.data.data;
 });
 
 export const fetchNewest = createAsyncThunk('home/fetchNewest', async () => {
   const res = await api.get('/products/newest');
+  console.log('fetchNewest response:', res.data);
   return res.data.data;
 });
 
 export const fetchPopular = createAsyncThunk('home/fetchPopular', async () => {
   const res = await api.get('/products/popular');
+  console.log('fetchPopular response:', res.data);
   return res.data.data;
 });
 

@@ -1,21 +1,21 @@
 import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect, useState } from "react";
 import {
-    ActivityIndicator,
-    FlatList,
-    SafeAreaView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View
+  ActivityIndicator,
+  FlatList,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
 } from "react-native";
 import { useDispatch, useSelector } from "react-redux";
 import ProductCard from "../components/ProductCard";
 import { useCart } from "../hooks/useCart";
 import {
-    clearSearchResults,
-    searchProducts
+  clearSearchResults,
+  searchProducts
 } from "../reudx/homeSlice";
 // ... import và các hook như cũ ...
 
@@ -43,7 +43,19 @@ export default function SearchSc({ route, navigation }) {
       dispatch(searchProducts(input.trim()));
     }
   };
-
+  const handleProductPress = (product) => {
+    const productData = {
+      ...product,
+      images: product.images && product.images.length > 0
+        ? product.images
+        : product.image_url
+          ? [product.image_url]
+          : product.image
+            ? [product.image]
+            : [],
+    };
+    navigation.navigate('ProductDetail', { product: productData });
+  };
   // Dummy filter/sort handlers
   const handleSort = () => setSortVisible(!sortVisible);
   const handleFilter = () => setFilterVisible(!filterVisible);
@@ -109,7 +121,7 @@ export default function SearchSc({ route, navigation }) {
         data={searchResults?.products || []}
         keyExtractor={(item) => item._id || item.id}
         renderItem={({ item }) => (
-          <ProductCard product={item} navigation={navigation} />
+          <ProductCard product={item} navigation={navigation}  onPress={handleProductPress}/>
         )}
         numColumns={2}
         contentContainerStyle={{ padding: 12 }}

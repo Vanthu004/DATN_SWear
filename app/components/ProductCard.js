@@ -1,14 +1,15 @@
 import { Ionicons } from "@expo/vector-icons";
 import React, { useRef } from "react";
 import {
-  Animated,
-  Image,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    Animated,
+    Image,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import { useCart } from '../hooks/useCart';
+import api from '../utils/api';
 
 export default function ProductCard({
   product,
@@ -44,12 +45,51 @@ export default function ProductCard({
     await addToCart(product, 1);
   };
 
-  // Lấy ảnh sản phẩm
-  const imageSource = product.image_url
-    ? { uri: product.image_url }
-    : product.image
-    ? { uri: product.image }
-    : require("../../assets/images/box-icon.png");
+  const handleProductPress = async () => {
+    try {
+      console.log('ProductCard - Original product data:', product);
+      console.log('ProductCard - Has description:', !!product.description);
+      console.log('ProductCard - Has rating:', !!product.rating);
+      console.log('ProductCard - Has stock:', product.stock !== undefined);
+      console.log('ProductCard - Has reviews:', !!product.reviews);
+      
+      // Fetch chi tiết sản phẩm nếu chưa có đầy đủ thông tin
+      if (!product.description || !product.rating || product.stock === undefined) {
+        console.log('ProductCard - Fetching detailed product data...');
+        const response = await api.get(`/products/${product._id}`);
+        const detailedProduct = response.data;
+        console.log('ProductCard - Detailed product data:', detailedProduct);
+        console.log('ProductCard - Detailed description:', detailedProduct.description);
+        console.log('ProductCard - Detailed rating:', detailedProduct.rating);
+        console.log('ProductCard - Detailed stock:', detailedProduct.stock);
+        console.log('ProductCard - Detailed reviews:', detailedProduct.reviews);
+        navigation.navigate("ProductDetail", { product: detailedProduct });
+      } else {
+        console.log('ProductCard - Using existing product data');
+        navigation.navigate("ProductDetail", { product });
+      }
+    } catch (error) {
+      console.error('Error fetching product details:', error);
+      // Fallback to original product data
+      navigation.navigate("ProductDetail", { product });
+    }
+  };
+
+  // Lấy ảnh sản phẩm với fallback tốt hơn
+  const getImageSource = () => {
+    if (product.image_url) {
+      return { uri: product.image_url };
+    }
+    if (product.image) {
+      return { uri: product.image };
+    }
+    if (product.images && product.images.length > 0) {
+      return { uri: product.images[0] };
+    }
+    return require("../../assets/images/box-icon.png");
+  };
+
+  const imageSource = getImageSource();
 
   // Giá và tên
   const price = product.price || "";
@@ -63,11 +103,7 @@ export default function ProductCard({
     <Animated.View style={[styles.card, fixedHeight && styles.fixedCard, { transform: [{ scale: scaleAnim }] }]}>  
       <TouchableOpacity
         activeOpacity={0.8}
-        onPress={onPress ? () => onPress(product) : () =>
-          navigation &&
-          navigation.navigate &&
-          navigation.navigate("ProductDetail", { product })
-        }
+        onPress={onPress ? () => onPress(product) : handleProductPress}
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
         style={{ flex: 1 }}

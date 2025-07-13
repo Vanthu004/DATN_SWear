@@ -36,6 +36,13 @@ export default function ProductDetailScreen({ route, navigation }) {
     const { addToCart, cartCount, isInCart } = useCart();
     const { userInfo } = useAuth();
 
+    // Debug logging để kiểm tra dữ liệu
+    console.log('ProductDetailScreen - Product data:', product);
+    console.log('ProductDetailScreen - Description:', product.description);
+    console.log('ProductDetailScreen - Rating:', product.rating);
+    console.log('ProductDetailScreen - Stock:', product.stock);
+    console.log('ProductDetailScreen - Reviews:', product.reviews);
+
     const handleAddToCart = async () => {
         if (!userInfo) {
             Alert.alert("Lỗi", "Vui lòng đăng nhập để thêm sản phẩm vào giỏ hàng");
@@ -80,14 +87,22 @@ export default function ProductDetailScreen({ route, navigation }) {
             <ScrollView contentContainerStyle={{ padding: 16 }} showsVerticalScrollIndicator={false}>
                 {/* Ảnh sản phẩm */}
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
-                    {(product.images || [product.image_url]).map((img, idx) => (
+                    {(product.images || [product.image_url] || [product.image]).filter(Boolean).length > 0 ? (
+                        (product.images || [product.image_url] || [product.image]).filter(Boolean).map((img, idx) => (
+                            <Image
+                                key={idx}
+                                source={{ uri: img }}
+                                style={[styles.image, { width: Dimensions.get('window').width - 32 }]}
+                                resizeMode="cover"
+                            />
+                        ))
+                    ) : (
                         <Image
-                            key={idx}
-                            source={{ uri: img }}
+                            source={require("../../assets/images/box-icon.png")}
                             style={[styles.image, { width: Dimensions.get('window').width - 32 }]}
-                            resizeMode="cover"
+                            resizeMode="contain"
                         />
-                    ))}
+                    )}
                 </ScrollView>
                 {/* Tên, giá, danh mục */}
                 <Text style={styles.title}>{product.name}</Text>
@@ -131,9 +146,10 @@ export default function ProductDetailScreen({ route, navigation }) {
                     </>
                 )}
                 {/* Số lượng còn lại */}
-                {product.stock !== undefined && (
-                    <Text style={styles.stock}>Còn lại: {product.stock} sản phẩm</Text>
-                )}
+                <Text style={styles.label}>Số lượng tồn kho</Text>
+                <Text style={styles.stock}>
+                    Còn lại: {product.stock !== undefined ? product.stock : 'Nhiều'} sản phẩm
+                </Text>
                 {/* Số lượng chọn */}
                 <Text style={styles.label}>Số lượng</Text>
                 <View style={styles.quantityContainer}>
@@ -152,28 +168,38 @@ export default function ProductDetailScreen({ route, navigation }) {
                     </TouchableOpacity>
                 </View>
                 {/* Mô tả */}
-                <Text style={styles.label}>Mô tả sản phẩm </Text>
-                {product.description && (
-                    <Text style={styles.description}>{product.description}</Text>
-                )}
+                <Text style={styles.label}>Mô tả sản phẩm</Text>
+                <Text style={styles.description}>
+                    {product.description || 'Chưa có mô tả chi tiết cho sản phẩm này.'}
+                </Text>
                 {/* Đánh giá */}
-                <Text style={styles.label}>Đánh giá</Text>
+                <Text style={styles.label}>Đánh giá sản phẩm</Text>
                 <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
                     {renderStars(product.rating || 5)}
-                    <Text style={{ marginLeft: 8, color: '#888' }}>{product.rating || 5} điểm ({product.rating_count || 0} đánh giá)</Text>
+                    <Text style={{ marginLeft: 8, color: '#888' }}>
+                        {product.rating || 5} điểm ({product.rating_count || product.ratingCount || 0} đánh giá)
+                    </Text>
                 </View>
                 {/* Danh sách đánh giá (nếu có) */}
-                {product.reviews && product.reviews.length > 0 && (
+                {product.reviews && product.reviews.length > 0 ? (
                     <View style={{ marginTop: 8 }}>
+                        <Text style={styles.label}>Đánh giá từ khách hàng</Text>
                         {product.reviews.slice(0, 3).map((review, idx) => (
                             <View key={idx} style={{ marginBottom: 8, padding: 8, backgroundColor: '#f9f9f9', borderRadius: 8 }}>
                                 <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
                                     {renderStars(review.rating)}
-                                    <Text style={{ marginLeft: 8, fontWeight: '500' }}>{review.user_name}</Text>
+                                    <Text style={{ marginLeft: 8, fontWeight: '500' }}>{review.user_name || 'Khách hàng'}</Text>
                                 </View>
                                 <Text style={{ color: '#666', fontSize: 14 }}>{review.comment}</Text>
                             </View>
                         ))}
+                    </View>
+                ) : (
+                    <View style={{ marginTop: 8 }}>
+                        <Text style={styles.label}>Đánh giá từ khách hàng</Text>
+                        <Text style={{ color: '#888', fontSize: 14, fontStyle: 'italic' }}>
+                            Chưa có đánh giá nào cho sản phẩm này.
+                        </Text>
                     </View>
                 )}
             </ScrollView>
