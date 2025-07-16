@@ -53,8 +53,8 @@ export const useOrder = () => {
         user_id: USER_ID,
         total_price: orderData.total,
         // Sử dụng ObjectId hợp lệ hoặc tạo temporary ID
-        shippingmethod_id: "507f1f77bcf86cd799439011", // Temporary ObjectId
-        paymentmethod_id: "507f1f77bcf86cd799439012", // Temporary ObjectId
+        shippingmethod_id: orderData.shippingMethodId, // Temporary ObjectId
+        paymentmethod_id: orderData.paymentMethodId, // Temporary ObjectId
         shipping_address: orderData.shippingAddress,
         note: orderData.note || "",
         orderDetails: orderDetails,
