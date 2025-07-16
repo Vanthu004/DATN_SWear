@@ -499,5 +499,22 @@ export const deleteAddress = async (id) => {
     throw error;
   }
 };
+export const getPublicVouchers = async () => {
+  const res = await api.get("/vouchers/");
+  return res.data;
+};
 
+export const getUserVouchers = async (userId) => {
+  const res = await api.get(`/vouchers?userId=${userId}`);
+  return res.data;
+};
+export const getPaymentMethods = async () => {
+  const res = await api.get("/payment-methods");
+  return res.data;
+};
+
+export const getShippingMethods = async () => {
+  const res = await api.get("/shipping-method");
+  return res.data;
+};
 export default api;
