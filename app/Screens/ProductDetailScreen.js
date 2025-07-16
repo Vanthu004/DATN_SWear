@@ -1,15 +1,15 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useState } from 'react';
 import {
-    Alert,
-    Dimensions,
-    Image,
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Alert,
+  Dimensions,
+  Image,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import api from '../utils/api';
@@ -89,11 +89,11 @@ export default function ProductDetailScreen({ route, navigation }) {
     setLoadingAddCart(true);
 
     try {
-      const cartRes = await api.get(`/carts/user/${userInfo._id}`);
+      const cartRes = await api.get(`/cart/user/${userInfo._id}`);
       let cart = cartRes.data;
 
       if (!cart?._id) {
-        const createCartRes = await api.post('/carts', { user_id: userInfo._id });
+        const createCartRes = await api.post('/cart', { user_id: userInfo._id });
         cart = createCartRes.data;
         console.log('🛒 Giỏ hàng mới đã được tạo:', cart);
       }

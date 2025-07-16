@@ -129,11 +129,11 @@ try {
   console.log("🔐 ID người dùng:", userId);
 
   // Gọi API lấy giỏ hàng theo user_id
-  const cartRes = await api.get(`/carts/user/${userId}`);
+  const cartRes = await api.get(`/cart/user/${userId}`);
 
   if (!cartRes.data || !cartRes.data._id) {
     console.log("🆕 User chưa có giỏ hàng, tạo mới...");
-    const createCartRes = await api.post("/carts", { user_id: userId });
+    const createCartRes = await api.post("/cart", { user_id: userId });
     console.log("🛒 Đã tạo giỏ hàng mới:", createCartRes.data);
   } else {
     console.log("✅ Giỏ hàng đã tồn tại:", cartRes.data);
@@ -142,7 +142,7 @@ try {
   if (cartError?.response?.status === 404) {
     // Nếu backend trả về 404 (User chưa có cart) => Tạo mới
     try {
-      const createCartRes = await api.post("/carts", { user_id: user._id || user.id });
+      const createCartRes = await api.post("/cart", { user_id: user._id || user.id });
       console.log("🛒 Đã tạo giỏ hàng mới sau lỗi 404:", createCartRes.data);
     } catch (createErr) {
       console.log("❌ Lỗi khi tạo mới giỏ hàng sau 404:", createErr?.response?.data || createErr.message);
@@ -169,11 +169,11 @@ try {
   console.log("🔐 ID người dùng:", userId);
 
   // Gọi API lấy giỏ hàng theo user_id
-  const cartRes = await api.get(`/carts/user/${userId}`);
+  const cartRes = await api.get(`/cart/user/${userId}`);
 
   if (!cartRes.data || !cartRes.data._id) {
     console.log("🆕 User chưa có giỏ hàng, tạo mới...");
-    const createCartRes = await api.post("/carts", { user_id: userId });
+    const createCartRes = await api.post("/cart", { user_id: userId });
     console.log("🛒 Đã tạo giỏ hàng mới:", createCartRes.data);
   } else {
     console.log("✅ Giỏ hàng đã tồn tại:", cartRes.data);
@@ -182,7 +182,7 @@ try {
   if (cartError?.response?.status === 404) {
     // Nếu backend trả về 404 (User chưa có cart) => Tạo mới
     try {
-      const createCartRes = await api.post("/carts", { user_id: user._id || user.id });
+      const createCartRes = await api.post("/cart", { user_id: user._id || user.id });
       console.log("🛒 Đã tạo giỏ hàng mới sau lỗi 404:", createCartRes.data);
     } catch (createErr) {
       console.log("❌ Lỗi khi tạo mới giỏ hàng sau 404:", createErr?.response?.data || createErr.message);
