@@ -7,6 +7,7 @@ import {
   FlatList,
   Image,
   Modal,
+  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
@@ -14,14 +15,9 @@ import {
 } from "react-native";
 import { useCart } from "../hooks/useCart";
 
-const COLORS = ["XANH DENIM", "ĐEN", "XÁM"];
-const SIZES = ["L", "M", "S", "XL"];
-
 function CartItem({ item, checked, onCheck, onRemove, onUpdate }) {
   const [showQtyModal, setShowQtyModal] = useState(false);
   const [newQty, setNewQty] = useState(item.quantity);
-
-  console.log("Cart item:", item);
 
   return (
     <View
@@ -59,7 +55,7 @@ function CartItem({ item, checked, onCheck, onRemove, onUpdate }) {
           {item.product?.name || "Sản phẩm không xác định"}
         </Text>
         <Text style={{ fontWeight: "bold", color: "#222", marginVertical: 2 }}>
-          {item.price_at_time?.toLocaleString() || "0"} đ
+          {(item.price_at_time || 0).toLocaleString()} đ
         </Text>
         {/* Số lượng */}
         <View
@@ -150,8 +146,7 @@ function CartItem({ item, checked, onCheck, onRemove, onUpdate }) {
 
 const CartScreen = () => {
   const navigation = useNavigation();
-  const { cartItems, loading, updateQuantity, removeFromCart, getTotal } =
-    useCart();
+  const { cartItems, loading, updateQuantity, removeFromCart } = useCart();
 
   // State lưu trạng thái checked cho từng item
   const [checkedItems, setCheckedItems] = useState({}); // { [item._id]: true/false }
@@ -200,7 +195,6 @@ const CartScreen = () => {
   if (cartItems.length === 0) {
     return (
       <View style={styles.container}>
-        {/* Header */}
         <View style={styles.customHeader}>
           <TouchableOpacity
             style={styles.backBtn}
@@ -213,7 +207,6 @@ const CartScreen = () => {
           <Text style={styles.headerTitle}>Giỏ hàng</Text>
         </View>
 
-        {/* Empty state */}
         <View style={styles.emptyContainer}>
           <Image
             source={require("../../assets/images/empty-box.png")}
@@ -236,7 +229,6 @@ const CartScreen = () => {
 
   return (
     <View style={styles.container}>
-      {/* Header */}
       <View style={styles.customHeader}>
         <TouchableOpacity
           style={styles.backBtn}
@@ -249,7 +241,6 @@ const CartScreen = () => {
         <Text style={styles.headerTitle}>Giỏ hàng ({cartItems.length})</Text>
       </View>
 
-      {/* List sản phẩm */}
       <FlatList
         data={cartItems}
         keyExtractor={(item) => item._id}
@@ -264,7 +255,6 @@ const CartScreen = () => {
         )}
       />
 
-      {/* Tổng */}
       <View style={styles.summary}>
         <View style={styles.summaryRow}>
           <Text style={styles.label}>Tạm tính</Text>
@@ -284,16 +274,20 @@ const CartScreen = () => {
         </View>
       </View>
 
-      {/* Nút thanh toán */}
       <TouchableOpacity
         style={[
           styles.checkoutButton,
-          Object.keys(checkedItems).length === 0 && styles.checkoutButtonDisabled
+          Object.keys(checkedItems).length === 0 && styles.checkoutButtonDisabled,
         ]}
         onPress={() => {
-          const selectedItems = cartItems.filter((item) => checkedItems[item._id]);
+          const selectedItems = cartItems.filter(
+            (item) => checkedItems[item._id]
+          );
           if (selectedItems.length === 0) {
-            Alert.alert("Thông báo", "Vui lòng chọn ít nhất một sản phẩm để thanh toán");
+            Alert.alert(
+              "Thông báo",
+              "Vui lòng chọn ít nhất một sản phẩm để thanh toán"
+            );
             return;
           }
           navigation.navigate("Checkout", {
@@ -313,10 +307,6 @@ const CartScreen = () => {
     </View>
   );
 };
-
-export default CartScreen;
-
-import { StyleSheet } from "react-native";
 
 const styles = StyleSheet.create({
   container: {
@@ -389,61 +379,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "500",
   },
-  productList: {
-    marginTop: 20,
-  },
-  item: {
-    flexDirection: "row",
-    backgroundColor: "#F9F9F9",
-    borderRadius: 10,
-    padding: 10,
-    marginBottom: 15,
-    alignItems: "center",
-  },
-  image: {
-    width: 60,
-    height: 60,
-    borderRadius: 8,
-    marginRight: 10,
-  },
-  itemInfo: {
-    flex: 1,
-    justifyContent: "center",
-  },
-  itemName: {
-    fontSize: 14,
-    fontWeight: "500",
-    color: "#000",
-  },
-  price: {
-    marginTop: 4,
-    fontWeight: "600",
-    color: "#222",
-  },
-  label: {
-    marginTop: 4,
-    fontSize: 13,
-    color: "#666",
-  },
-  quantityControl: {
-    flexDirection: "column",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  qtyButton: {
-    backgroundColor: "#007BFF",
-    borderRadius: 20,
-    width: 30,
-    height: 30,
-    justifyContent: "center",
-    alignItems: "center",
-    marginVertical: 2,
-  },
-  qtyText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "bold",
-  },
   summary: {
     marginTop: 10,
     paddingTop: 10,
@@ -454,6 +389,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     marginVertical: 4,
+  },
+  label: {
+    fontSize: 14,
+    color: "#666",
   },
   totalLabel: {
     fontWeight: "bold",
@@ -485,11 +424,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  removeIcon: {
-    position: "absolute",
-    top: 3,
-    right: 3,
-    zIndex: 1,
-    bottom: 3,
-  },
 });
+
+export default CartScreen;

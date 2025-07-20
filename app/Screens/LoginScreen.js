@@ -109,8 +109,9 @@ export default function LoginScreen({ navigation }) {
       };
       
       console.log('Login successful, user data from server:', userWithVerification);
-      
+
       // Thử lấy thông tin user đầy đủ từ server nếu có endpoint
+      
       try {
         const userProfileResponse = await api.get('/users/profile');
         if (userProfileResponse?.data?.user) {
@@ -120,29 +121,76 @@ export default function LoginScreen({ navigation }) {
           };
           console.log('Full user data from profile endpoint:', fullUserData);
           await login(token, fullUserData, true);
+        
+// 🛒 Bắt đầu kiểm tra và tạo giỏ hàng
+try {
+  console.log("📍 Bắt đầu kiểm tra giỏ hàng...");
+  const userId = user._id || user.id;
+  console.log("🔐 ID người dùng:", userId);
 
-          //tạo giỏ hàng đăng nhập lần đầu
-           try {
-      const userId = fullUserData._id || fullUserData.id;
-      console.log("🔐 ID người dùng:", userId);
+  // Gọi API lấy giỏ hàng theo user_id
+  const cartRes = await api.get(`/cart/user/${userId}`);
 
-      const cartRes = await api.get(`/cart/user/${userId}`);
-      if (!cartRes?.data || !cartRes?.data?._id) {
-        const createCartRes = await api.post("/cart", { user_id: userId });
-        console.log("🛒 Đã tạo giỏ hàng mới:", createCartRes.data);
-      } else {
-        console.log("✅ Giỏ hàng đã tồn tại:", cartRes.data);
-      }
-    } catch (cartError) {
-      console.log("❌ Lỗi kiểm tra hoặc tạo giỏ hàng:", cartError?.response?.data || cartError.message);
+  if (!cartRes.data || !cartRes.data._id) {
+    console.log("🆕 User chưa có giỏ hàng, tạo mới...");
+    const createCartRes = await api.post("/cart", { user_id: userId });
+    console.log("🛒 Đã tạo giỏ hàng mới:", createCartRes.data);
+  } else {
+    console.log("✅ Giỏ hàng đã tồn tại:", cartRes.data);
+  }
+} catch (cartError) {
+  if (cartError?.response?.status === 404) {
+    // Nếu backend trả về 404 (User chưa có cart) => Tạo mới
+    try {
+      const createCartRes = await api.post("/cart", { user_id: user._id || user.id });
+      console.log("🛒 Đã tạo giỏ hàng mới sau lỗi 404:", createCartRes.data);
+    } catch (createErr) {
+      console.log("❌ Lỗi khi tạo mới giỏ hàng sau 404:", createErr?.response?.data || createErr.message);
     }
+  } else {
+    console.log("❌ Lỗi kiểm tra giỏ hàng:", cartError?.response?.data || cartError.message);
+  }
+}
+
+
     
         } else {
           await login(token, userWithVerification, true);
+          
         }
       } catch (profileError) {
         console.log('Could not fetch full profile, using login response:', profileError);
         await login(token, userWithVerification, true);
+
+// 🛒 Bắt đầu kiểm tra và tạo giỏ hàng
+try {
+  console.log("📍 Bắt đầu kiểm tra giỏ hàng...");
+  const userId = user._id || user.id;
+  console.log("🔐 ID người dùng:", userId);
+
+  // Gọi API lấy giỏ hàng theo user_id
+  const cartRes = await api.get(`/cart/user/${userId}`);
+
+  if (!cartRes.data || !cartRes.data._id) {
+    console.log("🆕 User chưa có giỏ hàng, tạo mới...");
+    const createCartRes = await api.post("/cart", { user_id: userId });
+    console.log("🛒 Đã tạo giỏ hàng mới:", createCartRes.data);
+  } else {
+    console.log("✅ Giỏ hàng đã tồn tại:", cartRes.data);
+  }
+} catch (cartError) {
+  if (cartError?.response?.status === 404) {
+    // Nếu backend trả về 404 (User chưa có cart) => Tạo mới
+    try {
+      const createCartRes = await api.post("/cart", { user_id: user._id || user.id });
+      console.log("🛒 Đã tạo giỏ hàng mới sau lỗi 404:", createCartRes.data);
+    } catch (createErr) {
+      console.log("❌ Lỗi khi tạo mới giỏ hàng sau 404:", createErr?.response?.data || createErr.message);
+    }
+  } else {
+    console.log("❌ Lỗi kiểm tra giỏ hàng:", cartError?.response?.data || cartError.message);
+  }
+}
       }
       
       console.log('Login successful, user data saved with email_verified: true');
