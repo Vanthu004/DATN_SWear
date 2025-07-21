@@ -133,7 +133,7 @@ function OrderStack() {
       <Stack.Screen
         name="OrderHistory"
         component={OrderHistoryScreen}
-        options={{ title: "Đơn hàng" }}
+        options={{  headerShown: false  }}
       />
       <Stack.Screen
         name="OrderStatus"
@@ -196,7 +196,7 @@ function ProfileStack() {
       <Stack.Screen
         name="OrderHistory"
         component={OrderHistoryScreen}
-        options={{ title: "Đơn hàng" }}
+        options={{  headerShown: false  }}
       />
       <Stack.Screen
         name="OrderStatus"
