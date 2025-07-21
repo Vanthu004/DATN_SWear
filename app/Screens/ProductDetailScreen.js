@@ -98,8 +98,7 @@ export default function ProductDetailScreen({ route, navigation }) {
         console.log('🛒 Giỏ hàng mới đã được tạo:', cart);
       }
 
-      const addItemRes = await api.post('/cart-items', {
-        cart_id: cart._id,
+      const addItemRes = await api.post('/cart-items', {cart_id: cart._id,
         product_id: product._id,
         quantity,
         size,
@@ -125,7 +124,8 @@ export default function ProductDetailScreen({ route, navigation }) {
       : product.image_url
       ? [product.image_url]
       : [];
-
+  console.log("🔍 images:", product.images);
+  console.log("🔍 image_url:", product.image_url);
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
@@ -174,8 +174,7 @@ export default function ProductDetailScreen({ route, navigation }) {
               {product.sizes.map((item) => (
                 <TouchableOpacity
                   key={item}
-                  onPress={() => setSize(item)}
-                  style={[styles.variantBtn, size === item && styles.variantBtnActive]}
+                  onPress={() => setSize(item)}style={[styles.variantBtn, size === item && styles.variantBtnActive]}
                 >
                   <Text style={size === item && { color: '#3b82f6', fontWeight: 'bold' }}>
                     {item}
@@ -256,9 +255,7 @@ export default function ProductDetailScreen({ route, navigation }) {
         ) : (
           <Text style={{ color: '#aaa', fontStyle: 'italic' }}>Chưa có đánh giá nào</Text>
         )}
-      </ScrollView>
-
-      {/* Footer */}
+      </ScrollView>{/* Footer */}
       <View style={styles.footer}>
         <Text style={styles.footerPrice}>{product.price?.toLocaleString('vi-VN')} VND</Text>
         <TouchableOpacity
