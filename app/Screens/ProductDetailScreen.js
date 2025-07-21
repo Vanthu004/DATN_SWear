@@ -116,8 +116,7 @@ export default function ProductDetailScreen({ route, navigation }) {
         console.log('🛒 Giỏ hàng mới đã được tạo:', cart);
       }
 
-      const addItemRes = await api.post('/cart-items', {
-        cart_id: cart._id,
+      const addItemRes = await api.post('/cart-items', {cart_id: cart._id,
         product_id: product._id,
         quantity,
         size,
@@ -138,11 +137,21 @@ export default function ProductDetailScreen({ route, navigation }) {
 
   // Lấy mảng url ảnh, ưu tiên lấy từ images nếu có, fallback dùng image_url
   const imageUrls =
+<<<<<<< HEAD
     fullProduct.images && fullProduct.images.length > 0
       ? fullProduct.images.map(img => img.url)
       : [fullProduct.image_url];
 console.log("🧪 product:", product);
 console.log("🧪 images:", product.images);
+=======
+    product.images && product.images.length > 0
+      ? product.images.map((img) => img.url)
+      : product.image_url
+      ? [product.image_url]
+      : [];
+  console.log("🔍 images:", product.images);
+  console.log("🔍 image_url:", product.image_url);
+>>>>>>> 18f2aa4ffc3a08e555f549b2b3e79d8202cbf14a
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
@@ -190,8 +199,7 @@ console.log("🧪 images:", product.images);
               {product.sizes.map((item) => (
                 <TouchableOpacity
                   key={item}
-                  onPress={() => setSize(item)}
-                  style={[styles.variantBtn, size === item && styles.variantBtnActive]}
+                  onPress={() => setSize(item)}style={[styles.variantBtn, size === item && styles.variantBtnActive]}
                 >
                   <Text style={size === item && { color: '#3b82f6', fontWeight: 'bold' }}>
                     {item}
@@ -272,9 +280,7 @@ console.log("🧪 images:", product.images);
         ) : (
           <Text style={{ color: '#aaa', fontStyle: 'italic' }}>Chưa có đánh giá nào</Text>
         )}
-      </ScrollView>
-
-      {/* Footer */}
+      </ScrollView>{/* Footer */}
       <View style={styles.footer}>
         <Text style={styles.footerPrice}>{product.price?.toLocaleString('vi-VN')} VND</Text>
         <TouchableOpacity
