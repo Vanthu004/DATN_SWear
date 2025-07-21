@@ -118,12 +118,14 @@ export default function ProductDetailScreen({ route, navigation }) {
   if (!product) return <Text>Không có dữ liệu sản phẩm</Text>;
 
   // Lấy mảng url ảnh, ưu tiên lấy từ images nếu có, fallback dùng image_url
-  const imageUrls =
-    product.images && product.images.length > 0
-      ? product.images.map((img) => img.url)
-      : product.image_url
-      ? [product.image_url]
-      : [];
+const imageUrls =
+  Array.isArray(product.images) && product.images.length > 0
+    ? product.images // Vì mảng này đã là URL string
+    : product.image_url
+    ? [product.image_url]
+    : [];
+
+console.log("🖼️ Final imageUrls:", imageUrls);
   console.log("🔍 images:", product.images);
   console.log("🔍 image_url:", product.image_url);
   return (
