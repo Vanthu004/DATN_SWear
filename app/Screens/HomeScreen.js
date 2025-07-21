@@ -204,10 +204,15 @@ const DaylyCategoryList = ({ categories }) => (
     <SafeAreaView style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.navigate("ProfileScreen")}
-            style={styles.avatarWrap}
-          >
+<View style={styles.header}>
+  <TouchableOpacity
+    onPress={() =>
+      navigation.navigate("Profile", {
+        screen: "ProfileScreen",
+      })
+    }
+    style={styles.avatarWrap}
+  >
             <Image
               source={userInfo?.avata_url ? { uri: userInfo.avata_url } : defaultAvatar}
               style={styles.avatar}
