@@ -36,6 +36,24 @@ export default function ProductDetailScreen({ route, navigation }) {
   const [color, setColor] = useState(product?.colors?.[0] || 'black');
   const [quantity, setQuantity] = useState(1);
   const [loadingAddCart, setLoadingAddCart] = useState(false);
+  const [fullProduct, setFullProduct] = useState(product);
+
+    useEffect(() => {
+    const fetchProductDetail = async () => {
+      try {
+        const res = await api.get(`/products/${product._id}`);
+        setFullProduct(res.data);
+      } catch (error) {
+        console.error('❌ Lỗi lấy sản phẩm:', error.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (product?._id) {
+      fetchProductDetail();
+    }
+  }, [product]);
 
   useEffect(() => {
     const checkIsFavorite = async () => {
@@ -120,12 +138,11 @@ export default function ProductDetailScreen({ route, navigation }) {
 
   // Lấy mảng url ảnh, ưu tiên lấy từ images nếu có, fallback dùng image_url
   const imageUrls =
-    product.images && product.images.length > 0
-      ? product.images.map((img) => img.url)
-      : product.image_url
-      ? [product.image_url]
-      : [];
-
+    fullProduct.images && fullProduct.images.length > 0
+      ? fullProduct.images.map(img => img.url)
+      : [fullProduct.image_url];
+console.log("🧪 product:", product);
+console.log("🧪 images:", product.images);
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
@@ -147,17 +164,16 @@ export default function ProductDetailScreen({ route, navigation }) {
       </View>
 
       <ScrollView contentContainerStyle={{ padding: 16 }} showsVerticalScrollIndicator={false}>
-        {/* Carousel ảnh */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
-          {imageUrls.map((uri, idx) => (
-            <Image
-              key={idx}
-              source={{ uri }}
-              style={[styles.image, { width: Dimensions.get('window').width - 32 }]}
-              resizeMode="cover"
-            />
-          ))}
-        </ScrollView>
+<ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
+  {imageUrls.map((uri, idx) => (
+    <Image
+      key={idx}
+      source={{ uri }}
+      style={[styles.image, { width: Dimensions.get('window').width - 32, height: 220 }]}
+      resizeMode="cover"
+    />
+  ))}
+</ScrollView>
 
         {/* Tên, giá, danh mục */}
         <Text style={styles.title}>{product.name}</Text>
