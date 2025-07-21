@@ -1,12 +1,12 @@
+//app/Screens/HelpScreen.js
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 import {
-    Alert,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -15,21 +15,12 @@ const HelpScreen = ({ navigation }) => {
     {
       id: 1,
       title: "Điều khoản sử dụng",
-      onPress: () => navigation.navigate("Terms"),
+      onPress: () => navigation.navigate("TermsScreen"),
     },
     {
       id: 2,
       title: "Chính sách người dùng",
-      onPress: () => navigation.navigate("PrivacyPolicy"),
-    },
-    {
-      id: 3,
-      title: "Khóa tài khoản",
-      onPress: () =>
-        Alert.alert("Xác nhận", "Bạn có chắc muốn khóa tài khoản?", [
-          { text: "Hủy", style: "cancel" },
-          { text: "Khóa", onPress: () => {/* gọi API hoặc xử lý khóa */} },
-        ]),
+      onPress: () => navigation.navigate("PolicyScreen"),
     },
   ];
 

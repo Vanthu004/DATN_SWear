@@ -13,7 +13,6 @@ import CartScreen from "../Screens/CartScreen";
 import CategoryScreen from "../Screens/CategoryScreen";
 import ChangePasswordScreen from "../Screens/ChangePasswordScreen";
 import CheckoutScreen from "../Screens/CheckoutScreen";
-import DeactivateScreen from "../Screens/DeactivateScreen";
 import EditProfileScreen from "../Screens/EditProfileScreen";
 import HelpScreen from "../Screens/HelpScreen";
 import HomeScreen from "../Screens/HomeScreen";
@@ -239,12 +238,6 @@ function ProfileStack() {
         component={PolicyScreen}
         options={{ title: "Chính sách người dùng" }}
       />
-      <Stack.Screen
-        name="DeactivateScreen"
-        component={DeactivateScreen}
-        options={{ title: "Khóa tài khoản" }}
-      />
-
     </Stack.Navigator>
   );
 }
