@@ -13,8 +13,8 @@ import {
 export const useCart = () => {
   const [cartItems, setCartItems] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [cartCount, setCartCount] = useState(0);
   const [cartId, setCartId] = useState(null);
+
   const { userInfo } = useAuth();
   const USER_ID = userInfo?._id || userInfo?.id;
 
@@ -26,7 +26,6 @@ export const useCart = () => {
       setLoading(true);
       console.log("🧪 Gọi API cart của user:", USER_ID);
 
-      // 1. Lấy Cart theo user_id
       let cart;
       try {
         cart = await getCartByUser(USER_ID);
@@ -36,7 +35,6 @@ export const useCart = () => {
         if (err.response?.status === 404) {
           console.log("❌ User chưa có cart, sẽ tạo mới khi cần");
           setCartItems([]);
-          setCartCount(0);
           setCartId(null);
           return;
         }
@@ -46,16 +44,13 @@ export const useCart = () => {
       if (!cart) {
         console.log("❌ Không tìm thấy cart cho user");
         setCartItems([]);
-        setCartCount(0);
         setCartId(null);
         return;
       }
 
-      // 2. Lấy CartItem theo cart_id
       const items = await getCartItemsByCart(cart._id);
       console.log("CartItem:", items);
 
-      // 3. Xử lý cart items
       const processedItems = items.map((item) => ({
         ...item,
         product: {
@@ -67,11 +62,9 @@ export const useCart = () => {
       }));
 
       setCartItems(processedItems);
-      setCartCount(processedItems.length);
     } catch (err) {
       console.error("❌ Lỗi fetch cart:", err);
       setCartItems([]);
-      setCartCount(0);
       setCartId(null);
     } finally {
       setLoading(false);
@@ -94,7 +87,6 @@ export const useCart = () => {
       setLoading(true);
       console.log("🛒 Thêm sản phẩm vào giỏ hàng:", product.name);
 
-      // 1. Lấy hoặc tạo cart cho user
       let cart;
       if (!cartId) {
         try {
@@ -102,7 +94,6 @@ export const useCart = () => {
           setCartId(cart._id);
         } catch (err) {
           if (err.response?.status === 404) {
-            // Nếu không có cart, tạo mới
             console.log("🆕 Tạo cart mới cho user");
             cart = await createCart(USER_ID);
             setCartId(cart._id);
@@ -114,7 +105,6 @@ export const useCart = () => {
         cart = { _id: cartId };
       }
 
-      // 2. Thêm item vào cart
       const cartItemData = {
         cart_id: cart._id,
         product_id: product._id,
@@ -124,7 +114,6 @@ export const useCart = () => {
       const newItem = await addCartItem(cartItemData);
       console.log("✅ Đã thêm sản phẩm vào giỏ hàng:", newItem);
 
-      // 3. Thêm sản phẩm vào local state ngay lập tức
       const processedItem = {
         ...newItem,
         product: {
@@ -136,7 +125,6 @@ export const useCart = () => {
       };
 
       setCartItems((prev) => [...prev, processedItem]);
-      setCartCount((prev) => prev + 1);
 
       Alert.alert("Thành công", "Đã thêm sản phẩm vào giỏ hàng");
       return true;
@@ -156,7 +144,6 @@ export const useCart = () => {
     try {
       const updatedItem = await updateCartItemQuantity(itemId, newQuantity);
 
-      // Cập nhật local state
       setCartItems((prev) => {
         const updated = [...prev];
         const index = updated.findIndex((item) => item._id === itemId);
@@ -172,18 +159,23 @@ export const useCart = () => {
   };
 
   // Xóa sản phẩm khỏi giỏ hàng
-  const removeFromCart = async (itemId) => {
-    try {
-      await deleteCartItem(itemId);
-      setCartItems((prev) => prev.filter((item) => item._id !== itemId));
-      setCartCount((prev) => prev - 1);
-    } catch (err) {
-      console.error("❌ Lỗi xoá sản phẩm:", err);
-      Alert.alert("Lỗi", "Không thể xoá sản phẩm khỏi giỏ hàng");
-    }
-  };
+const removeFromCart = async (itemId) => {
+  try {
+    await deleteCartItem(itemId);
+    
+    // Cập nhật local
+    setCartItems((prev) => prev.filter((item) => item._id !== itemId));
+    
+    // 👉 Load lại toàn bộ cart để đồng bộ hóa
+    await fetchCartData();
+    
+  } catch (err) {
+    console.error("❌ Lỗi xoá sản phẩm:", err);
+    Alert.alert("Lỗi", "Không thể xoá sản phẩm khỏi giỏ hàng");
+  }
+};
 
-  // Tính tổng tiền
+
   const getTotal = () => {
     return cartItems.reduce(
       (sum, item) => sum + (item.product?.price || 0) * item.quantity,
@@ -191,7 +183,6 @@ export const useCart = () => {
     );
   };
 
-  // Kiểm tra sản phẩm đã có trong giỏ hàng chưa
   const isInCart = (productId) => {
     return cartItems.some((item) => item.product_id === productId);
   };
@@ -202,7 +193,7 @@ export const useCart = () => {
 
   return {
     cartItems,
-    cartCount,
+    cartCount: cartItems.length,
     cartId,
     loading,
     addToCart,
