@@ -1,4 +1,3 @@
-// Screens/WriteReviewScreen.js
 import { Ionicons } from "@expo/vector-icons";
 import React, { useState } from "react";
 import {
@@ -9,69 +8,65 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { useAuth } from "../context/AuthContext";
+import api from "../utils/api";
 
-export default function WriteReviewScreen({ navigation }) {
+export default function WriteReviewScreen({ navigation, route }) {
+  const { userInfo } = useAuth();
+  const { productId } = route.params;
+
   const [rating, setRating] = useState(0);
-  const [reviewText, setReviewText] = useState("");
-
-  const user_id = "60d5f8c8b1f9c70b3c4d8f8e";
-  const product_id = "60d5f8c8b1f9c70b3c4d8f8f";
+  const [comment, setComment] = useState("");
 
   const handleSubmit = async () => {
-    if (rating === 0 || reviewText.trim() === "") {
-      Alert.alert("Lỗi", "Vui lòng chọn số sao và nhập nội dung đánh giá.");
+    if (rating === 0 || comment.trim() === "") {
+      Alert.alert("Lỗi", "Vui lòng nhập đầy đủ đánh giá và điểm số");
       return;
     }
 
     try {
-      const res = await fetch("http://192.168.1.5:3000/api/reviews", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          user_id,
-          product_id,
-          rating,
-          comment: reviewText,
-        }),
+      const res = await api.post("/reviews", {
+        user_id: userInfo._id,
+        product_id: productId,
+        rating,
+        comment,
       });
 
-      if (!res.ok) throw new Error("Gửi đánh giá thất bại");
-
-      Alert.alert("Thành công", "Đánh giá của bạn đã được gửi!");
+      Alert.alert("Thành công", "Đánh giá đã được gửi");
       navigation.goBack();
     } catch (err) {
-      Alert.alert("Lỗi", err.message);
+      console.error("Lỗi gửi đánh giá:", err);
+      Alert.alert("Lỗi", "Không thể gửi đánh giá");
     }
   };
 
+  const renderStars = () => (
+    <View style={{ flexDirection: "row", marginBottom: 16 }}>
+      {[1, 2, 3, 4, 5].map((value) => (
+        <TouchableOpacity key={value} onPress={() => setRating(value)}>
+          <Ionicons
+            name={value <= rating ? "star" : "star-outline"}
+            size={30}
+            color="#FFD700"
+          />
+        </TouchableOpacity>
+      ))}
+    </View>
+  );
+
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>What is your rate?</Text>
-      <View style={styles.starContainer}>
-        {[1, 2, 3, 4, 5].map((i) => (
-          <TouchableOpacity key={i} onPress={() => setRating(i)}>
-            <Ionicons
-              name={i <= rating ? "star" : "star-outline"}
-              size={32}
-              color="#FFD700"
-            />
-          </TouchableOpacity>
-        ))}
-      </View>
-
-      <Text style={styles.label}>
-        Please share your opinion about the product
-      </Text>
+      <Text style={styles.title}>Viết đánh giá</Text>
+      {renderStars()}
       <TextInput
+        style={styles.input}
         multiline
-        placeholder="Your review"
-        value={reviewText}
-        onChangeText={setReviewText}
-        style={styles.textInput}
+        placeholder="Nhập đánh giá của bạn..."
+        value={comment}
+        onChangeText={setComment}
       />
-
-      <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
-        <Text style={styles.submitText}>SEND REVIEW</Text>
+      <TouchableOpacity style={styles.button} onPress={handleSubmit}>
+        <Text style={styles.buttonText}>Gửi đánh giá</Text>
       </TouchableOpacity>
     </View>
   );
@@ -79,23 +74,21 @@ export default function WriteReviewScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   container: { padding: 16, backgroundColor: "#fff", flex: 1 },
-  title: { fontSize: 18, fontWeight: "600", marginBottom: 16 },
-  starContainer: { flexDirection: "row", marginBottom: 20 },
-  label: { fontSize: 14, marginBottom: 6 },
-  textInput: {
+  title: { fontSize: 22, fontWeight: "bold", marginBottom: 20 },
+  input: {
+    height: 120,
+    borderColor: "#ccc",
     borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 10,
+    borderRadius: 8,
     padding: 12,
-    height: 100,
     textAlignVertical: "top",
     marginBottom: 20,
   },
-  submitButton: {
+  button: {
     backgroundColor: "red",
-    padding: 16,
+    padding: 14,
     borderRadius: 30,
     alignItems: "center",
   },
-  submitText: { color: "#fff", fontWeight: "bold", fontSize: 16 },
+  buttonText: { color: "#fff", fontWeight: "bold", fontSize: 16 },
 });

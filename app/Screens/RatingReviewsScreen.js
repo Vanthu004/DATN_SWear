@@ -1,7 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useFocusEffect } from "@react-navigation/native";
-import React, { useCallback, useState } from "react";
-
+import React, { useEffect } from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -11,34 +9,18 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { useReview } from "../hooks/useReview";
 
 export default function RatingReviewsScreen({ navigation }) {
-  const [reviews, setReviews] = useState([]);
-  const [loading, setLoading] = useState(true);
-
   const product_id = "60d5f8c8b1f9c70b3c4d8f8f";
+  const { reviews, loading, refreshReviews } = useReview(product_id);
 
-useFocusEffect(
-  useCallback(() => {
-    const fetchReviews = async () => {
-      try {
-        setLoading(true);
-        const res = await fetch(
-          `http://192.168.1.5:3000/api/reviews?product_id=${product_id}`
-        );
-        const data = await res.json();
-        setReviews(data);
-      } catch (err) {
-        console.error("Error loading reviews:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchReviews();
-  }, [])
-);
-
+  useEffect(() => {
+    const unsubscribe = navigation.addListener("focus", () => {
+      refreshReviews();
+    });
+    return unsubscribe;
+  }, [navigation]);
 
   const renderStars = (count) => (
     <View style={{ flexDirection: "row", marginVertical: 4 }}>
@@ -72,7 +54,10 @@ useFocusEffect(
     <View style={styles.reviewCard}>
       <Image
         source={{
-          uri: review.user_id?.avatar || "https://randomuser.me/api/portraits/lego/1.jpg",
+          uri:
+            review.user_id?.avata_url && review.user_id.avata_url !== ""
+              ? review.user_id.avata_url
+              : "https://randomuser.me/api/portraits/lego/1.jpg",
         }}
         style={styles.avatar}
       />
@@ -97,9 +82,7 @@ useFocusEffect(
 
       <View style={styles.overview}>
         <Text style={styles.avgScore}>{avgRating}</Text>
-        <View style={styles.starsRow}>
-          {renderStars(Math.round(avgRating))}
-        </View>
+        <View style={styles.starsRow}>{renderStars(Math.round(avgRating))}</View>
         <Text style={styles.totalReviews}>{totalReviews} ratings</Text>
       </View>
 
@@ -139,7 +122,7 @@ useFocusEffect(
 
       <TouchableOpacity
         style={styles.button}
-        onPress={() => navigation.navigate("WriteReview")}
+        onPress={() => navigation.navigate("WriteReview", { productId: product_id })}
       >
         <Text style={styles.buttonText}>Write a review</Text>
       </TouchableOpacity>
@@ -150,12 +133,10 @@ useFocusEffect(
 const styles = StyleSheet.create({
   container: { padding: 16, backgroundColor: "#fff", flex: 1 },
   title: { fontSize: 24, fontWeight: "700", marginBottom: 16 },
-
   overview: { alignItems: "center", marginBottom: 20 },
   avgScore: { fontSize: 36, fontWeight: "bold" },
   starsRow: { flexDirection: "row", marginTop: 6 },
   totalReviews: { color: "#777", fontSize: 14 },
-
   ratingRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -175,7 +156,6 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   countLabel: { width: 30, textAlign: "right" },
-
   reviewHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -184,7 +164,6 @@ const styles = StyleSheet.create({
   },
   reviewCount: { fontSize: 16, fontWeight: "600" },
   photoFilter: { fontSize: 14, color: "#666" },
-
   reviewCard: {
     backgroundColor: "#f8f8f8",
     borderRadius: 10,
@@ -202,7 +181,6 @@ const styles = StyleSheet.create({
   },
   date: { fontSize: 12, color: "#888" },
   comment: { marginTop: 6, fontSize: 14, color: "#333" },
-
   button: {
     backgroundColor: "red",
     padding: 14,

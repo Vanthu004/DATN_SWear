@@ -137,21 +137,12 @@ export default function ProductDetailScreen({ route, navigation }) {
 
   // Lấy mảng url ảnh, ưu tiên lấy từ images nếu có, fallback dùng image_url
   const imageUrls =
-<<<<<<< HEAD
     fullProduct.images && fullProduct.images.length > 0
       ? fullProduct.images.map(img => img.url)
       : [fullProduct.image_url];
-console.log("🧪 product:", product);
-console.log("🧪 images:", product.images);
-=======
-    product.images && product.images.length > 0
-      ? product.images.map((img) => img.url)
-      : product.image_url
-      ? [product.image_url]
-      : [];
+
   console.log("🔍 images:", product.images);
   console.log("🔍 image_url:", product.image_url);
->>>>>>> 18f2aa4ffc3a08e555f549b2b3e79d8202cbf14a
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
