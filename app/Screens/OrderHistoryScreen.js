@@ -168,12 +168,19 @@ export default function OrderHistoryScreen() {
           )}
           {getTabKeyFromStatus(item.status) === "delivered" && (
             <>
-              <TouchableOpacity 
-                style={styles.refundBtn}
-                onPress={() => {/* Handle refund request */}}
-              >
-                <Text style={styles.refundBtnText}>Yêu cầu hoàn tiền</Text>
-              </TouchableOpacity>
+             <TouchableOpacity 
+  style={styles.refundBtn}
+  onPress={() => {
+    navigation.navigate("RefundRequest", {
+      orderId: item._id,
+      orderCode: item.order_code,
+      orderDetails: item.orderDetails,
+    });
+  }}
+>
+  <Text style={styles.refundBtnText}>Yêu cầu hoàn tiền</Text>
+</TouchableOpacity>
+
               <TouchableOpacity 
   style={styles.reviewBtn}
   onPress={() => navigation.navigate("WriteReview", {

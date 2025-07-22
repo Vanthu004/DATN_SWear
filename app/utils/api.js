@@ -518,5 +518,28 @@ export const getShippingMethods = async () => {
   const res = await api.get("/shipping-method");
   return res.data;
 };
+export const requestRefund = async (orderId, reason) => {
+  try {
+    const userData = await AsyncStorage.getItem("user");
+    const user = JSON.parse(userData);
+    const userId = user?._id;
+
+    if (!userId) {
+      throw new Error("Không tìm thấy userId trong AsyncStorage");
+    }
+
+    const res = await api.post("/refund-requests", {
+      orderId,
+      userId,
+      reason,
+    });
+    return res.data;
+  } catch (error) {
+    console.error("Lỗi gửi yêu cầu hoàn tiền:", error);
+    throw error;
+  }
+};
+
+
 
 export default api;
