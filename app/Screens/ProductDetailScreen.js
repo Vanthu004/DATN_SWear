@@ -14,6 +14,9 @@ import {
 import { useAuth } from '../context/AuthContext';
 import api from '../utils/api';
 
+import { useReview } from "../hooks/useReview";
+
+
 const renderStars = (rating) => (
   <View style={{ flexDirection: 'row' }}>
     {Array.from({ length: 5 }).map((_, idx) => (
@@ -37,6 +40,8 @@ export default function ProductDetailScreen({ route, navigation }) {
   const [quantity, setQuantity] = useState(1);
   const [loadingAddCart, setLoadingAddCart] = useState(false);
   const [fullProduct, setFullProduct] = useState(product);
+
+  const { reviews, avgRating, addReview } = useReview(product?._id);
 
     useEffect(() => {
     const fetchProductDetail = async () => {
@@ -251,26 +256,59 @@ export default function ProductDetailScreen({ route, navigation }) {
         {product.description && <Text style={styles.description}>{product.description}</Text>}
 
         {/* Rating */}
-        <Text style={styles.label}>Đánh giá</Text>
-        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
-          {renderStars(product.rating || 5)}
-          <Text style={{ marginLeft: 8, color: '#888' }}>
-            {product.rating || 5} điểm ({product.rating_count || 0} đánh giá)
-          </Text>
-        </View>
+<Text style={styles.label}>Đánh giá</Text>
+<View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+  {renderStars(product.rating || 5)}
+  <Text style={{ marginLeft: 8, color: '#888' }}>
+   <Text>{avgRating} điểm ({reviews.length} đánh giá)</Text>
 
-        {/* Reviews */}
-        {product.reviews?.length > 0 ? (
-          product.reviews.map((review, idx) => (
-            <View key={idx} style={{ marginBottom: 10 }}>
-              <Text style={{ fontWeight: 'bold' }}>{review.name}</Text>
-              {renderStars(review.rating)}
-              <Text style={{ color: '#4b5563' }}>{review.comment}</Text>
-            </View>
-          ))
-        ) : (
-          <Text style={{ color: '#aaa', fontStyle: 'italic' }}>Chưa có đánh giá nào</Text>
-        )}
+  </Text>
+</View>
+
+{/* Reviews */}
+{reviews?.length > 0 ? (
+  reviews.map((review, idx) => (
+
+    <View
+      key={idx}
+      style={{
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        marginBottom: 16,
+        gap: 10,
+      }}
+    >
+      {/* Avatar */}
+    <Image
+  source={{ uri: review.user_id?.avata_url || 'https://cdn-icons-png.flaticon.com/512/149/149071.png' }}
+  style={{
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#eee',
+  }}
+/>
+
+
+
+
+      {/* Review content */}
+      <View style={{ flex: 1 }}>
+        <Text style={{ fontWeight: 'bold', fontSize: 14 }}>
+          {review.user_id?.name || 'Người dùng'}
+        </Text>
+        {renderStars(review.rating)}
+        <Text style={{ color: '#4b5563', marginTop: 2 }}>{review.comment}</Text>
+      </View>
+    </View>
+  ))
+) : (
+  <Text style={{ color: '#aaa', fontStyle: 'italic' }}>
+    Chưa có đánh giá nào
+  </Text>
+)}
+
+
       </ScrollView>{/* Footer */}
       <View style={styles.footer}>
         <Text style={styles.footerPrice}>{product.price?.toLocaleString('vi-VN')} VND</Text>

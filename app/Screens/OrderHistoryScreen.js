@@ -175,11 +175,16 @@ export default function OrderHistoryScreen() {
                 <Text style={styles.refundBtnText}>Yêu cầu hoàn tiền</Text>
               </TouchableOpacity>
               <TouchableOpacity 
-                style={styles.reviewBtn}
-                onPress={() => navigation.navigate("WriteReview", { orderId: item._id })}
-              >
-                <Text style={styles.reviewBtnText}>Viết đánh giá</Text>
-              </TouchableOpacity>
+  style={styles.reviewBtn}
+  onPress={() => navigation.navigate("WriteReview", {
+    orderId: item._id,
+    orderDetails: item.orderDetails,
+    orderCode: item.order_code
+  })}
+>
+  <Text style={styles.reviewBtnText}>Viết đánh giá</Text>
+</TouchableOpacity>
+
             </>
           )}
         </View>

@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import { useReview } from "../hooks/useReview";
 
+
 export default function RatingReviewsScreen({ navigation }) {
   const product_id = "60d5f8c8b1f9c70b3c4d8f8f";
   const { reviews, loading, refreshReviews } = useReview(product_id);
