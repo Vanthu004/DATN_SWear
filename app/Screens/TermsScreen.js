@@ -1,13 +1,15 @@
 // app/Screens/TermsScreen.js
 import React from "react";
-import { ScrollView, StyleSheet, Text } from "react-native";
+import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 const TermsScreen = () => {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.title}>Điều khoản sử dụng</Text>
+        <View style={styles.titleContainer}>
+          <Text style={styles.title}>Điều khoản sử dụng</Text>
+        </View>
 
         <Text style={styles.sectionTitle}>1. Giới thiệu</Text>
         <Text style={styles.paragraph}>
@@ -49,12 +51,16 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     margin: 16,
   },
+  titleContainer: {
+    width: "100%",
+    alignItems: "center",
+    marginBottom: 16,
+  },
   title: {
     fontSize: 22,
     fontWeight: "bold",
-    marginBottom: 16,
-    textAlign: "center",
     color: "#222",
+    textAlign: "center",
   },
   sectionTitle: {
     fontSize: 16,

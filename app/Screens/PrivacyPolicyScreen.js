@@ -1,44 +1,69 @@
 // app/Screens/PolicyScreen.js
-import React from "react";
-import { ScrollView, StyleSheet, Text } from "react-native";
+import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
+import React from 'react';
+import {
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
+} from 'react-native';
+
 import { SafeAreaView } from "react-native-safe-area-context";
 
 const PolicyScreen = () => {
+  const navigation = useNavigation();
   return (
     <SafeAreaView style={styles.container}>
+       <View style={styles.header}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => navigation.goBack()}
+        >
+          <Ionicons name="arrow-back" size={24} color="#000" />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Chính sách người dùng</Text>
+      </View>
+
       <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.title}>Chính sách người dùng</Text>
+        <View style={styles.titleContainer}>
+          <Text style={styles.title}>Chính sách người dùng</Text>
+        </View>
 
         <Text style={styles.sectionTitle}>1. Thu thập thông tin</Text>
         <Text style={styles.paragraph}>
-          Chúng tôi thu thập thông tin cá nhân như tên, email, địa chỉ, số điện thoại để cung cấp dịch vụ tốt hơn và hỗ trợ người dùng.
+          Chúng tôi thu thập các thông tin cần thiết để cải thiện trải nghiệm người dùng, bao gồm tên, email, địa chỉ, và thông tin thiết bị.
         </Text>
 
-        <Text style={styles.sectionTitle}>2. Sử dụng thông tin</Text>
+        <Text style={styles.sectionTitle}>2. Mục đích sử dụng</Text>
         <Text style={styles.paragraph}>
-          Thông tin người dùng được sử dụng để cải thiện trải nghiệm, xử lý đơn hàng, gửi thông báo và hỗ trợ khách hàng. Chúng tôi không chia sẻ thông tin với bên thứ ba nếu không có sự đồng ý.
+          Thông tin được sử dụng để cung cấp dịch vụ tốt hơn, cá nhân hóa nội dung và liên hệ khi cần thiết.
         </Text>
 
-        <Text style={styles.sectionTitle}>3. Bảo mật</Text>
+        <Text style={styles.sectionTitle}>3. Chia sẻ dữ liệu</Text>
         <Text style={styles.paragraph}>
-          Dữ liệu người dùng được lưu trữ an toàn trên hệ thống máy chủ bảo mật. Chúng tôi áp dụng các biện pháp bảo mật phù hợp để ngăn chặn truy cập trái phép.
+          Chúng tôi không chia sẻ thông tin người dùng cho bên thứ ba, ngoại trừ khi được sự đồng ý hoặc theo yêu cầu của pháp luật.
         </Text>
 
-        <Text style={styles.sectionTitle}>4. Quyền truy cập và chỉnh sửa</Text>
+        <Text style={styles.sectionTitle}>4. Bảo mật</Text>
         <Text style={styles.paragraph}>
-          Người dùng có quyền truy cập, chỉnh sửa hoặc xóa thông tin cá nhân bất kỳ lúc nào thông qua trang cá nhân hoặc liên hệ với bộ phận hỗ trợ.
+          Dữ liệu của bạn được lưu trữ và bảo vệ bởi các phương thức bảo mật tiên tiến. Tuy nhiên, không có hệ thống nào hoàn toàn an toàn khỏi các mối đe dọa mạng.
         </Text>
 
-        <Text style={styles.sectionTitle}>5. Thay đổi chính sách</Text>
+        <Text style={styles.sectionTitle}>5. Quyền của người dùng</Text>
         <Text style={styles.paragraph}>
-          Chúng tôi có thể cập nhật chính sách mà không cần thông báo trước. Người dùng nên kiểm tra định kỳ để nắm rõ các thay đổi mới nhất.
+          Bạn có quyền truy cập, chỉnh sửa hoặc yêu cầu xóa dữ liệu cá nhân bằng cách liên hệ với chúng tôi qua email.
         </Text>
 
-        <Text style={styles.sectionTitle}>6. Liên hệ</Text>
+        <Text style={styles.sectionTitle}>6. Cập nhật chính sách</Text>
         <Text style={styles.paragraph}>
-          Mọi thắc mắc hoặc yêu cầu liên quan đến chính sách có thể được gửi về email: support@example.com.
+          Chúng tôi có thể cập nhật chính sách này theo thời gian. Mọi thay đổi sẽ được thông báo trên ứng dụng.
         </Text>
+        <View style={{ height: 32 }} />
+
       </ScrollView>
+      
     </SafeAreaView>
   );
 };
@@ -47,6 +72,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#F4F5F7",
+     
   },
   content: {
     padding: 16,
@@ -54,12 +80,16 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     margin: 16,
   },
+  titleContainer: {
+    width: "100%",
+    alignItems: "center",
+    marginBottom: 16,
+  },
   title: {
     fontSize: 22,
     fontWeight: "bold",
-    marginBottom: 16,
-    textAlign: "center",
     color: "#222",
+    textAlign: "center",
   },
   sectionTitle: {
     fontSize: 16,
@@ -73,6 +103,27 @@ const styles = StyleSheet.create({
     color: "#444",
     lineHeight: 22,
     marginBottom: 8,
+  },
+  header: {
+    paddingTop: 20,
+    paddingHorizontal: 24,
+    paddingBottom: 5,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#f2f2f2',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 16,
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#333',
   },
 });
 
