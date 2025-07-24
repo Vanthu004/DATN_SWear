@@ -539,6 +539,16 @@ export const requestRefund = async (orderId, reason) => {
     throw error;
   }
 };
+export const getAllReviews = async () => {
+  try {
+    const response = await api.get("/reviews");
+    return response.data;
+  } catch (error) {
+    console.error("Lỗi khi lấy tất cả đánh giá:", error);
+    throw error;
+  }
+};
+
 
 
 
