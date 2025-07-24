@@ -1,15 +1,16 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
+  Animated,
+  Dimensions,
   FlatList,
   Image,
   SafeAreaView,
-  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
-  View
+  View,
 } from "react-native";
 import { useDispatch, useSelector } from "react-redux";
 import ProductCard from "../components/ProductCard";
@@ -23,11 +24,18 @@ import {
 } from "../reudx/homeSlice";
 import { addFavorite, getCategoriesById, getFavoritesByUser, removeFavorite } from "../utils/api";
 
+const { width } = Dimensions.get("window");
+
 const bannerImg = require("../../assets/sp1.png");
 const defaultAvatar = require("../../assets/images/default-avatar.png");
 const HOTCATEGORY_TYPE_ID = '6864066dc14992d3a8d28826';
 const POPULAR_SPORTS_TYPE_ID = '686406c0c14992d3a8d2882a'
 const DAILY_ESSENTIALS_TYPE_ID = '686406f6c14992d3a8d2882e'
+const BANNERS_TYPE_ID = '6880867e2472c27f4fe16fd0'
+const ShoseMoutain_TYPE_ID = '6881ef955efa939fe032afb5'
+
+
+
 export default function HomeScreen() {
   const dispatch = useDispatch();
   const navigation = useNavigation();
@@ -35,13 +43,19 @@ export default function HomeScreen() {
   const { categories, bestSellers, loading, popular, newest } = useSelector((state) => state.home);
   const { cartCount, refreshCart } = useCart();
 
-
-  
+  const scrollY = useRef(new Animated.Value(0)).current;
+  const translateY = scrollY.interpolate({
+  inputRange: [0, 50],
+  outputRange: [0, -40], // Dịch lên để nằm cùng hàng Header
+  extrapolate: "clamp",
+});
   const userId = userInfo?._id;
+  const [bannersCategories, setbannersCategories] = useState([]);
   const [favoriteIds, setFavoriteIds] = useState([]);
   const [hotCategories, setHotCategories] = useState([]);// list categorycategory
   const [popularSportsCategories, setPopularSportsCategories] = useState([]);
   const [dailyEssentialsCategories, setDailyEssentialsCategories] = useState([]);
+  const [shoseMoutainCategories, setShoseMoutainCategories] = useState([]);
   useEffect(() => {
     dispatch(fetchCategories());
     dispatch(fetchBestSellers());
@@ -107,9 +121,16 @@ export default function HomeScreen() {
     getCategoriesById(DAILY_ESSENTIALS_TYPE_ID)
       .then(data => setDailyEssentialsCategories(data))
       .catch(() => setDailyEssentialsCategories([]));
+    getCategoriesById(ShoseMoutain_TYPE_ID)
+      .then(data => setShoseMoutainCategories(data))
+      .catch(() => setShoseMoutainCategories([]));
+    // Fetch banners
+    getCategoriesById(BANNERS_TYPE_ID)
+      .then(data => setbannersCategories(data))
+      .catch(() => setbannersCategories([]));
   }, []);
 
-  // Hiển thị 5 danh mục đầu tiên
+  // Hiển thị số lượng danh mục đầu tiên
   const displayedCategories = categories.slice(0, 100);
 // hiển thị danh mục hot
   const HotCategoryList = ({ categories }) => (
@@ -177,7 +198,38 @@ export default function HomeScreen() {
 const DaylyCategoryList = ({ categories }) => (
   <View style={{ marginTop: 15, marginBottom: 24 }}>
     <Text style={{ fontWeight: 'bold', fontSize: 20, marginLeft: 16, marginBottom: 12 }}>
-      Khám phá môn thể thao hằng ngày 
+      Chinh phục mọi cự ly
+    </Text>
+    <FlatList
+      horizontal
+      data={categories}
+      keyExtractor={item => item._id}
+      contentContainerStyle={{ paddingHorizontal: 8 }}
+      renderItem={({ item }) => (
+        <TouchableOpacity
+          style={{ alignItems: 'center', marginRight: 16 }}
+          onPress={() => navigation.navigate('CategoryScreen', { category: item })}
+        >
+          <Image
+            source={item.image_url ? { uri: item.image_url } : require('../../assets/images/box-icon.png')}
+            style={{ width: 350, height: 200, }}
+          />
+  
+        </TouchableOpacity>
+      )}
+      showsHorizontalScrollIndicator={false}
+      ListEmptyComponent={loading ? (
+        <Text style={{ color: '#888', marginLeft: 16 }}>Đang tải...</Text>
+      ) : null}
+    />
+  </View>
+);
+
+// hiển thị Loại danh mục giày leo núinúi
+const ShoseMoutainCategoryList = ({ categories }) => (
+  <View style={{ marginTop: 15, marginBottom: 24 }}>
+    <Text style={{ fontWeight: 'bold', fontSize: 20, marginLeft: 16, marginBottom: 12 }}>
+      Chinh phục núi rừng
     </Text>
     <FlatList
       horizontal
@@ -206,17 +258,23 @@ const DaylyCategoryList = ({ categories }) => (
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <Animated.ScrollView showsVerticalScrollIndicator={false}
+          scrollEventThrottle={16}
+          onScroll={Animated.event(
+            [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+            { useNativeDriver: true }
+          )}
+        >
         {/* Header */}
-<View style={styles.header}>
-  <TouchableOpacity
-    onPress={() =>
-      navigation.navigate("Profile", {
-        screen: "ProfileScreen",
-      })
-    }
-    style={styles.avatarWrap}
-  >
+        <View style={styles.header}>
+          <TouchableOpacity
+            onPress={() =>
+              navigation.navigate("Profile", {
+                screen: "ProfileScreen",
+              })
+            }
+            style={styles.avatarWrap}
+          >
             <Image
               source={userInfo?.avata_url ? { uri: userInfo.avata_url } : defaultAvatar}
               style={styles.avatar}
@@ -236,6 +294,14 @@ const DaylyCategoryList = ({ categories }) => (
         </View>
 
         {/* Search Bar */}
+       <Animated.View
+        style={[
+          styles.searchBarContainer,
+          {
+            transform: [{ translateY }],
+          },
+        ]}
+      >
         <TouchableOpacity
           style={styles.searchBar}
           onPress={() => navigation.navigate("SearchSc")}
@@ -245,10 +311,30 @@ const DaylyCategoryList = ({ categories }) => (
             Tìm kiếm sản phẩm...
           </Text>
         </TouchableOpacity>
+      </Animated.View>
 
         {/* Banner */}
         <View style={styles.bannerWrap}>
-          <Image source={bannerImg} style={styles.bannerImg} />
+          {bannersCategories && bannersCategories.length > 0 ? (
+            <FlatList
+              data={bannersCategories}
+              keyExtractor={item => item._id}
+              horizontal
+              pagingEnabled
+              showsHorizontalScrollIndicator={false}
+              renderItem={({ item }) => (
+                <View style={{ width }}>
+                  <Image
+                    source={item.image_url ? { uri: item.image_url } : bannerImg}
+                    style={styles.bannerImg}
+               
+                  />
+                </View>
+              )}
+            />
+          ) : (
+            <Image source={bannerImg} style={styles.bannerImg} />
+          )}
         </View>
 
         {/* Categories */}
@@ -303,6 +389,8 @@ const DaylyCategoryList = ({ categories }) => (
         />
         {/* danh mục hot */}
         <HotCategoryList categories={hotCategories} />
+        {/* danh mục Giày chạy bộ */}
+        <DaylyCategoryList categories={dailyEssentialsCategories} />
         {/* sản phẩm phổ biến nhất */}
         <View style={styles.sectionRow}>
           <Text style={styles.sectionTitle}>Sản phẩm phổ biến nhất</Text>
@@ -327,10 +415,14 @@ const DaylyCategoryList = ({ categories }) => (
             <Text style={{ color: '#888', marginLeft: 16 }}>Đang tải...</Text>
           ) : null}
         />
+  
         {/* danh mục popular */}
         <PopularCategoryList categories={popularSportsCategories} />
         {/* danh mục daily essentials */}
-        <DaylyCategoryList categories={dailyEssentialsCategories} />
+        
+        < ShoseMoutainCategoryList categories={shoseMoutainCategories} />
+
+
         {/* sản phẩm mới nhất */}
         <View style={styles.sectionRow}>
           <Text style={styles.sectionTitle}>Sản phẩm mới nhất</Text>
@@ -355,20 +447,24 @@ const DaylyCategoryList = ({ categories }) => (
             <Text style={{ color: '#888', marginLeft: 16 }}>Đang tải...</Text>
           ) : null}
         />
-      </ScrollView>
+              <View style={{height: 50}}></View>
+      </Animated.ScrollView>
+
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1,
-    backgroundColor: "#fff" },
+    backgroundColor: "#fff" 
+
+  },
     header: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 16,
-    paddingTop: 50,
+    paddingTop: 30,
     marginBottom: 8,
   },
   avatarWrap: {

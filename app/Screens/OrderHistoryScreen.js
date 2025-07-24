@@ -2,18 +2,18 @@ import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import React, { useEffect, useRef, useState } from "react";
 import {
-  ActivityIndicator,
-  Dimensions,
-  FlatList,
-  Image,
-  Modal,
-  Pressable,
-  SafeAreaView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Dimensions,
+    FlatList,
+    Image,
+    Modal,
+    Pressable,
+    SafeAreaView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import { TabBar, TabView } from 'react-native-tab-view';
 import { useAuth } from "../context/AuthContext";
@@ -87,6 +87,14 @@ export default function OrderHistoryScreen() {
         };
       });
       const completedOrders = await Promise.all(ordersWithDetailsPromises);
+
+      // Sắp xếp theo updatedAt (nếu không có thì dùng createdAt)
+      completedOrders.sort((a, b) => {
+        const dateA = new Date(a.updatedAt || a.createdAt || 0);
+        const dateB = new Date(b.updatedAt || b.createdAt || 0);
+        return dateB - dateA; // Mới nhất lên đầu
+      });
+
       setOrdersWithDetails(completedOrders);
     } catch (error) {
       console.error("Error fetching orders:", error);

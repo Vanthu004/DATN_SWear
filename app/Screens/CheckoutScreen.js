@@ -53,6 +53,7 @@ const CheckoutScreen = () => {
 
   const [shippingMethods, setShippingMethods] = useState([]);
   const [selectedShippingMethodId, setSelectedShippingMethodId] = useState(null);
+  const [shippingFee, setShippingFee] = useState(0);
 
   const [note, setNote] = useState("");
   // Load dữ liệu khi mount
@@ -92,7 +93,10 @@ const CheckoutScreen = () => {
       // Load phương thức vận chuyển
       const shipMethods = await getShippingMethods();
       setShippingMethods(shipMethods);
-      if (shipMethods.length > 0) setSelectedShippingMethodId(shipMethods[0]._id);
+      if (shipMethods.length > 0) {
+        setSelectedShippingMethodId(shipMethods[0]._id);
+        setShippingFee(shipMethods[0].fee || 0);
+      }
     } catch (error) {
       console.error("Lỗi fetch dữ liệu:", error);
     }
@@ -113,14 +117,21 @@ const CheckoutScreen = () => {
   // Xử lý chọn shipping method
   const onShippingChange = (shippingMethodId) => {
     setSelectedShippingMethodId(shippingMethodId);
+    const method = shippingMethods.find(s => s._id === shippingMethodId);
+    setShippingFee(method?.fee || 0);
   };
 
   // Tính tổng sau giảm voucher %
   const calculateTotalAfterVoucher = () => {
-    if (!selectedVoucher || !selectedVoucher.discount_value) return total;
+    if (!selectedVoucher || !selectedVoucher.discount_value) return subtotal;
     const discountPercent = selectedVoucher.discount_value;
-    const discounted = total * (1 - discountPercent / 100);
+    const discounted = subtotal * (1 - discountPercent / 100);
     return discounted > 0 ? discounted : 0;
+  };
+
+  // Tổng cuối cùng: đã giảm voucher + phí vận chuyển
+  const calculateFinalTotal = () => {
+    return calculateTotalAfterVoucher() + (shippingFee || 0);
   };
 
   // Hàm đặt hàng (giữ nguyên như bạn yêu cầu)
@@ -136,7 +147,7 @@ const CheckoutScreen = () => {
 
     Alert.alert(
       "Xác nhận đặt hàng",
-      `Bạn có chắc muốn đặt hàng với tổng tiền ${calculateTotalAfterVoucher().toLocaleString()} VND?`,
+      `Bạn có chắc muốn đặt hàng với tổng tiền ${calculateFinalTotal().toLocaleString()} VND?`,
       [
         { text: "Hủy", style: "cancel" },
         {
@@ -164,12 +175,11 @@ const processOrder = async () => {
     console.log("🧾 ID Vận chuyển:", selectedShippingMethod?._id);
 
     const orderData = {
-      total: calculateTotalAfterVoucher(),
+      total: calculateFinalTotal(),
       shippingAddress: formatAddress(selectedAddressObj),
       paymentMethodId: selectedPaymentMethod?._id ,       // ✅ đúng kiểu
       shippingMethodId: selectedShippingMethod?._id ,     // ✅ đúng kiểu
       note,
-     
     };
 
       const result = await createOrderFromCart(checkedItems, orderData);
@@ -182,7 +192,7 @@ const processOrder = async () => {
         navigation.navigate(ROUTES.ORDER_SUCCESS, {
           orderCode: result.order.order_code,
           orderId: result.order._id,
-          total: calculateTotalAfterVoucher(),
+          total: calculateFinalTotal(),
         });
       }
     } catch (error) {
@@ -366,11 +376,7 @@ const processOrder = async () => {
           </View>
           <View style={styles.row}>
             <Text style={styles.label}>Phí vận chuyển</Text>
-            <Text style={styles.value}>{shipping.toFixed(0)} VND</Text>
-          </View>
-          <View style={styles.row}>
-            <Text style={styles.label}>Thuế</Text>
-            <Text style={styles.value}>{tax.toFixed(0)} VND</Text>
+            <Text style={styles.value}>{shippingFee.toLocaleString()} VND</Text>
           </View>
           {selectedVoucher && (
             <View style={styles.row}>
@@ -381,7 +387,7 @@ const processOrder = async () => {
           <View style={styles.row}>
             <Text style={styles.totalLabel}>Tổng</Text>
             <Text style={styles.total}>
-              {calculateTotalAfterVoucher().toLocaleString()} VND
+            {calculateFinalTotal().toLocaleString()} VND
             </Text>
           </View>
         </View>
@@ -391,7 +397,7 @@ const processOrder = async () => {
       <View style={styles.footer}>
         <View style={styles.totalBox}>
           <Text style={styles.footerTotal}>
-            {calculateTotalAfterVoucher().toLocaleString()} VND
+            {calculateFinalTotal().toLocaleString()} VND
           </Text>
         </View>
         <TouchableOpacity
