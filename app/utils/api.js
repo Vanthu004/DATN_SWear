@@ -464,7 +464,7 @@ export const deleteOrderDetail = async (orderDetailId) => {
 };
 export const createAddress = async (addressData) => {
   try {
-    const response = await api.post("/addresses", addressData);
+    const response = await api.post("addresses", addressData);
     return response.data;
   } catch (error) {
     console.error("Error creating address:", error);
@@ -515,7 +515,7 @@ export const getPaymentMethods = async () => {
 };
 
 export const getShippingMethods = async () => {
-  const res = await api.get("/shipping-method");
+  const res = await api.get("/shipping-methods");
   return res.data;
 };
 
