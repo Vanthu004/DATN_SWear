@@ -30,39 +30,63 @@ const AddAddressScreen = ({ navigation, route }) => {
 
 
   // Hàm xử lý lưu hoặc cập nhật địa chỉ
+
   const handleSave = async () => {
-    try {
-      if (!formData.name || !formData.phone || !formData.address || !formData.city || !formData.district) {
-        Alert.alert("Thiếu thông tin", "Vui lòng điền đầy đủ các trường bắt buộc.");
-        return;
-      }
+  try {
+    const errors = [];
 
-      const addressPayload = {
-        name: formData.name,
-        phone: formData.phone,
-        street: formData.address,
-        ward: formData.ward,
-        district: formData.district,
-        province: formData.city,
-        country: "Việt Nam",
-        type: formData.type,
-        is_default: formData.is_default,
-      };
+    // Kiểm tra các trường bắt buộc
+    if (!formData.name) errors.push("Họ và tên không được để trống.");
+    else if (formData.name.length < 3) errors.push("Họ và tên phải có ít nhất 3 ký tự.");
 
-      if (isEdit) {
-        await updateAddress(editAddress._id, addressPayload);
-        Alert.alert("Thành công", "Địa chỉ đã được cập nhật.");
-      } else {
-        await createAddress(addressPayload);
-        Alert.alert("Thành công", "Địa chỉ đã được lưu.");
-      }
-
-      navigation.goBack();
-    } catch (error) {
-      console.error("Lỗi khi lưu/cập nhật địa chỉ:", error);
-      Alert.alert("Lỗi", "Không thể lưu/cập nhật địa chỉ. Vui lòng thử lại.");
+    if (!formData.phone) {
+      errors.push("Số điện thoại không được để trống.");
+    } else if (!/^(0|\+84)[0-9]{9}$/.test(formData.phone)) {
+      errors.push("Số điện thoại không hợp lệ (ví dụ: 0987654321).");
     }
-  };
+
+    if (!formData.address || formData.address.length < 5) {
+      errors.push("Địa chỉ phải có ít nhất 5 ký tự.");
+    }
+
+    if (!formData.city) errors.push("Vui lòng chọn Tỉnh/Thành phố.");
+    if (!formData.district) errors.push("Vui lòng chọn Quận/Huyện.");
+
+    // Nếu có lỗi, hiển thị
+    if (errors.length > 0) {
+      Alert.alert("Lỗi nhập liệu", errors.join("\n"));
+      return;
+    }
+
+    // Tạo payload
+    const addressPayload = {
+      name: formData.name,
+      phone: formData.phone,
+      street: formData.address,
+      ward: formData.ward,
+      district: formData.district,
+      province: formData.city,
+      country: "Việt Nam",
+      type: formData.type,
+      is_default: formData.is_default,
+    };
+
+    // Gọi API
+    if (isEdit) {
+      await updateAddress(editAddress._id, addressPayload);
+      Alert.alert("Thành công", "Địa chỉ đã được cập nhật.");
+    } else {
+      await createAddress(addressPayload);
+      Alert.alert("Thành công", "Địa chỉ đã được lưu.");
+    }
+
+    navigation.goBack();
+  } catch (error) {
+    console.error("Lỗi khi lưu/cập nhật địa chỉ:", error);
+    Alert.alert("Lỗi", "Không thể lưu/cập nhật địa chỉ. Vui lòng thử lại.");
+  }
+};
+
 
   return (
     <SafeAreaView style={styles.container}>
