@@ -99,6 +99,7 @@ const CategoryScreen = ({ route, navigation }) => {
         columnWrapperStyle={styles.columnWrapperStyle}
         contentContainerStyle={styles.flatListContent}
       />
+      <View style={{height: 50}}></View>
     </View>
   );
 };

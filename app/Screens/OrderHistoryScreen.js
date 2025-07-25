@@ -2,18 +2,18 @@ import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import React, { useEffect, useRef, useState } from "react";
 import {
-    ActivityIndicator,
-    Dimensions,
-    FlatList,
-    Image,
-    Modal,
-    Pressable,
-    SafeAreaView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Dimensions,
+  FlatList,
+  Image,
+  Modal,
+  Pressable,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { TabBar, TabView } from 'react-native-tab-view';
 import { useAuth } from "../context/AuthContext";
@@ -310,6 +310,7 @@ export default function OrderHistoryScreen() {
           </View>
         </Pressable>
       </Modal>
+      <View style={{height: 50}}></View>
     </SafeAreaView>
   );
 }

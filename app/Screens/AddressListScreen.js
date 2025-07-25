@@ -124,6 +124,7 @@ const AddressListScreen = ({ navigation }) => {
       >
         <Text style={styles.addButtonText}>Thêm địa chỉ mới</Text>
       </TouchableOpacity>
+      <View style={{height: 60}}></View>
     </SafeAreaView>
   );
 };
