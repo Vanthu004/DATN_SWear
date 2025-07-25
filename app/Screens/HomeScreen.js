@@ -12,6 +12,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import Swiper from 'react-native-swiper';
 import { useDispatch, useSelector } from "react-redux";
 import ProductCard from "../components/ProductCard";
 import { useAuth } from "../context/AuthContext";
@@ -25,7 +26,6 @@ import {
 import { addFavorite, getCategoriesById, getFavoritesByUser, removeFavorite } from "../utils/api";
 
 const { width } = Dimensions.get("window");
-
 const bannerImg = require("../../assets/sp1.png");
 const defaultAvatar = require("../../assets/images/default-avatar.png");
 const HOTCATEGORY_TYPE_ID = '6864066dc14992d3a8d28826';
@@ -166,7 +166,7 @@ export default function HomeScreen() {
   // hiển thị danh mục phổ biến
   const PopularCategoryList = ({ categories }) => (
     <View style={{ marginTop: 15, marginBottom: 24 }}>
-      <Text style={{ fontWeight: 'bold', fontSize: 20, marginLeft: 16, marginBottom: 12 }}>
+      <Text style={{ fontWeight: 'bold', fontSize: 20, marginLeft: 16, marginBottom: 12,fontFamily:"serif" }}>
         Khám phá môn thể thao phổ biến
       </Text>
       <FlatList
@@ -197,7 +197,7 @@ export default function HomeScreen() {
 // hiển thị danh mục hằng ngàyngày
 const DaylyCategoryList = ({ categories }) => (
   <View style={{ marginTop: 15, marginBottom: 24 }}>
-    <Text style={{ fontWeight: 'bold', fontSize: 20, marginLeft: 16, marginBottom: 12 }}>
+    <Text style={{ fontWeight: 'bold', fontSize: 20, marginLeft: 16, marginBottom: 12, fontFamily:"serif" }}>
       Chinh phục mọi cự ly
     </Text>
     <FlatList
@@ -260,10 +260,10 @@ const ShoseMoutainCategoryList = ({ categories }) => (
     <SafeAreaView style={styles.container}>
       <Animated.ScrollView showsVerticalScrollIndicator={false}
           scrollEventThrottle={16}
-          onScroll={Animated.event(
-            [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-            { useNativeDriver: true }
-          )}
+           onScroll={Animated.event(
+          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+          { useNativeDriver: true }
+        )}
         >
         {/* Header */}
         <View style={styles.header}>
@@ -313,29 +313,30 @@ const ShoseMoutainCategoryList = ({ categories }) => (
         </TouchableOpacity>
       </Animated.View>
 
-        {/* Banner */}
-        <View style={styles.bannerWrap}>
-          {bannersCategories && bannersCategories.length > 0 ? (
-            <FlatList
-              data={bannersCategories}
-              keyExtractor={item => item._id}
-              horizontal
-              pagingEnabled
-              showsHorizontalScrollIndicator={false}
-              renderItem={({ item }) => (
-                <View style={{ width }}>
-                  <Image
-                    source={item.image_url ? { uri: item.image_url } : bannerImg}
-                    style={styles.bannerImg}
-               
-                  />
-                </View>
-              )}
-            />
-          ) : (
-            <Image source={bannerImg} style={styles.bannerImg} />
-          )}
-        </View>
+       <View style={styles.bannerWrap}>
+        {bannersCategories && bannersCategories.length > 0 ? (
+          <Swiper
+            loop
+            autoplay={true} 
+            showsPagination={false}
+            dotStyle={{ backgroundColor: '#ccc', width: 8, height: 8 }}
+            activeDotStyle={{ backgroundColor: '#000', width: 10, height: 10 }}
+            style={{ height: 160 }}
+          >
+            {bannersCategories.map((item) => (
+              <TouchableOpacity onPress={() => navigation.navigate('CategoryScreen', { category: item })} activeOpacity={0.8}>
+              <Image
+                key={item._id}
+                source={item.image_url ? { uri: item.image_url } : bannerImg}
+                style={styles.bannerImg}
+              />
+               </TouchableOpacity>
+            ))}
+          </Swiper>
+        ) : (
+          <Image source={bannerImg} style={styles.bannerImg} />
+        )}
+      </View>
 
         {/* Categories */}
         <View style={styles.categoryRow}>
@@ -514,16 +515,17 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   bannerWrap: {
-    marginHorizontal: 16,
-    borderRadius: 16,
+    marginHorizontal: 1,
+    borderRadius: 1,
     overflow: "hidden",
     marginBottom: 16,
   },
-  bannerImg: {
-    width: "100%",
-    height: 200,
-    borderRadius: 16,
-  },
+ bannerImg: {
+  width: width,
+  height: 160,
+  borderRadius: 10,
+  resizeMode: "contain",
+},
   categoryRow: {
     flexDirection: "row",
     alignItems: "center",
