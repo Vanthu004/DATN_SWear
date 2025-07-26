@@ -18,12 +18,18 @@ import { useAuth } from "../context/AuthContext";
 import { useCart } from "../hooks/useCart";
 import { useOrder } from "../hooks/useOrder";
 import {
+  applyVoucherApi,
   getAddressList,
   getPaymentMethods,
-  getPublicVouchers,
   getShippingMethods,
   getUserVouchers,
 } from "../utils/api";
+
+const formatMoney = (amount) => {
+  if (typeof amount !== "number") return "";
+  const integerPart = Math.floor(amount).toString();
+  return integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+};
 
 const CheckoutScreen = () => {
   const route = useRoute();
@@ -35,9 +41,7 @@ const CheckoutScreen = () => {
   const {
     checkedItems = [],
     subtotal = 0,
-    shipping = 0,
     tax = 0,
-    total = 0,
   } = route.params || {};
 
   // State
@@ -55,46 +59,82 @@ const CheckoutScreen = () => {
   const [selectedShippingMethodId, setSelectedShippingMethodId] = useState(null);
 
   const [note, setNote] = useState("");
+
+  // Lấy phí vận chuyển từ phương thức được chọn
+  const selectedShippingMethod = shippingMethods.find(
+    (sm) => sm._id === selectedShippingMethodId
+  );
+  const shippingFee = selectedShippingMethod ? selectedShippingMethod.fee : 0;
+
+  // Tổng tiền trước khi áp voucher
+  const totalBeforeVoucher = subtotal + shippingFee + tax;
+
   // Load dữ liệu khi mount
   useEffect(() => {
     fetchData();
   }, []);
 
   const fetchData = async () => {
+    console.log("📦 Gọi fetchData");
+
     try {
-      // Load địa chỉ
-      const addrList = await getAddressList();
-      setAddressList(addrList);
-      setSelectedAddressId(addrList.find((a) => a.is_default)?._id || addrList[0]?._id);
-
-      // Load voucher công khai + voucher user
-      const publicVouchers = await getPublicVouchers();
-      const userVouchers = userInfo?._id ? await getUserVouchers(userInfo._id) : [];
-
-      // Gộp và loại trùng voucher theo _id
-      const allVouchers = [...publicVouchers, ...userVouchers];
-      const uniqueVoucherMap = new Map();
-      allVouchers.forEach((v) => {
-        if (!uniqueVoucherMap.has(v._id)) uniqueVoucherMap.set(v._id, v);
-      });
-      const uniqueVouchers = Array.from(uniqueVoucherMap.values());
-      setVouchers(uniqueVouchers);
-      if (uniqueVouchers.length > 0) {
-        setSelectedVoucherId(uniqueVouchers[0]._id);
-        setSelectedVoucher(uniqueVouchers[0]);
+      // ======= Địa chỉ =======
+      try {
+        const addrList = await getAddressList();
+        setAddressList(addrList);
+        console.log("📍 Địa chỉ tải về:", addrList);
+        const defaultAddress = addrList.find((a) => a.is_default);
+        setSelectedAddressId(defaultAddress?._id || addrList[0]?._id);
+      } catch (err) {
+        console.error("❌ Lỗi tải địa chỉ:", err);
       }
 
-      // Load phương thức thanh toán
-      const payMethods = await getPaymentMethods();
-      setPaymentMethods(payMethods);
-      if (payMethods.length > 0) setSelectedPaymentMethodId(payMethods[0]._id);
+      // ======= Voucher =======
+      try {
+        const allVouchers = userInfo?._id ? await getUserVouchers(userInfo._id) : [];
+        console.log("🔥 User Vouchers:", allVouchers);
 
-      // Load phương thức vận chuyển
-      const shipMethods = await getShippingMethods();
-      setShippingMethods(shipMethods);
-      if (shipMethods.length > 0) setSelectedShippingMethodId(shipMethods[0]._id);
+        const uniqueVoucherMap = new Map();
+        allVouchers.forEach((v) => {
+          if (!uniqueVoucherMap.has(v._id)) uniqueVoucherMap.set(v._id, v);
+        });
+
+        const uniqueVouchers = Array.from(uniqueVoucherMap.values());
+        setVouchers(uniqueVouchers);
+
+        if (uniqueVouchers.length > 0) {
+          setSelectedVoucherId(uniqueVouchers[0]._id);
+          setSelectedVoucher(uniqueVouchers[0]);
+        }
+      } catch (err) {
+        console.error("❌ Lỗi tải voucher:", err);
+      }
+
+      // ======= Phương thức thanh toán =======
+      try {
+        const payMethods = await getPaymentMethods();
+        console.log("💳 Phương thức thanh toán:", payMethods);
+        setPaymentMethods(payMethods);
+        if (payMethods.length > 0) {
+          setSelectedPaymentMethodId(payMethods[0]._id);
+        }
+      } catch (err) {
+        console.error("❌ Lỗi tải phương thức thanh toán:", err);
+      }
+
+      // ======= Phương thức vận chuyển =======
+      try {
+        const shipMethods = await getShippingMethods();
+        console.log("🚚 Phương thức vận chuyển:", shipMethods);
+        setShippingMethods(shipMethods);
+        if (shipMethods.length > 0) {
+          setSelectedShippingMethodId(shipMethods[0]._id);
+        }
+      } catch (err) {
+        console.error("❌ Lỗi tải phương thức vận chuyển:", err);
+      }
     } catch (error) {
-      console.error("Lỗi fetch dữ liệu:", error);
+      console.error("❌ Lỗi fetch tổng thể:", error);
     }
   };
 
@@ -117,13 +157,13 @@ const CheckoutScreen = () => {
 
   // Tính tổng sau giảm voucher %
   const calculateTotalAfterVoucher = () => {
-    if (!selectedVoucher || !selectedVoucher.discount_value) return total;
+    if (!selectedVoucher || !selectedVoucher.discount_value) return totalBeforeVoucher;
     const discountPercent = selectedVoucher.discount_value;
-    const discounted = total * (1 - discountPercent / 100);
+    const discounted = totalBeforeVoucher * (1 - discountPercent / 100);
     return discounted > 0 ? discounted : 0;
   };
 
-  // Hàm đặt hàng (giữ nguyên như bạn yêu cầu)
+  // Hàm đặt hàng
   const handlePlaceOrder = async () => {
     if (checkedItems.length === 0) {
       Alert.alert("Lỗi", "Không có sản phẩm nào để đặt hàng");
@@ -136,7 +176,7 @@ const CheckoutScreen = () => {
 
     Alert.alert(
       "Xác nhận đặt hàng",
-      `Bạn có chắc muốn đặt hàng với tổng tiền ${calculateTotalAfterVoucher().toLocaleString()} VND?`,
+      `Bạn có chắc muốn đặt hàng với tổng tiền ${formatMoney(calculateTotalAfterVoucher())} VND?`,
       [
         { text: "Hủy", style: "cancel" },
         {
@@ -160,36 +200,47 @@ const processOrder = async () => {
       return `${addr.name} - ${addr.phone} - ${addr.street}, ${addr.ward ? addr.ward + ', ' : ''}${addr.district}, ${addr.province}, ${addr.country || 'Việt Nam'}`;
     };
 
-    console.log("🧾 ID Thanh toán:", selectedPaymentMethod?._id);
-    console.log("🧾 ID Vận chuyển:", selectedShippingMethod?._id);
-
     const orderData = {
       total: calculateTotalAfterVoucher(),
       shippingAddress: formatAddress(selectedAddressObj),
-      paymentMethodId: selectedPaymentMethod?._id ,       // ✅ đúng kiểu
-      shippingMethodId: selectedShippingMethod?._id ,     // ✅ đúng kiểu
+      paymentMethodId: selectedPaymentMethod?._id,
+      shippingMethodId: selectedShippingMethod?._id,
       note,
-     
+      voucherId: selectedVoucher?._id || null, // gửi voucherId nếu có
     };
 
-      const result = await createOrderFromCart(checkedItems, orderData);
+    // Tạo đơn hàng
+    const result = await createOrderFromCart(checkedItems, orderData);
 
-      if (result) {
-        for (const item of checkedItems) {
-          await removeFromCart(item._id);
+    if (result) {
+      // Nếu có voucher được chọn, gọi applyVoucher
+      if (selectedVoucher && userInfo?._id) {
+        try {
+          await applyVoucherApi(userInfo._id, selectedVoucher.voucher_id);
+          console.log("✅ Voucher đã được áp dụng thành công sau khi đặt hàng");
+        } catch (err) {
+          console.error("❌ Lỗi khi áp dụng voucher sau đặt hàng:", err);
+          // Có thể xử lý hiển thị cảnh báo hoặc bỏ qua tùy ý
         }
-
-        navigation.navigate(ROUTES.ORDER_SUCCESS, {
-          orderCode: result.order.order_code,
-          orderId: result.order._id,
-          total: calculateTotalAfterVoucher(),
-        });
       }
-    } catch (error) {
-      console.error("❌ Lỗi xử lý đơn hàng:", error);
-      Alert.alert("Lỗi", "Không thể tạo đơn hàng. Vui lòng thử lại.");
+
+      // Xóa sản phẩm đã đặt khỏi giỏ hàng
+      for (const item of checkedItems) {
+        await removeFromCart(item._id);
+      }
+
+      // Điều hướng sang màn thành công
+      navigation.navigate(ROUTES.ORDER_SUCCESS, {
+        orderCode: result.order.order_code,
+        orderId: result.order._id,
+        total: calculateTotalAfterVoucher(),
+      });
     }
-  };
+  } catch (error) {
+    console.error("❌ Lỗi xử lý đơn hàng:", error);
+    Alert.alert("Lỗi", "Không thể tạo đơn hàng. Vui lòng thử lại.");
+  }
+};
 
   return (
     <View style={styles.container}>
@@ -255,7 +306,7 @@ const processOrder = async () => {
                     Số lượng: {item.quantity}
                   </Text>
                   <Text style={{ color: "#222", fontSize: 13 }}>
-                    {(item.price_at_time || item.product?.price || 0).toLocaleString()} đ
+                    {formatMoney(item.price_at_time || item.product?.price || 0)} đ
                   </Text>
                 </View>
               </TouchableOpacity>
@@ -286,28 +337,37 @@ const processOrder = async () => {
         </View>
 
         {/* Voucher */}
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Voucher Áp dụng</Text>
-          {vouchers.length > 0 ? (
-            <Picker
-              selectedValue={selectedVoucherId}
-              onValueChange={onVoucherChange}
-              style={{ marginTop: 5 }}
-            >
-              {vouchers.map((v) => (
-                <Picker.Item
-                  key={v._id}
-                  label={`Mã: ${v.voucher_id || v.code || v._id} - Giảm ${v.discount_value || 0}% - HSD: ${new Date(
-                    v.expiry_date
-                  ).toLocaleDateString()}`}
-                  value={v._id}
-                />
-              ))}
-            </Picker>
-          ) : (
-            <Text style={{ marginTop: 5, color: "#888" }}>Không có voucher áp dụng</Text>
-          )}
-        </View>
+<View style={styles.card}>
+  <Text style={styles.cardTitle}>Voucher Áp dụng</Text>
+{vouchers.length > 0 ? (
+  <Picker
+    selectedValue={selectedVoucherId}
+    onValueChange={(val) => {
+      if (val === "none") {
+        setSelectedVoucherId(null);
+        setSelectedVoucher(null);
+      } else {
+        onVoucherChange(val);
+      }
+    }}
+    style={{ marginTop: 5 }}
+  >
+    {/* Tuỳ chọn không chọn voucher */}
+    <Picker.Item label="Không sử dụng voucher" value="none" />
+    
+    {/* Các voucher có sẵn */}
+    {vouchers.map((v) => (
+      <Picker.Item
+        key={v._id}
+        label={`Mã: ${v.voucher_id}-Giảm ${v.discount_value}%-SL: ${v.usage_limit}`}
+        value={v._id}
+      />
+    ))}
+  </Picker>
+) : (
+  <Text style={{ marginTop: 5, color: "#888" }}>Không có voucher áp dụng</Text>
+)}
+</View>
 
         {/* Phương thức thanh toán */}
         <View style={styles.card}>
@@ -347,30 +407,30 @@ const processOrder = async () => {
 
         {/* Ghi chú */}
         <View style={styles.card}>
-  <Text style={styles.cardTitle}>Ghi chú</Text>
-  <TextInput
-    style={styles.input}
-    value={note}
-    onChangeText={setNote}
-    placeholder="Nhập ghi chú (nếu có)"
-    multiline
-    numberOfLines={3}
-  />
-</View>
+          <Text style={styles.cardTitle}>Ghi chú</Text>
+          <TextInput
+            style={styles.input}
+            value={note}
+            onChangeText={setNote}
+            placeholder="Nhập ghi chú (nếu có)"
+            multiline
+            numberOfLines={3}
+          />
+        </View>
 
         {/* Tổng tiền */}
         <View style={styles.summary}>
           <View style={styles.row}>
             <Text style={styles.label}>Tạm tính</Text>
-            <Text style={styles.value}>{subtotal.toLocaleString()} VND</Text>
+            <Text style={styles.value}>{formatMoney(subtotal)} VND</Text>
           </View>
           <View style={styles.row}>
             <Text style={styles.label}>Phí vận chuyển</Text>
-            <Text style={styles.value}>{shipping.toFixed(0)} VND</Text>
+            <Text style={styles.value}>{formatMoney(shippingFee)} VND</Text>
           </View>
           <View style={styles.row}>
             <Text style={styles.label}>Thuế</Text>
-            <Text style={styles.value}>{tax.toFixed(0)} VND</Text>
+            <Text style={styles.value}>{formatMoney(tax)} VND</Text>
           </View>
           {selectedVoucher && (
             <View style={styles.row}>
@@ -381,7 +441,7 @@ const processOrder = async () => {
           <View style={styles.row}>
             <Text style={styles.totalLabel}>Tổng</Text>
             <Text style={styles.total}>
-              {calculateTotalAfterVoucher().toLocaleString()} VND
+              {formatMoney(calculateTotalAfterVoucher())} VND
             </Text>
           </View>
         </View>
@@ -391,7 +451,7 @@ const processOrder = async () => {
       <View style={styles.footer}>
         <View style={styles.totalBox}>
           <Text style={styles.footerTotal}>
-            {calculateTotalAfterVoucher().toLocaleString()} VND
+            {formatMoney(calculateTotalAfterVoucher())} VND
           </Text>
         </View>
         <TouchableOpacity
@@ -479,6 +539,14 @@ const styles = StyleSheet.create({
   },
   orderButtonDisabled: { backgroundColor: "#ccc" },
   orderText: { color: "#fff", fontSize: 16, fontWeight: "500" },
+  input: {
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 8,
+    padding: 8,
+    backgroundColor: "#fff",
+    marginTop: 5,
+  },
 });
 
 export default CheckoutScreen;

@@ -1,7 +1,7 @@
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
-const API_BASE_URL = "http://192.168.1.7:3000/api"; //
+const API_BASE_URL = "http://192.168.52.104:3000/api"; //
 
 
 const api = axios.create({
@@ -505,8 +505,8 @@ export const getPublicVouchers = async () => {
 };
 
 export const getUserVouchers = async (userId) => {
-  const res = await api.get(`/vouchers?userId=${userId}`);
-  return res.data;
+  const response = await api.get(`/vouchers/user/${userId}`);
+  return response.data;
 };
 export const getPaymentMethods = async () => {
   const res = await api.get("/payment-methods");
@@ -516,6 +516,17 @@ export const getPaymentMethods = async () => {
 export const getShippingMethods = async () => {
   const res = await api.get("/shipping-method");
   return res.data;
+};
+
+export const applyVoucherApi = async (userId, voucherId) => {
+  try {
+    // Gửi PUT request đến route có 2 params trong URL
+    const response = await api.put(`/vouchers/apply-voucher/${voucherId}/${userId}`);
+    return response.data;
+  } catch (error) {
+    console.error("Apply voucher API error:", error);
+    throw error;
+  }
 };
 
 export default api;
