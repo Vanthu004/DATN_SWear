@@ -412,6 +412,7 @@ const processOrder = async () => {
           )}
         </TouchableOpacity>
       </View>
+      <View style={{ height: 100 }} />
     </View>
   );
 };

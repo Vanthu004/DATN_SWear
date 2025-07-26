@@ -57,6 +57,7 @@ const TermsScreen = () => {
         <Text style={styles.paragraph}>
           Mọi thắc mắc xin liên hệ chúng tôi qua email: support@example.com.
         </Text>
+        <View style={{ height: 50 }} />
       </ScrollView>
     </SafeAreaView>
   );

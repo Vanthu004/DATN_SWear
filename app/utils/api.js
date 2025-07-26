@@ -461,6 +461,19 @@ export const deleteOrderDetail = async (orderDetailId) => {
     throw error;
   }
 };
+export const cancelOrder = async (orderId) => {
+  try {
+    const response = await api.put(`/orders/${orderId}/cancel`);
+    return response.data;
+  } catch (error) {
+    console.error("Cancel order error:", error);
+    throw error;
+  }
+};
+
+
+
+// Address APIs
 export const createAddress = async (addressData) => {
   try {
     const response = await api.post("addresses", addressData);
@@ -499,6 +512,8 @@ export const deleteAddress = async (id) => {
     throw error;
   }
 };
+
+// Voucher APIs
 export const getPublicVouchers = async () => {
   const res = await api.get("/vouchers/");
   return res.data;
@@ -508,6 +523,8 @@ export const getUserVouchers = async (userId) => {
   const res = await api.get(`/vouchers?userId=${userId}`);
   return res.data;
 };
+
+// Payment and Shipping Methods APIs
 export const getPaymentMethods = async () => {
   const res = await api.get("/payment-methods");
   return res.data;
