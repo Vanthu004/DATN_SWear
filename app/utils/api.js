@@ -1,8 +1,9 @@
-
+// app/utils/api.js
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
-const API_BASE_URL = "http://192.168.1.112:3000/api"; //
+import { Alert } from "react-native";
 
+const API_BASE_URL = "http://192.168.1.112:3000/api";
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -11,10 +12,9 @@ const api = axios.create({
   },
 });
 
-// Add request interceptor for logging and adding token
+// Interceptor request để thêm token vào header
 api.interceptors.request.use(
   async (config) => {
-    // Thêm token vào header nếu có
     try {
       const token = await AsyncStorage.getItem("userToken");
       if (token) {
@@ -31,6 +31,7 @@ api.interceptors.request.use(
       params: config.params,
       headers: config.headers,
     });
+
     return config;
   },
   (error) => {
@@ -39,7 +40,7 @@ api.interceptors.request.use(
   }
 );
 
-// Add response interceptor for logging
+// Interceptor response để log và xử lý lỗi
 api.interceptors.response.use(
   (response) => {
     console.log("API Response:", {
@@ -49,13 +50,30 @@ api.interceptors.response.use(
     });
     return response;
   },
-  (error) => {
+  async (error) => {
+    const status = error.response?.status;
+    const message = error.response?.data?.message || "Lỗi không xác định";
+
+    //  Nếu bị cấm (403)
+    if (status === 403 && message.includes("bị khóa")) {
+      await AsyncStorage.multiRemove(["userToken", "userInfo"]);
+      await AsyncStorage.setItem("banMessage", message);
+      Alert.alert("Tài khoản bị khóa", message);
+    }
+
+    //  Nếu token hết hạn (401)
+    if (status === 401 && message.toLowerCase().includes("jwt")) {
+      await AsyncStorage.multiRemove(["userToken", "userInfo"]);
+      Alert.alert("Hết phiên", "Vui lòng đăng nhập lại.");
+    }
+
     console.log("API Response Error:", {
-      status: error.response?.status,
+      status,
       url: error.config?.url,
       data: error.response?.data,
       message: error.message,
     });
+
     return Promise.reject(error);
   }
 );
