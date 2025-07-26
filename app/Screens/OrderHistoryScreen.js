@@ -177,28 +177,28 @@ export default function OrderHistoryScreen() {
           {getTabKeyFromStatus(item.status) === "delivered" && (
             <>
              <TouchableOpacity 
-  style={styles.refundBtn}
-  onPress={() => {
-    navigation.navigate("RefundRequest", {
-      orderId: item._id,
-      orderCode: item.order_code,
-      orderDetails: item.orderDetails,
-    });
-  }}
->
-  <Text style={styles.refundBtnText}>Yêu cầu hoàn tiền</Text>
-</TouchableOpacity>
+              style={styles.refundBtn}
+              onPress={() => {
+                navigation.navigate("RefundRequest", {
+                  orderId: item._id,
+                  orderCode: item.order_code,
+                  orderDetails: item.orderDetails,
+                });
+              }}
+            >
+              <Text style={styles.refundBtnText}>Yêu cầu hoàn tiền</Text>
+            </TouchableOpacity>
 
-              <TouchableOpacity 
-  style={styles.reviewBtn}
-  onPress={() => navigation.navigate("WriteReview", {
-    orderId: item._id,
-    orderDetails: item.orderDetails,
-    orderCode: item.order_code
-  })}
->
-  <Text style={styles.reviewBtnText}>Viết đánh giá</Text>
-</TouchableOpacity>
+                          <TouchableOpacity 
+              style={styles.reviewBtn}
+              onPress={() => navigation.navigate("WriteReview", {
+                orderId: item._id,
+                orderDetails: item.orderDetails,
+                orderCode: item.order_code
+              })}
+            >
+              <Text style={styles.reviewBtnText}>Viết đánh giá</Text>
+            </TouchableOpacity>
 
             </>
           )}
