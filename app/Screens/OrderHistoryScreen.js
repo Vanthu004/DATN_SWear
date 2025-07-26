@@ -3,6 +3,7 @@ import { useNavigation } from "@react-navigation/native";
 import React, { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Dimensions,
   FlatList,
   Image,
@@ -13,8 +14,9 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  View,
+  View
 } from "react-native";
+import Dialog from "react-native-dialog";
 import { TabBar, TabView } from 'react-native-tab-view';
 import { useAuth } from "../context/AuthContext";
 import { getOrderDetailsByOrderId, getOrdersByUser } from "../utils/api";
@@ -57,7 +59,9 @@ export default function OrderHistoryScreen() {
   const [index, setIndex] = useState(0);
   const [routes] = useState(ORDER_TABS.map(tab => ({ key: tab.key, title: tab.label })));
   const [modalVisible, setModalVisible] = useState(false);
-
+const [showCancelDialog, setShowCancelDialog] = useState(false);
+  const [cancelReason, setCancelReason] = useState("");
+  const [selectedOrderId, setSelectedOrderId] = useState(null);
   // Handler cho các lựa chọn trong modal
   const handleMenuSelect = (key) => {
     setModalVisible(false);
@@ -73,6 +77,24 @@ export default function OrderHistoryScreen() {
     }
   };
 
+  const handleCancelOrder = async () => {
+    if (!selectedOrderId || !cancelReason.trim()) {
+      Alert.alert("Lý do hủy không được để trống");
+      return;
+    }
+
+    try {
+      await cancelOrder(selectedOrderId, cancelReason.trim());
+      Alert.alert("Thành công", "Đơn hàng đã được hủy.");
+      setShowCancelDialog(false);
+      setCancelReason("");
+      setSelectedOrderId(null);
+      fetchOrdersWithDetails(); // Refresh đơn hàng
+    } catch (error) {
+      Alert.alert("Lỗi", "Không thể hủy đơn hàng.");
+    }
+  };
+  
   // Fetch orders and their details
   const fetchOrdersWithDetails = async () => {
     if (!userInfo?._id) return;
@@ -167,9 +189,12 @@ export default function OrderHistoryScreen() {
         </View>
         <View style={styles.orderActions}>
           {getTabKeyFromStatus(item.status) === "pending" && (
-            <TouchableOpacity 
+           <TouchableOpacity
               style={styles.cancelBtn}
-              onPress={() => {/* Handle cancel order */}}
+              onPress={() => {
+                setSelectedOrderId(item._id);
+                setShowCancelDialog(true);
+              }}
             >
               <Text style={styles.cancelBtnText}>Hủy đơn hàng</Text>
             </TouchableOpacity>
@@ -310,6 +335,23 @@ export default function OrderHistoryScreen() {
           </View>
         </Pressable>
       </Modal>
+      {/* Dialog hủy đơn hàng */}
+      <Dialog.Container visible={showCancelDialog}>
+        <Dialog.Title>Hủy đơn hàng</Dialog.Title>
+        <Dialog.Description>
+          Vui lòng nhập lý do hủy đơn hàng này.
+        </Dialog.Description>
+        <Dialog.Input
+          placeholder="Nhập lý do hủy..."
+          value={cancelReason}
+          onChangeText={setCancelReason}
+        />
+        <Dialog.Button
+          label="Huỷ bỏ"
+          onPress={() => setShowCancelDialog(false)}
+        />
+        <Dialog.Button label="Xác nhận hủy" onPress={handleCancelOrder} />
+      </Dialog.Container>
       <View style={{height: 50}}></View>
     </SafeAreaView>
   );
