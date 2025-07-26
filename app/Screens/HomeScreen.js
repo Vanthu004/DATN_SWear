@@ -33,7 +33,10 @@ export default function HomeScreen() {
   const navigation = useNavigation();
   const { userInfo } = useAuth();
   const { categories, bestSellers, loading, popular, newest } = useSelector((state) => state.home);
-  const { cartCount } = useCart();
+  const { cartCount, refreshCart } = useCart();
+
+
+  
   const userId = userInfo?._id;
   const [favoriteIds, setFavoriteIds] = useState([]);
   const [hotCategories, setHotCategories] = useState([]);// list categorycategory
@@ -74,6 +77,7 @@ export default function HomeScreen() {
         };
         fetchFavorites();
       }
+       refreshCart(); // ✅ Gọi đúng tên function
     }, [userId])
   );
 
