@@ -1,8 +1,10 @@
-
+// app/utils/api.js
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
-const API_BASE_URL = "http://192.168.52.104:3000/api"; //
+import { Alert } from "react-native";
 
+
+const API_BASE_URL = "http://192.168.37.5:3000/api"; //
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -11,10 +13,9 @@ const api = axios.create({
   },
 });
 
-// Add request interceptor for logging and adding token
+// Interceptor request để thêm token vào header
 api.interceptors.request.use(
   async (config) => {
-    // Thêm token vào header nếu có
     try {
       const token = await AsyncStorage.getItem("userToken");
       if (token) {
@@ -31,6 +32,7 @@ api.interceptors.request.use(
       params: config.params,
       headers: config.headers,
     });
+
     return config;
   },
   (error) => {
@@ -39,7 +41,7 @@ api.interceptors.request.use(
   }
 );
 
-// Add response interceptor for logging
+// Interceptor response để log và xử lý lỗi
 api.interceptors.response.use(
   (response) => {
     console.log("API Response:", {
@@ -49,13 +51,30 @@ api.interceptors.response.use(
     });
     return response;
   },
-  (error) => {
+  async (error) => {
+    const status = error.response?.status;
+    const message = error.response?.data?.message || "Lỗi không xác định";
+
+    //  Nếu bị cấm (403)
+    if (status === 403 && message.includes("bị khóa")) {
+      await AsyncStorage.multiRemove(["userToken", "userInfo"]);
+      await AsyncStorage.setItem("banMessage", message);
+      Alert.alert("Tài khoản bị khóa", message);
+    }
+
+    //  Nếu token hết hạn (401)
+    if (status === 401 && message.toLowerCase().includes("jwt")) {
+      await AsyncStorage.multiRemove(["userToken", "userInfo"]);
+      Alert.alert("Hết phiên", "Vui lòng đăng nhập lại.");
+    }
+
     console.log("API Response Error:", {
-      status: error.response?.status,
+      status,
       url: error.config?.url,
       data: error.response?.data,
       message: error.message,
     });
+
     return Promise.reject(error);
   }
 );
@@ -461,9 +480,24 @@ export const deleteOrderDetail = async (orderDetailId) => {
     throw error;
   }
 };
+export const cancelOrder = async (orderId, reason) => {
+  try {
+    const response = await api.put(`/orders/${orderId}/cancel`, {
+      reason: reason,
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Cancel order error:", error);
+    throw error;
+  }
+};
+
+
+
+// Address APIs
 export const createAddress = async (addressData) => {
   try {
-    const response = await api.post("/addresses", addressData);
+    const response = await api.post("addresses", addressData);
     return response.data;
   } catch (error) {
     console.error("Error creating address:", error);
@@ -499,6 +533,8 @@ export const deleteAddress = async (id) => {
     throw error;
   }
 };
+
+// Voucher APIs
 export const getPublicVouchers = async () => {
   const res = await api.get("/vouchers/");
   return res.data;
@@ -508,15 +544,48 @@ export const getUserVouchers = async (userId) => {
   const response = await api.get(`/vouchers/user/${userId}`);
   return response.data;
 };
+
+// Payment and Shipping Methods APIs
 export const getPaymentMethods = async () => {
   const res = await api.get("/payment-methods");
   return res.data;
 };
 
 export const getShippingMethods = async () => {
-  const res = await api.get("/shipping-method");
+  const res = await api.get("/shipping-methods");
   return res.data;
 };
+export const requestRefund = async (orderId, reason) => {
+  try {
+    const userData = await AsyncStorage.getItem("user");
+    const user = JSON.parse(userData);
+    const userId = user?._id;
+
+    if (!userId) {
+      throw new Error("Không tìm thấy userId trong AsyncStorage");
+    }
+
+    const res = await api.post("/refund-requests", {
+      orderId,
+      userId,
+      reason,
+    });
+    return res.data;
+  } catch (error) {
+    console.error("Lỗi gửi yêu cầu hoàn tiền:", error);
+    throw error;
+  }
+};
+export const getAllReviews = async () => {
+  try {
+    const response = await api.get("/reviews");
+    return response.data;
+  } catch (error) {
+    console.error("Lỗi khi lấy tất cả đánh giá:", error);
+    throw error;
+  }
+};
+
 
 export const applyVoucherApi = async (userId, voucherId) => {
   try {

@@ -57,6 +57,7 @@ const CheckoutScreen = () => {
 
   const [shippingMethods, setShippingMethods] = useState([]);
   const [selectedShippingMethodId, setSelectedShippingMethodId] = useState(null);
+  const [shippingFee, setShippingFee] = useState(0);
 
   const [note, setNote] = useState("");
 
@@ -101,7 +102,6 @@ const CheckoutScreen = () => {
 
         const uniqueVouchers = Array.from(uniqueVoucherMap.values());
         setVouchers(uniqueVouchers);
-
         if (uniqueVouchers.length > 0) {
           setSelectedVoucherId(uniqueVouchers[0]._id);
           setSelectedVoucher(uniqueVouchers[0]);
@@ -132,6 +132,7 @@ const CheckoutScreen = () => {
         }
       } catch (err) {
         console.error("❌ Lỗi tải phương thức vận chuyển:", err);
+
       }
     } catch (error) {
       console.error("❌ Lỗi fetch tổng thể:", error);
@@ -153,6 +154,8 @@ const CheckoutScreen = () => {
   // Xử lý chọn shipping method
   const onShippingChange = (shippingMethodId) => {
     setSelectedShippingMethodId(shippingMethodId);
+    const method = shippingMethods.find(s => s._id === shippingMethodId);
+    setShippingFee(method?.fee || 0);
   };
 
   // Tính tổng sau giảm voucher %
@@ -164,6 +167,7 @@ const CheckoutScreen = () => {
   };
 
   // Hàm đặt hàng
+
   const handlePlaceOrder = async () => {
     if (checkedItems.length === 0) {
       Alert.alert("Lỗi", "Không có sản phẩm nào để đặt hàng");
@@ -177,6 +181,7 @@ const CheckoutScreen = () => {
     Alert.alert(
       "Xác nhận đặt hàng",
       `Bạn có chắc muốn đặt hàng với tổng tiền ${formatMoney(calculateTotalAfterVoucher())} VND?`,
+
       [
         { text: "Hủy", style: "cancel" },
         {
@@ -201,12 +206,13 @@ const processOrder = async () => {
     };
 
     const orderData = {
-      total: calculateTotalAfterVoucher(),
+      total: calculateFinalTotal(),
       shippingAddress: formatAddress(selectedAddressObj),
       paymentMethodId: selectedPaymentMethod?._id,
       shippingMethodId: selectedShippingMethod?._id,
       note,
       voucherId: selectedVoucher?._id || null, // gửi voucherId nếu có
+
     };
 
     // Tạo đơn hàng
@@ -227,6 +233,7 @@ const processOrder = async () => {
       // Xóa sản phẩm đã đặt khỏi giỏ hàng
       for (const item of checkedItems) {
         await removeFromCart(item._id);
+
       }
 
       // Điều hướng sang màn thành công
@@ -426,11 +433,13 @@ const processOrder = async () => {
           </View>
           <View style={styles.row}>
             <Text style={styles.label}>Phí vận chuyển</Text>
+
             <Text style={styles.value}>{formatMoney(shippingFee)} VND</Text>
           </View>
           <View style={styles.row}>
             <Text style={styles.label}>Thuế</Text>
             <Text style={styles.value}>{formatMoney(tax)} VND</Text>
+
           </View>
           {selectedVoucher && (
             <View style={styles.row}>
@@ -442,6 +451,7 @@ const processOrder = async () => {
             <Text style={styles.totalLabel}>Tổng</Text>
             <Text style={styles.total}>
               {formatMoney(calculateTotalAfterVoucher())} VND
+
             </Text>
           </View>
         </View>
@@ -452,6 +462,7 @@ const processOrder = async () => {
         <View style={styles.totalBox}>
           <Text style={styles.footerTotal}>
             {formatMoney(calculateTotalAfterVoucher())} VND
+
           </Text>
         </View>
         <TouchableOpacity
@@ -466,6 +477,7 @@ const processOrder = async () => {
           )}
         </TouchableOpacity>
       </View>
+      <View style={{ height: 100 }} />
     </View>
   );
 };
