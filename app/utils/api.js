@@ -541,8 +541,8 @@ export const getPublicVouchers = async () => {
 };
 
 export const getUserVouchers = async (userId) => {
-  const res = await api.get(`/vouchers?userId=${userId}`);
-  return res.data;
+  const response = await api.get(`/vouchers/user/${userId}`);
+  return response.data;
 };
 
 // Payment and Shipping Methods APIs
@@ -587,6 +587,15 @@ export const getAllReviews = async () => {
 };
 
 
-
+export const applyVoucherApi = async (userId, voucherId) => {
+  try {
+    // Gửi PUT request đến route có 2 params trong URL
+    const response = await api.put(`/vouchers/apply-voucher/${voucherId}/${userId}`);
+    return response.data;
+  } catch (error) {
+    console.error("Apply voucher API error:", error);
+    throw error;
+  }
+};
 
 export default api;
