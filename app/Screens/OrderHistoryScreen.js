@@ -1,6 +1,6 @@
-import { Ionicons } from "@expo/vector-icons";
-import { useNavigation } from "@react-navigation/native";
-import React, { useEffect, useRef, useState } from "react";
+import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -15,74 +15,68 @@ import {
   TextInput,
   TouchableOpacity,
   View,
-} from "react-native";
-import Dialog from "react-native-dialog";
-import { TabBar, TabView } from "react-native-tab-view";
-import { useAuth } from "../context/AuthContext";
+} from 'react-native';
+import { TabBar, TabView } from 'react-native-tab-view';
+import { useAuth } from '../context/AuthContext';
 import {
   cancelOrder,
   getOrderDetailsByOrderId,
   getOrdersByUser,
-} from "../utils/api";
+} from '../utils/api';
 
 const ORDER_TABS = [
-  { key: "all", label: "Tất cả" },
-  { key: "pending", label: "Chờ xử lý" },
-  { key: "confirmed", label: "Đã xác nhận" },
-  { key: "shipping", label: "Đang vận chuyển" },
-  { key: "delivered", label: "Đã giao hàng" },
-  { key: "completed", label: "Hoàn thành" },
-  { key: "cancelled", label: "Đã hủy" },
+  { key: 'all', label: 'Tất cả' },
+  { key: 'pending', label: 'Chờ xử lý' },
+  { key: 'confirmed', label: 'Đã xác nhận' },
+  { key: 'shipping', label: 'Đang vận chuyển' },
+  { key: 'delivered', label: 'Đã giao hàng' },
+  { key: 'completed', label: 'Hoàn thành' },
+  { key: 'cancelled', label: 'Đã hủy' },
 ];
 
 const STATUS_MAP = {
-  pending: ["pending", "created", "chờ xử lý"],
-  confirmed: ["confirmed", "đã xác nhận"],
-  shipping: ["shipping", "shipped", "in_transit", "đang vận chuyển"],
-  delivered: ["delivered", "received", "đã giao hàng"],
-  completed: ["completed", "hoàn thành", "done", "success"],
-  cancelled: ["cancelled", "canceled", "đã hủy", "hủy", "refunded"],
+  pending: ['pending', 'created', 'chờ xử lý'],
+  confirmed: ['confirmed', 'đã xác nhận'],
+  shipping: ['shipping', 'shipped', 'in_transit', 'đang vận chuyển'],
+  delivered: ['delivered', 'received', 'đã giao hàng'],
+  completed: ['completed', 'hoàn thành', 'done', 'success'],
+  cancelled: ['cancelled', 'canceled', 'đã hủy', 'hủy', 'refunded'],
 };
 
 function getTabKeyFromStatus(status) {
-  if (!status) return "pending";
+  if (!status) return 'pending';
   status = status.toLowerCase();
   for (const [tab, arr] of Object.entries(STATUS_MAP)) {
     if (arr.includes(status)) return tab;
   }
-  return "pending";
+  return 'pending';
 }
 
 export default function OrderHistoryScreen() {
-  // Khởi tạo các state và hooks
   const navigation = useNavigation();
   const { userInfo } = useAuth();
   const [ordersWithDetails, setOrdersWithDetails] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [search, setSearch] = useState("");
-  const layout = useRef(Dimensions.get("window")).current;
+  const [search, setSearch] = useState('');
+  const layout = useRef(Dimensions.get('window')).current;
   const [index, setIndex] = useState(0);
   const [routes] = useState(
-    ORDER_TABS.map((tab) => ({ key: tab.key, title: tab.label })),
+    ORDER_TABS.map((tab) => ({ key: tab.key, title: tab.label }))
   );
   const [modalVisible, setModalVisible] = useState(false);
-
-  const [showCancelDialog, setShowCancelDialog] = useState(false);
-  const [cancelReason, setCancelReason] = useState("");
-  const [selectedOrderId, setSelectedOrderId] = useState(null);
 
   // Handler cho các lựa chọn trong modal
   const handleMenuSelect = (key) => {
     setModalVisible(false);
-    if (key === "cart") {
-      navigation.navigate("CartScreen");
-    } else if (key === "shipping") {
-      navigation.navigate("AddressListScreen");
-    } else if (key === "payment") {
-      navigation.navigate("PaymentScreen");
+    if (key === 'cart') {
+      navigation.navigate('CartScreen');
+    } else if (key === 'shipping') {
+      navigation.navigate('AddressListScreen');
+    } else if (key === 'payment') {
+      navigation.navigate('PaymentScreen');
     } else {
       // fallback
-      console.log("Selected:", key);
+      console.log('Selected:', key);
     }
   };
 
@@ -110,7 +104,7 @@ export default function OrderHistoryScreen() {
 
       setOrdersWithDetails(completedOrders);
     } catch (error) {
-      console.error("Error fetching orders:", error);
+      console.error('Error fetching orders:', error);
     } finally {
       setLoading(false);
     }
@@ -123,9 +117,9 @@ export default function OrderHistoryScreen() {
   // Lọc đơn hàng theo tab và tìm kiếm
   const getFilteredOrders = (tabKey) => {
     let filtered = ordersWithDetails;
-    if (tabKey !== "all") {
+    if (tabKey !== 'all') {
       filtered = filtered.filter(
-        (order) => getTabKeyFromStatus(order.status) === tabKey,
+        (order) => getTabKeyFromStatus(order.status) === tabKey
       );
     }
     if (search.trim()) {
@@ -135,7 +129,7 @@ export default function OrderHistoryScreen() {
           ?.toLowerCase()
           .includes(keyword);
         const matchProductName = order.orderDetails?.some((prod) =>
-          prod.product_name?.toLowerCase().includes(keyword),
+          prod.product_name?.toLowerCase().includes(keyword)
         );
         return matchOrderCode || matchProductName;
       });
@@ -144,21 +138,13 @@ export default function OrderHistoryScreen() {
   };
 
   // Xử lý hủy đơn hàng
-  const handleCancelOrder = async () => {
-    if (!selectedOrderId || !cancelReason.trim()) {
-      Alert.alert("Lý do hủy không được để trống");
-      return;
-    }
-
+  const handleCancelOrder = async (orderId) => {
     try {
-      await cancelOrder(selectedOrderId, cancelReason.trim());
-      Alert.alert("Thành công", "Đơn hàng đã được hủy.");
-      setShowCancelDialog(false);
-      setCancelReason("");
-      setSelectedOrderId(null);
-      fetchOrdersWithDetails(); // Refresh đơn hàng
+      await cancelOrder(orderId);
+      Alert.alert('Thành công', 'Đơn hàng đã được hủy.');
+      fetchOrdersWithDetails(); // Gọi lại danh sách đơn hàng
     } catch (error) {
-      Alert.alert("Lỗi", "Không thể hủy đơn hàng.");
+      Alert.alert('Lỗi', 'Không thể hủy đơn hàng.');
     }
   };
 
@@ -167,7 +153,7 @@ export default function OrderHistoryScreen() {
     const firstProduct = item.orderDetails?.[0] || {};
     const tabKey = getTabKeyFromStatus(item.status);
     const tabLabel =
-      ORDER_TABS.find((t) => t.key === tabKey)?.label || item.status || "";
+      ORDER_TABS.find((t) => t.key === tabKey)?.label || item.status || '';
     // Tổng số lượng sản phẩm trong đơn hàng
     const totalQuantity =
       item.orderDetails?.reduce((sum, prod) => sum + (prod.quantity || 0), 0) ||
@@ -176,28 +162,28 @@ export default function OrderHistoryScreen() {
       <TouchableOpacity
         style={styles.orderCard}
         onPress={() =>
-          navigation.navigate("OrderDetail", { orderId: item._id })
+          navigation.navigate('OrderDetail', { orderId: item._id })
         }
       >
-        <View style={{ flexDirection: "row" }}>
+        <View style={{ flexDirection: 'row' }}>
           <Image
             source={
               firstProduct.product_image
                 ? { uri: firstProduct.product_image }
-                : require("../../assets/images/box-icon.png")
+                : require('../../assets/images/box-icon.png')
             }
             style={styles.productImage}
           />
           <View style={{ flex: 1, marginLeft: 10 }}>
             <Text style={styles.orderCode}>Mã đơn: {item.order_code}</Text>
             <Text style={styles.productName} numberOfLines={1}>
-              {firstProduct.product_name || "Sản phẩm"}
+              {firstProduct.product_name || 'Sản phẩm'}
               {item.orderDetails?.length > 1
                 ? ` và ${item.orderDetails.length - 1} sản phẩm khác`
-                : ""}
+                : ''}
             </Text>
             <Text style={styles.productInfoRow}>
-              x{firstProduct.quantity || 1}{" "}
+              x{firstProduct.quantity || 1}{' '}
               {(firstProduct.product_price || 0).toLocaleString()}₫
             </Text>
             {/* <Text style={styles.productTotalQty}>
@@ -210,18 +196,27 @@ export default function OrderHistoryScreen() {
           </View>
         </View>
         <View style={styles.orderActions}>
-          {getTabKeyFromStatus(item.status) === "pending" && (
+          {getTabKeyFromStatus(item.status) === 'pending' && (
             <TouchableOpacity
               style={styles.cancelBtn}
-              onPress={() => {
-                setSelectedOrderId(item._id);
-                setShowCancelDialog(true);
-              }}
+              onPress={() =>
+                Alert.alert(
+                  'Xác nhận hủy',
+                  'Bạn chắc chắn muốn hủy đơn hàng này?',
+                  [
+                    { text: 'Không', style: 'cancel' },
+                    {
+                      text: 'Hủy đơn',
+                      onPress: () => handleCancelOrder(item._id),
+                    },
+                  ]
+                )
+              }
             >
               <Text style={styles.cancelBtnText}>Hủy đơn hàng</Text>
             </TouchableOpacity>
           )}
-          {getTabKeyFromStatus(item.status) === "delivered" && (
+          {getTabKeyFromStatus(item.status) === 'delivered' && (
             <>
               <TouchableOpacity
                 style={styles.refundBtn}
@@ -234,7 +229,7 @@ export default function OrderHistoryScreen() {
               <TouchableOpacity
                 style={styles.reviewBtn}
                 onPress={() =>
-                  navigation.navigate("WriteReview", { orderId: item._id })
+                  navigation.navigate('WriteReview', { orderId: item._id })
                 }
               >
                 <Text style={styles.reviewBtnText}>Viết đánh giá</Text>
@@ -262,7 +257,7 @@ export default function OrderHistoryScreen() {
       return (
         <View style={styles.emptyContainer}>
           <Image
-            source={require("../../assets/images/empty-box.png")}
+            source={require('../../assets/images/empty-box.png')}
             style={styles.emptyImage}
           />
           <Text style={styles.emptyText}>Không có đơn hàng nào</Text>
@@ -322,9 +317,9 @@ export default function OrderHistoryScreen() {
           <TabBar
             {...props}
             scrollEnabled
-            indicatorStyle={{ backgroundColor: "#007bff" }}
-            style={{ backgroundColor: "#fff" }}
-            labelStyle={{ color: "#222", fontWeight: "bold" }}
+            indicatorStyle={{ backgroundColor: '#007bff' }}
+            style={{ backgroundColor: '#fff' }}
+            labelStyle={{ color: '#222', fontWeight: 'bold' }}
             activeColor="#007bff"
             inactiveColor="#888"
           />
@@ -345,7 +340,7 @@ export default function OrderHistoryScreen() {
             <Text style={styles.menuTitle}>Chọn chức năng</Text>
             <TouchableOpacity
               style={styles.menuBtn}
-              onPress={() => handleMenuSelect("cart")}
+              onPress={() => handleMenuSelect('cart')}
             >
               <Ionicons
                 name="cart-outline"
@@ -357,7 +352,7 @@ export default function OrderHistoryScreen() {
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.menuBtn}
-              onPress={() => handleMenuSelect("shipping")}
+              onPress={() => handleMenuSelect('shipping')}
             >
               <Ionicons
                 name="location-outline"
@@ -369,7 +364,7 @@ export default function OrderHistoryScreen() {
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.menuBtn}
-              onPress={() => handleMenuSelect("payment")}
+              onPress={() => handleMenuSelect('payment')}
             >
               <Ionicons
                 name="card-outline"
@@ -382,23 +377,6 @@ export default function OrderHistoryScreen() {
           </View>
         </Pressable>
       </Modal>
-
-      <Dialog.Container visible={showCancelDialog}>
-        <Dialog.Title>Hủy đơn hàng</Dialog.Title>
-        <Dialog.Description>
-          Vui lòng nhập lý do hủy đơn hàng này.
-        </Dialog.Description>
-        <Dialog.Input
-          placeholder="Nhập lý do hủy..."
-          value={cancelReason}
-          onChangeText={setCancelReason}
-        />
-        <Dialog.Button
-          label="Huỷ bỏ"
-          onPress={() => setShowCancelDialog(false)}
-        />
-        <Dialog.Button label="Xác nhận hủy" onPress={handleCancelOrder} />
-      </Dialog.Container>
     </SafeAreaView>
   );
 }
@@ -406,13 +384,13 @@ export default function OrderHistoryScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: '#fff',
     marginTop: 40,
   },
   header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: 8,
     marginBottom: 8,
     minHeight: 56,
@@ -421,21 +399,21 @@ const styles = StyleSheet.create({
     padding: 8,
   },
   backIconWrap: {
-    backgroundColor: "#f0f0f0",
+    backgroundColor: '#f0f0f0',
     borderRadius: 20,
     padding: 4,
-    alignItems: "center",
-    justifyContent: "center",
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   searchBarWrap: {
     flex: 1,
     marginHorizontal: 8,
-    justifyContent: "center",
+    justifyContent: 'center',
   },
   searchBar: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#F6F6F6",
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F6F6F6',
     borderRadius: 18,
     paddingHorizontal: 12,
     paddingVertical: 3,
@@ -446,7 +424,7 @@ const styles = StyleSheet.create({
   searchInput: {
     marginLeft: 8,
     flex: 1,
-    color: "#222",
+    color: '#222',
   },
   tabsRow: {
     flexGrow: 0,
@@ -457,22 +435,22 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     paddingHorizontal: 16,
     borderRadius: 20,
-    backgroundColor: "#f0f0f0",
+    backgroundColor: '#f0f0f0',
     marginRight: 8,
   },
   activeTab: {
-    backgroundColor: "#007bff",
+    backgroundColor: '#007bff',
   },
   tabText: {
     fontSize: 14,
-    color: "#333",
-    fontWeight: "500",
+    color: '#333',
+    fontWeight: '500',
   },
   activeTabText: {
-    color: "#fff",
+    color: '#fff',
   },
   orderCard: {
-    backgroundColor: "#f6f6f6",
+    backgroundColor: '#f6f6f6',
     borderRadius: 12,
     padding: 14,
     marginHorizontal: 16,
@@ -482,82 +460,82 @@ const styles = StyleSheet.create({
     width: 70,
     height: 70,
     borderRadius: 8,
-    backgroundColor: "#fff",
+    backgroundColor: '#fff',
   },
   orderCode: {
     fontSize: 13,
-    color: "#666",
+    color: '#666',
     marginBottom: 4,
   },
   productName: {
-    fontWeight: "bold",
+    fontWeight: 'bold',
     fontSize: 15,
     marginBottom: 4,
-    color: "#222",
+    color: '#222',
   },
   productInfoRow: {
     fontSize: 13,
-    color: "#000",
+    color: '#000',
     marginBottom: 2,
   },
   productTotalQty: {
     fontSize: 13,
-    color: "#666",
+    color: '#666',
     marginBottom: 2,
   },
   orderStatus: {
     fontSize: 14,
-    color: "#007bff",
+    color: '#007bff',
     marginTop: 10,
-    textAlign: "right",
+    textAlign: 'right',
   },
   totalPrice: {
-    textAlign: "right",
-    fontWeight: "bold",
-    color: "#222",
+    textAlign: 'right',
+    fontWeight: 'bold',
+    color: '#222',
     fontSize: 15,
     marginTop: 10,
   },
   orderActions: {
-    flexDirection: "row",
+    flexDirection: 'row',
     marginTop: 10,
-    justifyContent: "flex-end",
+    justifyContent: 'flex-end',
   },
   cancelBtn: {
-    backgroundColor: "#eee",
+    backgroundColor: '#eee',
     borderRadius: 8,
     paddingVertical: 8,
     paddingHorizontal: 16,
   },
   cancelBtnText: {
-    color: "#222",
-    fontWeight: "bold",
+    color: '#222',
+    fontWeight: 'bold',
   },
   refundBtn: {
-    backgroundColor: "#eee",
+    backgroundColor: '#eee',
     borderRadius: 8,
     paddingVertical: 8,
     paddingHorizontal: 16,
     marginRight: 8,
   },
   refundBtnText: {
-    color: "#222",
-    fontWeight: "bold",
+    color: '#222',
+    fontWeight: 'bold',
   },
   reviewBtn: {
-    backgroundColor: "#FF5252",
+    backgroundColor: '#FF5252',
     borderRadius: 8,
     paddingVertical: 8,
     paddingHorizontal: 16,
   },
   reviewBtnText: {
-    color: "#fff",
-    fontWeight: "bold",
+    color: '#fff',
+    fontWeight: 'bold',
   },
   emptyContainer: {
     flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
+    alignItems: 'center',
+    justifyContent: 'center',
     marginTop: 40,
   },
   emptyImage: {
@@ -566,42 +544,42 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   emptyText: {
-    color: "#888",
+    color: '#888',
     fontSize: 16,
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.2)",
-    justifyContent: "center",
-    alignItems: "center",
+    backgroundColor: 'rgba(0,0,0,0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   menuModal: {
-    backgroundColor: "#fff",
+    backgroundColor: '#fff',
     borderRadius: 16,
     padding: 24,
     minWidth: 260,
-    alignItems: "flex-start",
+    alignItems: 'flex-start',
     elevation: 5,
-    shadowColor: "#000",
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 4,
   },
   menuTitle: {
-    fontWeight: "bold",
+    fontWeight: 'bold',
     fontSize: 16,
     marginBottom: 16,
-    color: "#222",
+    color: '#222',
   },
   menuBtn: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingVertical: 10,
     paddingHorizontal: 4,
-    width: "100%",
+    width: '100%',
   },
   menuBtnText: {
     fontSize: 15,
-    color: "#222",
+    color: '#222',
   },
 });
