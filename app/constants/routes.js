@@ -1,3 +1,4 @@
+//app/constants/routes.js
 export const ROUTES = {
   // Auth routes
   AUTH: "Auth",
@@ -35,6 +36,10 @@ export const ROUTES = {
   PAYMENT: "Payment",
   ADD_BANK_CARD: "AddBankCard",
   CHANGE_PASSWORD: "ChangePassword",
+  HELP: "Help",
+  TERMS: "Terms",
+  PRIVACY_POLICY: "PrivacyPolicy",
+
 
   // Order routes
   ORDER_HISTORY: "OrderHistory",
