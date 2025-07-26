@@ -1,7 +1,7 @@
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
-const API_BASE_URL = "http://192.168.0.110:3000/api"; //
+const API_BASE_URL = "http://192.168.1.112:3000/api"; //
 
 
 const api = axios.create({
@@ -461,9 +461,11 @@ export const deleteOrderDetail = async (orderDetailId) => {
     throw error;
   }
 };
-export const cancelOrder = async (orderId) => {
+export const cancelOrder = async (orderId, reason) => {
   try {
-    const response = await api.put(`/orders/${orderId}/cancel`);
+    const response = await api.put(`/orders/${orderId}/cancel`, {
+      reason: reason,
+    });
     return response.data;
   } catch (error) {
     console.error("Cancel order error:", error);
