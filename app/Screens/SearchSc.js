@@ -189,6 +189,7 @@ export default function SearchSc({ route, navigation }) {
         contentContainerStyle={{ padding: 12 }}
         columnWrapperStyle={{ justifyContent: 'space-between' }}
       />
+      <View style={{height: 50}}></View>
     </SafeAreaView>
   );
 }

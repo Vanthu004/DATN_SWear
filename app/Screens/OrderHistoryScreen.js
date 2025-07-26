@@ -223,22 +223,30 @@ export default function OrderHistoryScreen() {
           )}
           {getTabKeyFromStatus(item.status) === "delivered" && (
             <>
-              <TouchableOpacity
-                style={styles.refundBtn}
-                onPress={() => {
-                  /* Handle refund request */
-                }}
-              >
-                <Text style={styles.refundBtnText}>Yêu cầu hoàn tiền</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.reviewBtn}
-                onPress={() =>
-                  navigation.navigate("WriteReview", { orderId: item._id })
-                }
-              >
-                <Text style={styles.reviewBtnText}>Viết đánh giá</Text>
-              </TouchableOpacity>
+             <TouchableOpacity 
+  style={styles.refundBtn}
+  onPress={() => {
+    navigation.navigate("RefundRequest", {
+      orderId: item._id,
+      orderCode: item.order_code,
+      orderDetails: item.orderDetails,
+    });
+  }}
+>
+  <Text style={styles.refundBtnText}>Yêu cầu hoàn tiền</Text>
+</TouchableOpacity>
+
+              <TouchableOpacity 
+  style={styles.reviewBtn}
+  onPress={() => navigation.navigate("WriteReview", {
+    orderId: item._id,
+    orderDetails: item.orderDetails,
+    orderCode: item.order_code
+  })}
+>
+  <Text style={styles.reviewBtnText}>Viết đánh giá</Text>
+</TouchableOpacity>
+
             </>
           )}
         </View>
@@ -382,7 +390,6 @@ export default function OrderHistoryScreen() {
           </View>
         </Pressable>
       </Modal>
-
       {/* Dialog hủy đơn hàng */}
       <Dialog.Container visible={showCancelDialog}>
         <Dialog.Title>Hủy đơn hàng</Dialog.Title>
@@ -400,6 +407,9 @@ export default function OrderHistoryScreen() {
         />
         <Dialog.Button label="Xác nhận hủy" onPress={handleCancelOrder} />
       </Dialog.Container>
+
+      <View style={{height: 50}}></View>
+
     </SafeAreaView>
   );
 }

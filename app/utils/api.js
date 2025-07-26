@@ -3,7 +3,8 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import { Alert } from "react-native";
 
-const API_BASE_URL = "http://192.168.1.112:3000/api";
+
+const API_BASE_URL = "http://192.168.37.5:3000/api"; //
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -554,5 +555,38 @@ export const getShippingMethods = async () => {
   const res = await api.get("/shipping-methods");
   return res.data;
 };
+export const requestRefund = async (orderId, reason) => {
+  try {
+    const userData = await AsyncStorage.getItem("user");
+    const user = JSON.parse(userData);
+    const userId = user?._id;
+
+    if (!userId) {
+      throw new Error("Không tìm thấy userId trong AsyncStorage");
+    }
+
+    const res = await api.post("/refund-requests", {
+      orderId,
+      userId,
+      reason,
+    });
+    return res.data;
+  } catch (error) {
+    console.error("Lỗi gửi yêu cầu hoàn tiền:", error);
+    throw error;
+  }
+};
+export const getAllReviews = async () => {
+  try {
+    const response = await api.get("/reviews");
+    return response.data;
+  } catch (error) {
+    console.error("Lỗi khi lấy tất cả đánh giá:", error);
+    throw error;
+  }
+};
+
+
+
 
 export default api;
