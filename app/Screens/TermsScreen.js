@@ -1,11 +1,33 @@
 // app/Screens/TermsScreen.js
-import React from "react";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
+import React from 'react';
+import {
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
+} from 'react-native';
 import { SafeAreaView } from "react-native-safe-area-context";
 
 const TermsScreen = () => {
+
+    const navigation = useNavigation();
   return (
+
+    
     <SafeAreaView style={styles.container}>
+      <View style={styles.header}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => navigation.goBack()}
+        >
+          <Ionicons name="arrow-back" size={24} color="#000" />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Điều khoản sử dụng</Text>
+      </View>
+
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.titleContainer}>
           <Text style={styles.title}>Điều khoản sử dụng</Text>
@@ -74,6 +96,27 @@ const styles = StyleSheet.create({
     color: "#444",
     lineHeight: 22,
     marginBottom: 8,
+  },
+    header: {
+    paddingTop: 20,
+    paddingHorizontal: 24,
+    paddingBottom: 5,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#f2f2f2',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 16,
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#333',
   },
 });
 

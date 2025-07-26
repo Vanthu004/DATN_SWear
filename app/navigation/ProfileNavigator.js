@@ -47,8 +47,8 @@ export default function ProfileNavigator() {
         component={ChangePasswordScreen}
       />
       <ProfileStack.Screen name={ROUTES.HELP} component={HelpScreen} />
-      <ProfileStack.Screen name={ROUTES.TERMS} component={TermsScreen} />
-      <ProfileStack.Screen name={ROUTES.PRIVACY_POLICY} component={PrivacyPolicyScreen} />
+      <ProfileStack.Screen name={ROUTES.TERMS} component={TermsScreen} options={ { headerShown: false }} />
+      <ProfileStack.Screen name={ROUTES.PRIVACY_POLICY} component={PrivacyPolicyScreen} options={ { headerShown: false }} />
 
     </ProfileStack.Navigator>
   );

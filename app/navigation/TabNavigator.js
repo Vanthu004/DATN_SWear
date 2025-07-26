@@ -231,12 +231,12 @@ function ProfileStack() {
       <Stack.Screen
         name="TermsScreen"
         component={TermsScreen}
-        options={{ title: "Điều khoản" }}
+        options={{ headerShown: false }}
       />
       <Stack.Screen
         name="PolicyScreen"
         component={PolicyScreen}
-        options={{ title: "Chính sách người dùng" }}
+        options={{ headerShown: false }}
       />
     </Stack.Navigator>
   );
