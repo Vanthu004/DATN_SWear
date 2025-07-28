@@ -1,7 +1,7 @@
-
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 const API_BASE_URL = "http://192.168.1.7:3000/api"; //
+
 
 
 const api = axios.create({
@@ -463,7 +463,7 @@ export const deleteOrderDetail = async (orderDetailId) => {
 };
 export const createAddress = async (addressData) => {
   try {
-    const response = await api.post("/addresses", addressData);
+    const response = await api.post("addresses", addressData);
     return response.data;
   } catch (error) {
     console.error("Error creating address:", error);
@@ -514,8 +514,92 @@ export const getPaymentMethods = async () => {
 };
 
 export const getShippingMethods = async () => {
-  const res = await api.get("/shipping-method");
+  const res = await api.get("/shipping-methods");
   return res.data;
+};
+export const requestRefund = async (orderId, reason) => {
+  try {
+    const userData = await AsyncStorage.getItem("user");
+    const user = JSON.parse(userData);
+    const userId = user?._id;
+
+    if (!userId) {
+      throw new Error("Không tìm thấy userId trong AsyncStorage");
+    }
+
+    const res = await api.post("/refund-requests", {
+      orderId,
+      userId,
+      reason,
+    });
+    return res.data;
+  } catch (error) {
+    console.error("Lỗi gửi yêu cầu hoàn tiền:", error);
+    throw error;
+  }
+};
+export const getAllReviews = async () => {
+  try {
+    const response = await api.get("/reviews");
+    return response.data;
+  } catch (error) {
+    console.error("Lỗi khi lấy tất cả đánh giá:", error);
+    throw error;
+  }
+};
+
+
+
+
+// ===== SHIPPING METHODS APIs =====
+
+// Shipping Methods APIs
+export const getShippingMethods = async () => {
+  try {
+    const response = await api.get('/shipping-methods');
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching shipping methods:', error);
+    // Return default shipping method if API fails
+    return [{
+      _id: "507f1f77bcf86cd799439011",
+      name: "Vận chuyển Thường",
+      code: "STANDARD",
+      description: "Giao hàng trong 3-5 ngày làm việc",
+      price: 15000,
+      is_active: true
+    }];
+  }
+};
+
+export const createShippingMethod = async (shippingData) => {
+  try {
+    const response = await api.post('/shipping-methods', shippingData);
+    return response.data;
+  } catch (error) {
+    console.error('Error creating shipping method:', error);
+    throw error;
+  }
+};
+
+export const updateShippingMethod = async (id, shippingData) => {
+  try {
+    const response = await api.put(`/shipping-methods/${id}`, shippingData);
+    return response.data;
+  } catch (error) {
+    console.error('Error updating shipping method:', error);
+    throw error;
+  }
+};
+
+export const deleteShippingMethod = async (id) => {
+  try {
+    const response = await api.delete(`/shipping-methods/${id}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error deleting shipping method:', error);
+    throw error;
+  }
 };
 
 export default api;
