@@ -14,12 +14,14 @@ import {
 import { ROUTES } from "../constants/routes";
 import { useCart } from "../hooks/useCart";
 import { useOrder } from "../hooks/useOrder";
+import api from '../utils/api'; // Thêm dòng này nếu chưa có
+import { getPaymentMethods } from '../utils/paymentApi';
 
 const CheckoutScreen = () => {
   const route = useRoute();
   const navigation = useNavigation();
   const { createOrderFromCart, loading } = useOrder();
-  const { removeFromCart } = useCart();
+  const { removeFromCart, cartId } = useCart();
 
   const {
     checkedItems = [],
@@ -33,7 +35,39 @@ const CheckoutScreen = () => {
   const [shippingAddress, setShippingAddress] = useState(
     "18/9 Hồ Văn Nhân, Hồng Hà, Hà Nội"
   );
-  const [paymentMethod, setPaymentMethod] = useState("BIDV Bank");
+  // Gán ảnh cố định theo code
+  const imageMap = {
+    COD: "https://i.pinimg.com/564x/66/cb/6b/66cb6b04177ab07a60c17445011161ca.jpg",
+    ZALOPAY: "https://cdn.haitrieu.com/wp-content/uploads/2022/10/Logo-ZaloPay-Square.png",
+  };
+
+  const [paymentMethods, setPaymentMethods] = useState([]);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState(null);
+  const [loadingPaymentMethods, setLoadingPaymentMethods] = useState(true);
+  const [processingZaloPay, setProcessingZaloPay] = useState(false);
+  const [orderMessage, setOrderMessage] = useState("");
+
+  React.useEffect(() => {
+    const fetchPaymentMethods = async () => {
+      setLoadingPaymentMethods(true);
+      try {
+        const data = await getPaymentMethods();
+        console.log("Payment methods from API:", data); // LOG 1
+        // Lọc chỉ lấy COD và ZALOPAY, enrich thêm ảnh
+        const filtered = data.filter(pm =>
+          pm.code?.toUpperCase() === 'COD' || pm.code?.toUpperCase() === 'ZALOPAY'
+        ).map(pm => ({ ...pm, image: imageMap[pm.code?.toUpperCase()] || null }));
+        setPaymentMethods(filtered);
+        // Mặc định chọn COD nếu có
+        setSelectedPaymentMethod(filtered.find(pm => pm.code?.toUpperCase() === 'COD')?._id || null);
+      } catch (err) {
+        Alert.alert('Lỗi', 'Không tải được phương thức thanh toán');
+      } finally {
+        setLoadingPaymentMethods(false);
+      }
+    };
+    fetchPaymentMethods();
+  }, []);
   const [shippingMethod, setShippingMethod] = useState("Vận chuyển Thường");
   const [note, setNote] = useState("");
 
@@ -44,59 +78,104 @@ const CheckoutScreen = () => {
       return;
     }
 
-    // Hiển thị confirm dialog
-    Alert.alert(
-      "Xác nhận đặt hàng",
-      `Bạn có chắc muốn đặt hàng với tổng tiền ${total.toLocaleString()} VND?`,
-      [
-        { text: "Hủy", style: "cancel" },
-        {
-          text: "Đặt hàng",
-          style: "default",
-          onPress: async () => {
-            await processOrder();
+    // Kiểm tra phương thức thanh toán
+    const selectedMethod = paymentMethods.find(pm => pm._id === selectedPaymentMethod);
+    const isOnlinePayment = selectedMethod && selectedMethod.code?.toUpperCase() === 'ZALOPAY';
+
+    if (isOnlinePayment) {
+      setOrderMessage("Vui lòng thanh toán để đặt hàng");
+      setTimeout(async () => {
+        setOrderMessage("");
+        await processOrder();
+      }, 1200);
+    } else {
+      // COD - hiển thị confirm dialog như cũ
+      Alert.alert(
+        "Xác nhận đặt hàng",
+        `Bạn có chắc muốn đặt hàng với tổng tiền ${total.toLocaleString()} VND?`,
+        [
+          { text: "Hủy", style: "cancel" },
+          {
+            text: "Đặt hàng",
+            style: "default",
+            onPress: async () => {
+              await processOrder();
+            },
           },
-        },
-      ]
-    );
+        ]
+      );
+    }
   };
 
   // Xử lý tạo đơn hàng
   const processOrder = async () => {
     try {
-      // Dữ liệu đơn hàng
       const orderData = {
         total: total,
         shippingAddress: shippingAddress,
-        paymentMethodId: "default_payment_id", // Sẽ cập nhật sau khi có API payment methods
-        shippingMethodId: "default_shipping_id", // Sẽ cập nhật sau khi có API shipping methods
+        paymentMethodId: selectedPaymentMethod,
+        shippingMethodId: "default_shipping_id",
         note: note,
       };
-
-      console.log("🛒 Bắt đầu tạo đơn hàng...");
-      console.log("📦 Cart items:", checkedItems);
-      console.log("💰 Order data:", orderData);
-
       // Tạo đơn hàng từ cart
       const result = await createOrderFromCart(checkedItems, orderData);
-
       if (result) {
-        console.log("✅ Đơn hàng tạo thành công:", result);
-
-        // Xóa các sản phẩm đã đặt khỏi cart
-        for (const item of checkedItems) {
-          await removeFromCart(item._id);
+        // Kiểm tra nếu chọn ZALOPAY thì gọi API lấy mã QR
+        const selectedMethod = paymentMethods.find(pm => pm._id === selectedPaymentMethod);
+        console.log("selectedPaymentMethod:", selectedPaymentMethod); // LOG 2
+        console.log("selectedMethod:", selectedMethod); // LOG 3
+        if (selectedMethod && selectedMethod.code?.toUpperCase() === 'ZALOPAY') {
+          setProcessingZaloPay(true);
+          try {
+            // Tính tổng tiền đúng yêu cầu
+            const productTotal = subtotal;
+            const taxAmount = tax;
+            const shippingFee = shipping;
+            const voucherDiscount = route.params?.voucher_discount || 0;
+            const totalAmount = productTotal + taxAmount + shippingFee - voucherDiscount;
+            // Gọi API backend để lấy mã QR ZaloPay
+            const paymentRes = await api.post('/payments/zalopay/payment', {
+              orderId: result.order._id,
+              product_total: productTotal,
+              tax: taxAmount,
+              shipping_fee: shippingFee,
+              voucher_discount: voucherDiscount,
+              amount: totalAmount,
+              cart_id: cartId, // ✅ Truyền cart_id lên backend
+            });
+            const paymentData = paymentRes.data;
+            console.log("ZaloPay paymentData:", paymentData); // LOG QR RESPONSE
+            const qrValue = paymentData.qr_url || paymentData.order_url || paymentData.paymentUrl || paymentData.payUrl;
+            // Chuyển sang màn hình QR, truyền thêm orderId để polling check trạng thái
+            navigation.navigate('ZaloPayQRScreen', {
+              orderId: paymentData.app_trans_id || result.order._id,
+              responseTime: Date.now(),
+              amount: paymentData.total_amount || totalAmount,
+              qrCodeUrl: qrValue,
+              paymentUrl: paymentData.order_url,
+              backendOrderId: result.order._id, // truyền orderId backend để check trạng thái
+              checkedItems: checkedItems, // truyền danh sách sản phẩm để xóa sau khi thanh toán thành công
+            });
+            // KHÔNG xóa sản phẩm khỏi giỏ hàng ở đây - chỉ xóa khi thanh toán thành công
+          } catch (err) {
+            Alert.alert('Lỗi', 'Không lấy được mã QR ZaloPay');
+          } finally {
+            setProcessingZaloPay(false);
+          }
+        } else {
+          // Nếu là COD thì xử lý như cũ
+          for (const item of checkedItems) {
+            await removeFromCart(item._id);
+          }
+          Alert.alert("Thành công", `Đơn hàng ${result.order.order_code} đã được tạo thành công!`); // chỉ alert khi là COD
+          navigation.navigate(ROUTES.ORDER_SUCCESS, {
+            orderCode: result.order.order_code,
+            orderId: result.order._id,
+            total: total,
+          });
         }
-
-        // Chuyển đến màn hình thành công
-        navigation.navigate(ROUTES.ORDER_SUCCESS, {
-          orderCode: result.order.order_code,
-          orderId: result.order._id,
-          total: total,
-        });
       }
     } catch (error) {
-      console.error("❌ Lỗi xử lý đơn hàng:", error);
       Alert.alert("Lỗi", "Không thể tạo đơn hàng. Vui lòng thử lại.");
     }
   };
@@ -178,14 +257,87 @@ const CheckoutScreen = () => {
           <Ionicons name="chevron-forward" size={20} style={styles.icon} />
         </TouchableOpacity>
 
-        {/* Phương thức thanh toán */}
-        <TouchableOpacity style={styles.card}>
+        {/* Phương thức thanh toán - cải tiến */}
+        <View style={styles.card}>
           <Text style={styles.cardTitle}>Phương thức Thanh toán</Text>
-          <Text style={[styles.cardContent, { fontWeight: "bold" }]}>
-            {paymentMethod}
-          </Text>
-          <Ionicons name="chevron-forward" size={20} style={styles.icon} />
-        </TouchableOpacity>
+          {loadingPaymentMethods ? (
+            <Text style={styles.cardContent}>Đang tải...</Text>
+          ) : paymentMethods.length === 0 ? (
+            <Text style={styles.cardContent}>
+              Không có phương thức thanh toán khả dụng
+            </Text>
+          ) : (
+            paymentMethods.map((method) => {
+              const isSelected = selectedPaymentMethod === method._id;
+              return (
+                <TouchableOpacity
+                  key={method._id}
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    padding: 12,
+                    backgroundColor: "#f4f4f4",
+                    borderRadius: 10,
+                    marginBottom: 10,
+                    borderWidth: 1,
+                    borderColor: "#ccc",
+                  }}
+                  onPress={() => setSelectedPaymentMethod(method._id)}
+                >
+                  {method.image && (
+                    <Image
+                      source={{ uri: method.image }}
+                      style={{ width: 40, height: 40, marginRight: 12 }}
+                      resizeMode="contain"
+                    />
+                  )}
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 15, fontWeight: "500" }}>
+                      {method.name}
+                    </Text>
+                    {/* Dòng khuyến mãi chỉ hiện nếu được chọn và là ZALOPAY */}
+                    {isSelected && method.code === "ZALOPAY" && (
+                      <View
+                        style={{
+                          backgroundColor: "#e0f7fa",
+                          borderRadius: 4,
+                          paddingVertical: 2,
+                          paddingHorizontal: 6,
+                          marginTop: 4,
+                          alignSelf: 'flex-start',
+                        }}
+                      >
+                        {/* Có thể thêm khuyến mãi cho ZaloPay ở đây nếu cần */}
+                      </View>
+                    )}
+                  </View>
+                  <View
+                    style={{
+                      width: 20,
+                      height: 20,
+                      borderRadius: 10,
+                      borderWidth: 1,
+                      borderColor: "#888",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    {isSelected && (
+                      <View
+                        style={{
+                          width: 12,
+                          height: 12,
+                          borderRadius: 6,
+                          backgroundColor: "#007AFF",
+                        }}
+                      />
+                    )}
+                  </View>
+                </TouchableOpacity>
+              );
+            })
+          )}
+        </View>
 
         {/* Phương thức vận chuyển */}
         <TouchableOpacity style={styles.card}>
@@ -238,6 +390,11 @@ const CheckoutScreen = () => {
           )}
         </TouchableOpacity>
       </View>
+      {orderMessage ? (
+        <View style={styles.orderMessageBox}>
+          <Text style={styles.orderMessageText}>{orderMessage}</Text>
+        </View>
+      ) : null}
     </View>
   );
 };
@@ -367,5 +524,24 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 16,
     fontWeight: "500",
+  },
+  orderMessageBox: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 90,
+    alignItems: 'center',
+    zIndex: 20,
+  },
+  orderMessageText: {
+    backgroundColor: '#e6f7ff',
+    color: '#228be6',
+    paddingHorizontal: 18,
+    paddingVertical: 8,
+    borderRadius: 20,
+    fontSize: 15,
+    fontWeight: '500',
+    overflow: 'hidden',
+    elevation: 2,
   },
 });

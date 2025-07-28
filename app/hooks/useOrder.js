@@ -2,11 +2,11 @@ import { useEffect, useState } from "react";
 import { Alert } from "react-native";
 import { useAuth } from "../context/AuthContext";
 import {
-  createOrder,
-  createOrderWithDetails,
-  getOrderById,
-  getOrdersByUser,
-  updateOrder,
+    createOrder,
+    createOrderWithDetails,
+    getOrderById,
+    getOrdersByUser,
+    updateOrder,
 } from "../utils/api";
 
 export const useOrder = () => {
@@ -69,10 +69,10 @@ export const useOrder = () => {
       // Refresh danh sách đơn hàng
       await fetchUserOrders();
 
-      Alert.alert(
-        "Thành công",
-        `Đơn hàng ${result.order.order_code} đã được tạo thành công!`
-      );
+      // Alert.alert(
+      //   "Thành công",
+      //   `Đơn hàng ${result.order.order_code} đã được tạo thành công!`
+      // );
 
       return result;
     } catch (error) {

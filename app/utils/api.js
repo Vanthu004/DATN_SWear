@@ -1,7 +1,6 @@
-
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
-const API_BASE_URL = "http://192.168.1.7:3000/api"; //
+const API_BASE_URL = "http://192.168.1.2:3000/api"; //
 
 
 const api = axios.create({
@@ -496,6 +495,57 @@ export const deleteAddress = async (id) => {
     return response.data;
   } catch (error) {
     console.error("Error deleting address:", error);
+    throw error;
+  }
+};
+
+// ===== SHIPPING METHODS APIs =====
+
+// Shipping Methods APIs
+export const getShippingMethods = async () => {
+  try {
+    const response = await api.get('/shipping-methods');
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching shipping methods:', error);
+    // Return default shipping method if API fails
+    return [{
+      _id: "507f1f77bcf86cd799439011",
+      name: "Vận chuyển Thường",
+      code: "STANDARD",
+      description: "Giao hàng trong 3-5 ngày làm việc",
+      price: 15000,
+      is_active: true
+    }];
+  }
+};
+
+export const createShippingMethod = async (shippingData) => {
+  try {
+    const response = await api.post('/shipping-methods', shippingData);
+    return response.data;
+  } catch (error) {
+    console.error('Error creating shipping method:', error);
+    throw error;
+  }
+};
+
+export const updateShippingMethod = async (id, shippingData) => {
+  try {
+    const response = await api.put(`/shipping-methods/${id}`, shippingData);
+    return response.data;
+  } catch (error) {
+    console.error('Error updating shipping method:', error);
+    throw error;
+  }
+};
+
+export const deleteShippingMethod = async (id) => {
+  try {
+    const response = await api.delete(`/shipping-methods/${id}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error deleting shipping method:', error);
     throw error;
   }
 };
