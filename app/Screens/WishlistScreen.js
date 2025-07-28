@@ -29,14 +29,33 @@ export default function WishlistScreen() {
     useCallback(() => {
       const fetchFavorites = async () => {
         if (!userId) {
+          console.warn("⚠️ Không có userId");
           setFavorites([]);
           setLoading(false);
           return;
         }
+
+        console.log("🔍 Fetching favorites, userId:", userId);
         setLoading(true);
+
         try {
           const res = await getFavoritesByUser(userId);
-          setFavorites(res.data || []);
+          console.log("📦 Full API response:", res);
+
+          // Tùy vào cấu trúc res bạn có thể chỉnh lại đoạn dưới
+          const favoriteList = Array.isArray(res?.data)
+            ? res.data
+            : Array.isArray(res)
+            ? res
+            : [];
+
+          console.log("✅ Dữ liệu yêu thích trả về:", favoriteList);
+          if (!Array.isArray(favoriteList)) {
+            console.warn("⚠️ Dữ liệu không phải mảng:", favoriteList);
+            setFavorites([]);
+          } else {
+            setFavorites(favoriteList);
+          }
         } catch (err) {
           console.error("❌ Lỗi khi lấy favorite:", err.message || err);
           Alert.alert("Lỗi", "Không thể tải dữ liệu yêu thích");
@@ -44,6 +63,7 @@ export default function WishlistScreen() {
           setLoading(false);
         }
       };
+
       fetchFavorites();
     }, [userId])
   );
@@ -60,13 +80,13 @@ export default function WishlistScreen() {
           onPress: async () => {
             try {
               await removeFavorite(userId, productId);
-              // Cập nhật lại danh sách favorites
               setFavorites((prev) =>
                 prev.filter((item) => item.product_id._id !== productId)
               );
+              console.log("✅ Đã xoá sản phẩm yêu thích:", productId);
             } catch (err) {
-              console.error("❌ Lỗi khi xóa sản phẩm yêu thích:", err.message || err);
-              Alert.alert("Lỗi", "Không thể xóa sản phẩm khỏi danh sách yêu thích");
+              console.error("❌ Lỗi khi xóa yêu thích:", err.message || err);
+              Alert.alert("Lỗi", "Không thể xoá sản phẩm khỏi danh sách yêu thích");
             }
           },
         },
@@ -75,18 +95,12 @@ export default function WishlistScreen() {
   };
 
   const renderItem = ({ item }) => {
-    const product = item.product_id;
+    const product = item?.product_id;
     if (!product) return null;
 
-    // Chuẩn bị dữ liệu images cho màn chi tiết sản phẩm
     const productData = {
       ...product,
-      images:
-        product.images && product.images.length > 0
-          ? product.images
-          : product.image_url
-          ? [product.image_url]
-          : [],
+      images: product.images?.length > 0 ? product.images : product.image_url ? [product.image_url] : [],
     };
 
     return (
@@ -98,16 +112,14 @@ export default function WishlistScreen() {
         <TouchableOpacity
           style={styles.heartIcon}
           onPress={(e) => {
-            e.stopPropagation && e.stopPropagation();
+            e.stopPropagation?.();
             handleRemoveFavorite(product._id);
           }}
         >
           <Ionicons name="heart" size={20} color="#1e90ff" />
         </TouchableOpacity>
         <Text style={styles.name}>{product.name}</Text>
-        <Text style={styles.price}>
-          {product.price?.toLocaleString('vi-VN')} ₫
-        </Text>
+        <Text style={styles.price}>{product.price?.toLocaleString('vi-VN')} ₫</Text>
       </TouchableOpacity>
     );
   };
@@ -128,9 +140,9 @@ export default function WishlistScreen() {
       <Text style={styles.title}>Sản phẩm Yêu thích ({favorites.length})</Text>
       <FlatList
         data={favorites}
-        numColumns={2}
         keyExtractor={(item) => item._id}
         renderItem={renderItem}
+        numColumns={2}
         contentContainerStyle={styles.list}
         columnWrapperStyle={{ justifyContent: 'space-between' }}
         ListEmptyComponent={

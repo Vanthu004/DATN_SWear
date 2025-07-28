@@ -140,6 +140,7 @@ function CartItem({ item, checked, onCheck, onRemove, onUpdate }) {
           </View>
         </View>
       </Modal>
+      <View style={{height: 50}}></View>
     </View>
   );
 }

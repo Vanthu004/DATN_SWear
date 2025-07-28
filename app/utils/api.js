@@ -1,7 +1,10 @@
+// app/utils/api.js
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
-const API_BASE_URL = "http://192.168.1.2:3000/api"; //
+import { Alert } from "react-native";
 
+
+const API_BASE_URL = "http://192.168.37.5:3000/api"; //
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -10,10 +13,9 @@ const api = axios.create({
   },
 });
 
-// Add request interceptor for logging and adding token
+// Interceptor request để thêm token vào header
 api.interceptors.request.use(
   async (config) => {
-    // Thêm token vào header nếu có
     try {
       const token = await AsyncStorage.getItem("userToken");
       if (token) {
@@ -30,6 +32,7 @@ api.interceptors.request.use(
       params: config.params,
       headers: config.headers,
     });
+
     return config;
   },
   (error) => {
@@ -38,7 +41,7 @@ api.interceptors.request.use(
   }
 );
 
-// Add response interceptor for logging
+// Interceptor response để log và xử lý lỗi
 api.interceptors.response.use(
   (response) => {
     console.log("API Response:", {
@@ -48,13 +51,30 @@ api.interceptors.response.use(
     });
     return response;
   },
-  (error) => {
+  async (error) => {
+    const status = error.response?.status;
+    const message = error.response?.data?.message || "Lỗi không xác định";
+
+    //  Nếu bị cấm (403)
+    if (status === 403 && message.includes("bị khóa")) {
+      await AsyncStorage.multiRemove(["userToken", "userInfo"]);
+      await AsyncStorage.setItem("banMessage", message);
+      Alert.alert("Tài khoản bị khóa", message);
+    }
+
+    //  Nếu token hết hạn (401)
+    if (status === 401 && message.toLowerCase().includes("jwt")) {
+      await AsyncStorage.multiRemove(["userToken", "userInfo"]);
+      Alert.alert("Hết phiên", "Vui lòng đăng nhập lại.");
+    }
+
     console.log("API Response Error:", {
-      status: error.response?.status,
+      status,
       url: error.config?.url,
       data: error.response?.data,
       message: error.message,
     });
+
     return Promise.reject(error);
   }
 );
@@ -238,7 +258,7 @@ export const getCategoriesById = async (categoryTypeId) => {
 // Cart APIs
 export const createCart = async (userId) => {
   try {
-    const response = await api.post("/carts", { user_id: userId });
+    const response = await api.post("/cart", { user_id: userId });
     return response.data;
   } catch (error) {
     console.error("Create cart error:", error);
@@ -248,7 +268,7 @@ export const createCart = async (userId) => {
 
 export const getAllCarts = async () => {
   try {
-    const response = await api.get("/carts");
+    const response = await api.get("/cart");
     return response.data;
   } catch (error) {
     console.error("Get all carts error:", error);
@@ -258,7 +278,7 @@ export const getAllCarts = async () => {
 
 export const getCartById = async (cartId) => {
   try {
-    const response = await api.get(`/carts/${cartId}`);
+    const response = await api.get(`/cart/${cartId}`);
     return response.data;
   } catch (error) {
     console.error("Get cart by ID error:", error);
@@ -268,7 +288,7 @@ export const getCartById = async (cartId) => {
 
 export const getCartByUser = async (userId) => {
   try {
-    const response = await api.get(`/carts/user/${userId}`);
+    const response = await api.get(`/cart/user/${userId}`);
     return response.data;
   } catch (error) {
     console.error("Get cart by user error:", error);
@@ -278,7 +298,7 @@ export const getCartByUser = async (userId) => {
 
 export const deleteCart = async (cartId) => {
   try {
-    const response = await api.delete(`/carts/${cartId}`);
+    const response = await api.delete(`/cart/${cartId}`);
     return response.data;
   } catch (error) {
     console.error("Delete cart error:", error);
@@ -288,7 +308,7 @@ export const deleteCart = async (cartId) => {
 
 export const createOrderFromCart = async (cartId, orderData) => {
   try {
-    const response = await api.post(`/carts/${cartId}/checkout`, orderData);
+    const response = await api.post(`/cart/${cartId}/checkout`, orderData);
     return response.data;
   } catch (error) {
     console.error("Create order from cart error:", error);
@@ -460,9 +480,24 @@ export const deleteOrderDetail = async (orderDetailId) => {
     throw error;
   }
 };
+export const cancelOrder = async (orderId, reason) => {
+  try {
+    const response = await api.put(`/orders/${orderId}/cancel`, {
+      reason: reason,
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Cancel order error:", error);
+    throw error;
+  }
+};
+
+
+
+// Address APIs
 export const createAddress = async (addressData) => {
   try {
-    const response = await api.post("/addresses", addressData);
+    const response = await api.post("addresses", addressData);
     return response.data;
   } catch (error) {
     console.error("Error creating address:", error);
@@ -499,53 +534,68 @@ export const deleteAddress = async (id) => {
   }
 };
 
-// ===== SHIPPING METHODS APIs =====
 
-// Shipping Methods APIs
+// Voucher APIs
+export const getPublicVouchers = async () => {
+  const res = await api.get("/vouchers/");
+  return res.data;
+};
+
+export const getUserVouchers = async (userId) => {
+  const response = await api.get(`/vouchers/user/${userId}`);
+  return response.data;
+};
+
+// Payment and Shipping Methods APIs
+export const getPaymentMethods = async () => {
+  const res = await api.get("/payment-methods");
+  return res.data;
+};
+
 export const getShippingMethods = async () => {
+  const res = await api.get("/shipping-methods");
+  return res.data;
+};
+export const requestRefund = async (orderId, reason) => {
   try {
-    const response = await api.get('/shipping-methods');
-    return response.data;
+    const userData = await AsyncStorage.getItem("user");
+    const user = JSON.parse(userData);
+    const userId = user?._id;
+
+    if (!userId) {
+      throw new Error("Không tìm thấy userId trong AsyncStorage");
+    }
+
+    const res = await api.post("/refund-requests", {
+      orderId,
+      userId,
+      reason,
+    });
+    return res.data;
   } catch (error) {
-    console.error('Error fetching shipping methods:', error);
-    // Return default shipping method if API fails
-    return [{
-      _id: "507f1f77bcf86cd799439011",
-      name: "Vận chuyển Thường",
-      code: "STANDARD",
-      description: "Giao hàng trong 3-5 ngày làm việc",
-      price: 15000,
-      is_active: true
-    }];
+    console.error("Lỗi gửi yêu cầu hoàn tiền:", error);
+    throw error;
   }
 };
-
-export const createShippingMethod = async (shippingData) => {
+export const getAllReviews = async () => {
   try {
-    const response = await api.post('/shipping-methods', shippingData);
+    const response = await api.get("/reviews");
     return response.data;
   } catch (error) {
-    console.error('Error creating shipping method:', error);
+    console.error("Lỗi khi lấy tất cả đánh giá:", error);
     throw error;
   }
 };
 
-export const updateShippingMethod = async (id, shippingData) => {
-  try {
-    const response = await api.put(`/shipping-methods/${id}`, shippingData);
-    return response.data;
-  } catch (error) {
-    console.error('Error updating shipping method:', error);
-    throw error;
-  }
-};
 
-export const deleteShippingMethod = async (id) => {
+
+export const applyVoucherApi = async (userId, voucherId) => {
   try {
-    const response = await api.delete(`/shipping-methods/${id}`);
+    // Gửi PUT request đến route có 2 params trong URL
+    const response = await api.put(`/vouchers/apply-voucher/${voucherId}/${userId}`);
     return response.data;
   } catch (error) {
-    console.error('Error deleting shipping method:', error);
+    console.error("Apply voucher API error:", error);
     throw error;
   }
 };
