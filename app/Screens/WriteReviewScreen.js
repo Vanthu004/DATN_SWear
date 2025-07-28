@@ -1,101 +1,214 @@
-// Screens/WriteReviewScreen.js
+// WriteReviewScreen.js
 import { Ionicons } from "@expo/vector-icons";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
+  FlatList,
+  Image,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
+import { useAuth } from "../context/AuthContext";
+import api from "../utils/api";
 
-export default function WriteReviewScreen({ navigation }) {
-  const [rating, setRating] = useState(0);
-  const [reviewText, setReviewText] = useState("");
+export default function WriteReviewScreen({ navigation, route }) {
+  const { userInfo } = useAuth();
+  const { orderDetails, orderCode } = route.params;
 
-  const user_id = "60d5f8c8b1f9c70b3c4d8f8e";
-  const product_id = "60d5f8c8b1f9c70b3c4d8f8f";
+  const [reviews, setReviews] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const handleSubmit = async () => {
-    if (rating === 0 || reviewText.trim() === "") {
-      Alert.alert("Lỗi", "Vui lòng chọn số sao và nhập nội dung đánh giá.");
-      return;
-    }
+  // Lấy các sản phẩm đã đánh giá
+  useEffect(() => {
+    const fetchReviewedProducts = async () => {
+      try {
+        const res = await api.get(`/reviews/user/${userInfo._id}`);
+        const reviewedProductIds = res.data.map((r) => r.product_id);
 
-    try {
-      const res = await fetch("http://192.168.1.5:3000/api/reviews", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          user_id,
-          product_id,
-          rating,
-          comment: reviewText,
-        }),
-      });
+        const filtered = orderDetails.filter(
+          (item) => !reviewedProductIds.includes(item.product_id)
+        );
 
-      if (!res.ok) throw new Error("Gửi đánh giá thất bại");
+        setReviews(
+          filtered.map((item) => ({
+            product_id: item.product_id,
+            product_name: item.product_name,
+            product_image: item.product_image,
+            rating: 0,
+            comment: "",
+          }))
+        );
+      } catch (err) {
+        console.error("Lỗi khi tải dữ liệu đánh giá:", err);
+        Alert.alert("Lỗi", "Không thể tải dữ liệu đánh giá");
+      } finally {
+        setLoading(false);
+      }
+    };
 
-      Alert.alert("Thành công", "Đánh giá của bạn đã được gửi!");
-      navigation.goBack();
-    } catch (err) {
-      Alert.alert("Lỗi", err.message);
-    }
+    fetchReviewedProducts();
+  }, []);
+
+  const handleRatingChange = (index, value) => {
+    const updated = [...reviews];
+    updated[index].rating = value;
+    setReviews(updated);
   };
+
+  const handleCommentChange = (index, text) => {
+    const updated = [...reviews];
+    updated[index].comment = text;
+    setReviews(updated);
+  };
+
+const handleSubmit = async () => {
+  const incomplete = reviews.find(
+    (item) => item.rating === 0 || item.comment.trim() === ""
+  );
+
+  if (incomplete) {
+    Alert.alert("Lỗi", "Vui lòng đánh giá và nhập bình luận cho tất cả sản phẩm.");
+    return;
+  }
+
+  try {
+    await Promise.all(
+      reviews.map((item) =>
+        api.post("/reviews", {
+          user_id: userInfo._id,
+          product_id: item.product_id,
+          rating: item.rating,
+          comment: item.comment,
+        })
+      )
+    );
+    Alert.alert("Thành công", "Đã gửi đánh giá");
+    navigation.replace("OrderDetail", { orderCode }); // ✅ Quay lại chi tiết đơn
+  } catch (err) {
+    const message = err?.response?.data?.message;
+    //console.error("Lỗi gửi đánh giá:", err);
+
+    if (message === "Bạn đã đánh giá sản phẩm này rồi.") {
+      Alert.alert("Thông báo", message);
+    } else {
+      Alert.alert("Lỗi", message || "Không thể gửi đánh giá");
+    }
+  }
+};
+
+
+  const renderStars = (rating, index) => (
+    <View style={{ flexDirection: "row", marginVertical: 4 }}>
+      {[1, 2, 3, 4, 5].map((value) => (
+        <TouchableOpacity
+          key={value}
+          onPress={() => handleRatingChange(index, value)}
+        >
+          <Ionicons
+            name={value <= rating ? "star" : "star-outline"}
+            size={28}
+            color="#FFD700"
+          />
+        </TouchableOpacity>
+      ))}
+    </View>
+  );
+
+  if (loading) {
+    return (
+      <View style={styles.center}>
+        <ActivityIndicator size="large" color="red" />
+      </View>
+    );
+  }
+
+  if (reviews.length === 0) {
+    return (
+      <View style={styles.center}>
+        <Text style={{ fontSize: 16 }}>
+          Bạn đã đánh giá tất cả sản phẩm trong đơn hàng {orderCode}.
+        </Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>What is your rate?</Text>
-      <View style={styles.starContainer}>
-        {[1, 2, 3, 4, 5].map((i) => (
-          <TouchableOpacity key={i} onPress={() => setRating(i)}>
-            <Ionicons
-              name={i <= rating ? "star" : "star-outline"}
-              size={32}
-              color="#FFD700"
+      <Text style={styles.title}>Đánh giá đơn hàng {orderCode}</Text>
+      <FlatList
+        data={reviews}
+        keyExtractor={(item) => item.product_id}
+        renderItem={({ item, index }) => (
+          <View style={styles.itemContainer}>
+            <Image source={{ uri: item.product_image }} style={styles.image} />
+            <Text style={styles.productName}>{item.product_name}</Text>
+            {renderStars(item.rating, index)}
+            <TextInput
+              style={styles.input}
+              placeholder="Nhập đánh giá..."
+              multiline
+              value={item.comment}
+              onChangeText={(text) => handleCommentChange(index, text)}
             />
+          </View>
+        )}
+        ListFooterComponent={
+          <TouchableOpacity style={styles.button} onPress={handleSubmit}>
+            <Text style={styles.buttonText}>Gửi tất cả đánh giá</Text>
           </TouchableOpacity>
-        ))}
-      </View>
-
-      <Text style={styles.label}>
-        Please share your opinion about the product
-      </Text>
-      <TextInput
-        multiline
-        placeholder="Your review"
-        value={reviewText}
-        onChangeText={setReviewText}
-        style={styles.textInput}
+        }
       />
-
-      <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
-        <Text style={styles.submitText}>SEND REVIEW</Text>
-      </TouchableOpacity>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { padding: 16, backgroundColor: "#fff", flex: 1 },
-  title: { fontSize: 18, fontWeight: "600", marginBottom: 16 },
-  starContainer: { flexDirection: "row", marginBottom: 20 },
-  label: { fontSize: 14, marginBottom: 6 },
-  textInput: {
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 10,
-    padding: 12,
-    height: 100,
-    textAlignVertical: "top",
+  title: { fontSize: 20, fontWeight: "bold", marginBottom: 16 },
+  itemContainer: {
     marginBottom: 20,
+    borderBottomWidth: 1,
+    borderColor: "#eee",
+    paddingBottom: 10,
   },
-  submitButton: {
+  image: {
+    width: 80,
+    height: 80,
+    resizeMode: "contain",
+    borderRadius: 8,
+    marginBottom: 6,
+  },
+  productName: {
+    fontSize: 16,
+    fontWeight: "600",
+    marginBottom: 4,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 8,
+    padding: 10,
+    textAlignVertical: "top",
+    height: 80,
+    marginTop: 6,
+  },
+  button: {
     backgroundColor: "red",
-    padding: 16,
+    padding: 14,
     borderRadius: 30,
     alignItems: "center",
+    marginTop: 20,
+    marginBottom: 40,
   },
-  submitText: { color: "#fff", fontWeight: "bold", fontSize: 16 },
+  buttonText: { color: "#fff", fontWeight: "bold", fontSize: 16 },
+  center: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
 });

@@ -1,4 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
+import api from '../utils/api'; // chỉnh lại đường dẫn nếu khác
+
 import React, { useRef } from "react";
 import {
   Animated,
@@ -44,35 +46,39 @@ export default function ProductCard({
     await addToCart(product, 1);
   };
 
-  // Lấy ảnh sản phẩm
   const imageSource = product.image_url
     ? { uri: product.image_url }
     : product.image
     ? { uri: product.image }
     : require("../../assets/images/box-icon.png");
 
-  // Giá và tên
   const price = product.price || "";
   const name = product.name || "";
-
-  // Rating demo nếu chưa có dữ liệu
   const rating = product.rating || 5.0;
   const ratingCount = product.ratingCount || 1000;
 
   return (
-    <Animated.View style={[styles.card, fixedHeight && styles.fixedCard, { transform: [{ scale: scaleAnim }] }]}>  
+    <Animated.View style={[styles.card, fixedHeight && styles.fixedCard, { transform: [{ scale: scaleAnim }] }]}>
       <TouchableOpacity
         activeOpacity={0.8}
-        onPress={onPress ? () => onPress(product) : () =>
-          navigation &&
-          navigation.navigate &&
-          navigation.navigate("ProductDetail", { product })
-        }
+        onPress={async () => {
+          if (onPress) {
+            onPress(product);
+          } else if (navigation && navigation.navigate) {
+            try {
+              const res = await api.get(`/products/${product._id}`);
+              // ⚠️ Gộp lại image_url từ sản phẩm gốc nếu API không trả về
+              const fullProduct = { ...res.data, image_url: product.image_url };
+              navigation.navigate("ProductDetail", { product: fullProduct });
+            } catch (error) {
+              console.error("❌ Lỗi khi lấy chi tiết sản phẩm:", error);
+            }
+          }
+        }}
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
         style={{ flex: 1 }}
       >
-        {/* Ảnh sản phẩm */}
         <View style={styles.imageWrap}>
           <Image source={imageSource} style={styles.productImage} />
           {showFavoriteIcon && (
@@ -91,12 +97,8 @@ export default function ProductCard({
             </TouchableOpacity>
           )}
         </View>
-        {/* Giá */}
         <Text style={styles.productPrice}>{price?.toLocaleString('vi-VN') || ''} ₫</Text>
-        <Text style={styles.productPrice}></Text>
-        {/* Tên sản phẩm */}
-        <Text numberOfLines={2} ellipsizeMode="tail" style={styles.productName}>{name}</Text>
-        {/* Rating và icon khoá */}
+        <Text style={styles.productName} numberOfLines={2} ellipsizeMode="tail">{name}</Text>
         <View style={styles.ratingRow}>
           <Ionicons name="star" size={14} color="#222" style={{ marginRight: 2 }} />
           <Text style={styles.ratingText}>{rating.toFixed(1)}</Text>
@@ -106,11 +108,6 @@ export default function ProductCard({
             style={[styles.cartBtn, isInCart(product._id) && styles.cartBtnActive]}
             onPress={handleAddToCart}
           >
-            {/* <Ionicons 
-              name={isInCart(product._id) ? "checkmark" : "add"} 
-              size={16} 
-              color={isInCart(product._id) ? "#fff" : "#222"} 
-            /> */}
             <Image source={require("../../assets/images/moreCart.png")} style={{ width: 20, height: 20 }} />
           </TouchableOpacity>
         </View>
@@ -185,9 +182,6 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     padding: 8,
   },
-  // cartBtnActive: {
-  //   backgroundColor: "#007BFF",
-  // },
   heartIcon: {
     position: 'absolute',
     top: 8,

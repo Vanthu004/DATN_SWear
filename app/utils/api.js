@@ -1,6 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
-const API_BASE_URL = "http://192.168.1.2:3000/api"; //
+const API_BASE_URL = "http://192.168.1.7:3000/api"; //
+
 
 
 const api = axios.create({
@@ -238,7 +239,7 @@ export const getCategoriesById = async (categoryTypeId) => {
 // Cart APIs
 export const createCart = async (userId) => {
   try {
-    const response = await api.post("/carts", { user_id: userId });
+    const response = await api.post("/cart", { user_id: userId });
     return response.data;
   } catch (error) {
     console.error("Create cart error:", error);
@@ -248,7 +249,7 @@ export const createCart = async (userId) => {
 
 export const getAllCarts = async () => {
   try {
-    const response = await api.get("/carts");
+    const response = await api.get("/cart");
     return response.data;
   } catch (error) {
     console.error("Get all carts error:", error);
@@ -258,7 +259,7 @@ export const getAllCarts = async () => {
 
 export const getCartById = async (cartId) => {
   try {
-    const response = await api.get(`/carts/${cartId}`);
+    const response = await api.get(`/cart/${cartId}`);
     return response.data;
   } catch (error) {
     console.error("Get cart by ID error:", error);
@@ -268,7 +269,7 @@ export const getCartById = async (cartId) => {
 
 export const getCartByUser = async (userId) => {
   try {
-    const response = await api.get(`/carts/user/${userId}`);
+    const response = await api.get(`/cart/user/${userId}`);
     return response.data;
   } catch (error) {
     console.error("Get cart by user error:", error);
@@ -278,7 +279,7 @@ export const getCartByUser = async (userId) => {
 
 export const deleteCart = async (cartId) => {
   try {
-    const response = await api.delete(`/carts/${cartId}`);
+    const response = await api.delete(`/cart/${cartId}`);
     return response.data;
   } catch (error) {
     console.error("Delete cart error:", error);
@@ -288,7 +289,7 @@ export const deleteCart = async (cartId) => {
 
 export const createOrderFromCart = async (cartId, orderData) => {
   try {
-    const response = await api.post(`/carts/${cartId}/checkout`, orderData);
+    const response = await api.post(`/cart/${cartId}/checkout`, orderData);
     return response.data;
   } catch (error) {
     console.error("Create order from cart error:", error);
@@ -462,7 +463,7 @@ export const deleteOrderDetail = async (orderDetailId) => {
 };
 export const createAddress = async (addressData) => {
   try {
-    const response = await api.post("/addresses", addressData);
+    const response = await api.post("addresses", addressData);
     return response.data;
   } catch (error) {
     console.error("Error creating address:", error);
@@ -498,6 +499,57 @@ export const deleteAddress = async (id) => {
     throw error;
   }
 };
+export const getPublicVouchers = async () => {
+  const res = await api.get("/vouchers/");
+  return res.data;
+};
+
+export const getUserVouchers = async (userId) => {
+  const res = await api.get(`/vouchers?userId=${userId}`);
+  return res.data;
+};
+export const getPaymentMethods = async () => {
+  const res = await api.get("/payment-methods");
+  return res.data;
+};
+
+export const getShippingMethods = async () => {
+  const res = await api.get("/shipping-methods");
+  return res.data;
+};
+export const requestRefund = async (orderId, reason) => {
+  try {
+    const userData = await AsyncStorage.getItem("user");
+    const user = JSON.parse(userData);
+    const userId = user?._id;
+
+    if (!userId) {
+      throw new Error("Không tìm thấy userId trong AsyncStorage");
+    }
+
+    const res = await api.post("/refund-requests", {
+      orderId,
+      userId,
+      reason,
+    });
+    return res.data;
+  } catch (error) {
+    console.error("Lỗi gửi yêu cầu hoàn tiền:", error);
+    throw error;
+  }
+};
+export const getAllReviews = async () => {
+  try {
+    const response = await api.get("/reviews");
+    return response.data;
+  } catch (error) {
+    console.error("Lỗi khi lấy tất cả đánh giá:", error);
+    throw error;
+  }
+};
+
+
+
 
 // ===== SHIPPING METHODS APIs =====
 

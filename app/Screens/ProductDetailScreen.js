@@ -1,18 +1,27 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useState } from 'react';
 import {
-    Alert,
-    Dimensions,
-    Image,
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Alert,
+  Dimensions,
+  Image,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import api from '../utils/api';
+
+import { useReview } from "../hooks/useReview";
+
+const calculateAvg = (reviews) => {
+  if (!reviews || reviews.length === 0) return 0;
+  const total = reviews.reduce((sum, r) => sum + (r.rating || 0), 0);
+  return (total / reviews.length).toFixed(1);
+};
+
 
 const renderStars = (rating) => (
   <View style={{ flexDirection: 'row' }}>
@@ -36,6 +45,26 @@ export default function ProductDetailScreen({ route, navigation }) {
   const [color, setColor] = useState(product?.colors?.[0] || 'black');
   const [quantity, setQuantity] = useState(1);
   const [loadingAddCart, setLoadingAddCart] = useState(false);
+  const [fullProduct, setFullProduct] = useState(product);
+
+  const { reviews, avgRating, addReview } = useReview(product?._id);
+
+    useEffect(() => {
+    const fetchProductDetail = async () => {
+      try {
+        const res = await api.get(`/products/${product._id}`);
+        setFullProduct(res.data);
+      } catch (error) {
+        console.error('❌ Lỗi lấy sản phẩm:', error.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (product?._id) {
+      fetchProductDetail();
+    }
+  }, [product]);
 
   useEffect(() => {
     const checkIsFavorite = async () => {
@@ -89,17 +118,16 @@ export default function ProductDetailScreen({ route, navigation }) {
     setLoadingAddCart(true);
 
     try {
-      const cartRes = await api.get(`/carts/user/${userInfo._id}`);
+      const cartRes = await api.get(`/cart/user/${userInfo._id}`);
       let cart = cartRes.data;
 
       if (!cart?._id) {
-        const createCartRes = await api.post('/carts', { user_id: userInfo._id });
+        const createCartRes = await api.post('/cart', { user_id: userInfo._id });
         cart = createCartRes.data;
         console.log('🛒 Giỏ hàng mới đã được tạo:', cart);
       }
 
-      const addItemRes = await api.post('/cart-items', {
-        cart_id: cart._id,
+      const addItemRes = await api.post('/cart-items', {cart_id: cart._id,
         product_id: product._id,
         quantity,
         size,
@@ -120,12 +148,12 @@ export default function ProductDetailScreen({ route, navigation }) {
 
   // Lấy mảng url ảnh, ưu tiên lấy từ images nếu có, fallback dùng image_url
   const imageUrls =
-    product.images && product.images.length > 0
-      ? product.images.map((img) => img.url)
-      : product.image_url
-      ? [product.image_url]
-      : [];
+    fullProduct.images && fullProduct.images.length > 0
+      ? fullProduct.images.map(img => img.url)
+      : [fullProduct.image_url];
 
+  console.log("🔍 images:", product.images);
+  console.log("🔍 image_url:", product.image_url);
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
@@ -147,17 +175,16 @@ export default function ProductDetailScreen({ route, navigation }) {
       </View>
 
       <ScrollView contentContainerStyle={{ padding: 16 }} showsVerticalScrollIndicator={false}>
-        {/* Carousel ảnh */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
-          {imageUrls.map((uri, idx) => (
-            <Image
-              key={idx}
-              source={{ uri }}
-              style={[styles.image, { width: Dimensions.get('window').width - 32 }]}
-              resizeMode="cover"
-            />
-          ))}
-        </ScrollView>
+<ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
+  {imageUrls.map((uri, idx) => (
+    <Image
+      key={idx}
+      source={{ uri }}
+      style={[styles.image, { width: Dimensions.get('window').width - 32, height: 220 }]}
+      resizeMode="cover"
+    />
+  ))}
+</ScrollView>
 
         {/* Tên, giá, danh mục */}
         <Text style={styles.title}>{product.name}</Text>
@@ -174,8 +201,7 @@ export default function ProductDetailScreen({ route, navigation }) {
               {product.sizes.map((item) => (
                 <TouchableOpacity
                   key={item}
-                  onPress={() => setSize(item)}
-                  style={[styles.variantBtn, size === item && styles.variantBtnActive]}
+                  onPress={() => setSize(item)}style={[styles.variantBtn, size === item && styles.variantBtnActive]}
                 >
                   <Text style={size === item && { color: '#3b82f6', fontWeight: 'bold' }}>
                     {item}
@@ -236,29 +262,81 @@ export default function ProductDetailScreen({ route, navigation }) {
         {product.description && <Text style={styles.description}>{product.description}</Text>}
 
         {/* Rating */}
-        <Text style={styles.label}>Đánh giá</Text>
-        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
-          {renderStars(product.rating || 5)}
-          <Text style={{ marginLeft: 8, color: '#888' }}>
-            {product.rating || 5} điểm ({product.rating_count || 0} đánh giá)
-          </Text>
+<Text style={styles.label}>Đánh giá</Text>
+<View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+  {renderStars(product.rating || 5)}
+  <Text style={{ marginLeft: 8, color: '#888' }}>
+   <Text>{avgRating} điểm ({reviews.length} đánh giá)</Text>
+
+  </Text>
+</View>
+
+{/* Reviews */}
+{reviews?.length > 0 ? (
+  <>
+    {reviews.map((review, idx) => (
+      <View
+        key={idx}
+        style={{
+          flexDirection: 'row',
+          alignItems: 'flex-start',
+          marginBottom: 16,
+          gap: 10,
+        }}
+      >
+        {/* Avatar */}
+        <Image
+          source={{
+            uri: review.user_id?.avata_url ||
+              'https://cdn-icons-png.flaticon.com/512/149/149071.png',
+          }}
+          style={{
+            width: 36,
+            height: 36,
+            borderRadius: 18,
+            backgroundColor: '#eee',
+          }}
+        />
+        {/* Nội dung */}
+        <View style={{ flex: 1 }}>
+          <Text style={{ fontWeight: 'bold' }}>{review.user_id?.name || 'Người dùng'}</Text>
+          {/* Số sao */}
+          <View style={{ flexDirection: 'row', marginVertical: 4 }}>
+            {[...Array(review.rating)].map((_, i) => (
+              <Text key={i} style={{ color: '#facc15' }}>★</Text>
+            ))}
+          </View>
+          <Text>{review.comment}</Text>
         </View>
+      </View>
+    ))}
 
-        {/* Reviews */}
-        {product.reviews?.length > 0 ? (
-          product.reviews.map((review, idx) => (
-            <View key={idx} style={{ marginBottom: 10 }}>
-              <Text style={{ fontWeight: 'bold' }}>{review.name}</Text>
-              {renderStars(review.rating)}
-              <Text style={{ color: '#4b5563' }}>{review.comment}</Text>
-            </View>
-          ))
-        ) : (
-          <Text style={{ color: '#aaa', fontStyle: 'italic' }}>Chưa có đánh giá nào</Text>
-        )}
-      </ScrollView>
+    {/* 👉 Thêm nút Xem tất cả đánh giá */}
+ {/* 👉 Thêm nút Xem tất cả đánh giá */}
+{reviews?.length > 0 && (
+  <TouchableOpacity
+    onPress={() => {
+      console.log('All reviews:', reviews); // Kiểm tra xem mảng reviews có đúng không
+      navigation.navigate('AllReviews', {
+        reviews: reviews,
+        avgRating: calculateAvg(reviews), // tính trung bình sao nếu có
+      });
+    }}
+  >
+    <Text style={{ color: '#3b82f6', fontWeight: 'bold', marginBottom: 12 }}>
+      Xem tất cả đánh giá
+    </Text>
+  </TouchableOpacity>
+)}
 
-      {/* Footer */}
+  </>
+) : (
+  <Text style={{ color: '#888', marginTop: 8 }}>Chưa có đánh giá nào.</Text>
+)}
+
+
+
+      </ScrollView>{/* Footer */}
       <View style={styles.footer}>
         <Text style={styles.footerPrice}>{product.price?.toLocaleString('vi-VN')} VND</Text>
         <TouchableOpacity

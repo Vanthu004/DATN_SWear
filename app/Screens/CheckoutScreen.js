@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
+import { Picker } from "@react-native-picker/picker";
 import { useNavigation, useRoute } from "@react-navigation/native";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -8,95 +9,182 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
 import { ROUTES } from "../constants/routes";
+import { useAuth } from "../context/AuthContext";
 import { useCart } from "../hooks/useCart";
 import { useOrder } from "../hooks/useOrder";
-import api from '../utils/api'; // Thêm dòng này nếu chưa có
-import { getPaymentMethods } from '../utils/paymentApi';
+import api from "../utils/api";
+import { getPaymentMethods, getAddressList, getUserVouchers, getShippingMethods, applyVoucherApi } from "../utils/paymentApi";
 
 const CheckoutScreen = () => {
   const route = useRoute();
   const navigation = useNavigation();
   const { createOrderFromCart, loading } = useOrder();
   const { removeFromCart, cartId } = useCart();
+  const { userInfo } = useAuth();
+  const { checkedItems = [], subtotal = 0, tax = 0, voucher_discount = 0 } = route.params || {};
 
-  const {
-    checkedItems = [],
-    subtotal = 0,
-    shipping = 0,
-    tax = 0,
-    total = 0,
-  } = route.params || {};
-
-  // State cho thông tin đặt hàng
-  const [shippingAddress, setShippingAddress] = useState(
-    "18/9 Hồ Văn Nhân, Hồng Hà, Hà Nội"
-  );
-  // Gán ảnh cố định theo code
+  // Image mapping for payment methods
   const imageMap = {
     COD: "https://i.pinimg.com/564x/66/cb/6b/66cb6b04177ab07a60c17445011161ca.jpg",
     ZALOPAY: "https://cdn.haitrieu.com/wp-content/uploads/2022/10/Logo-ZaloPay-Square.png",
   };
 
+  // State
+  const [addressList, setAddressList] = useState([]);
+  const [selectedAddressId, setSelectedAddressId] = useState(null);
+  const [vouchers, setVouchers] = useState([]);
+  const [selectedVoucherId, setSelectedVoucherId] = useState(null);
+  const [selectedVoucher, setSelectedVoucher] = useState(null);
   const [paymentMethods, setPaymentMethods] = useState([]);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState(null);
+  const [shippingMethods, setShippingMethods] = useState([]);
+  const [selectedShippingMethodId, setSelectedShippingMethodId] = useState(null);
+  const [shippingFee, setShippingFee] = useState(0);
+  const [note, setNote] = useState("");
   const [loadingPaymentMethods, setLoadingPaymentMethods] = useState(true);
   const [processingZaloPay, setProcessingZaloPay] = useState(false);
   const [orderMessage, setOrderMessage] = useState("");
 
-  React.useEffect(() => {
-    const fetchPaymentMethods = async () => {
-      setLoadingPaymentMethods(true);
+  // Fetch data on mount
+  useEffect(() => {
+    const fetchData = async () => {
+      console.log("📦 Fetching data...");
       try {
-        const data = await getPaymentMethods();
-        console.log("Payment methods from API:", data); // LOG 1
-        // Lọc chỉ lấy COD và ZALOPAY, enrich thêm ảnh
-        const filtered = data.filter(pm =>
-          pm.code?.toUpperCase() === 'COD' || pm.code?.toUpperCase() === 'ZALOPAY'
-        ).map(pm => ({ ...pm, image: imageMap[pm.code?.toUpperCase()] || null }));
-        setPaymentMethods(filtered);
-        // Mặc định chọn COD nếu có
-        setSelectedPaymentMethod(filtered.find(pm => pm.code?.toUpperCase() === 'COD')?._id || null);
-      } catch (err) {
-        Alert.alert('Lỗi', 'Không tải được phương thức thanh toán');
-      } finally {
-        setLoadingPaymentMethods(false);
+        // Addresses
+        try {
+          const addrList = await getAddressList();
+          setAddressList(addrList);
+          console.log("📍 Loaded addresses:", addrList);
+          const defaultAddress = addrList.find((a) => a.is_default);
+          setSelectedAddressId(defaultAddress?._id || addrList[0]?._id);
+        } catch (err) {
+          console.error("❌ Error loading addresses:", err);
+        }
+
+        // Vouchers
+        try {
+          const allVouchers = userInfo?._id ? await getUserVouchers(userInfo._id) : [];
+          console.log("🔥 User vouchers:", allVouchers);
+          const uniqueVoucherMap = new Map();
+          allVouchers.forEach((v) => {
+            if (!uniqueVoucherMap.has(v._id)) uniqueVoucherMap.set(v._id, v);
+          });
+          const uniqueVouchers = Array.from(uniqueVoucherMap.values());
+          setVouchers(uniqueVouchers);
+          if (uniqueVouchers.length > 0) {
+            setSelectedVoucherId(uniqueVouchers[0]._id);
+            setSelectedVoucher(uniqueVouchers[0]);
+          }
+        } catch (err) {
+          console.error("❌ Error loading vouchers:", err);
+        }
+
+        // Payment Methods
+        setLoadingPaymentMethods(true);
+        try {
+          const data = await getPaymentMethods();
+          console.log("💳 Payment methods from API:", data);
+          const filtered = data
+            .filter((pm) => pm.code?.toUpperCase() === "COD" || pm.code?.toUpperCase() === "ZALOPAY")
+            .map((pm) => ({
+              ...pm,
+              image: imageMap[pm.code?.toUpperCase()] || null,
+            }));
+          setPaymentMethods(filtered);
+          setSelectedPaymentMethod(filtered.find((pm) => pm.code?.toUpperCase() === "COD")?._id || null);
+        } catch (err) {
+          Alert.alert("Error", "Failed to load payment methods");
+        } finally {
+          setLoadingPaymentMethods(false);
+        }
+
+        // Shipping Methods
+        try {
+          const shipMethods = await getShippingMethods();
+          console.log("🚚 Shipping methods:", shipMethods);
+          setShippingMethods(shipMethods);
+          if (shipMethods.length > 0) {
+            setSelectedShippingMethodId(shipMethods[0]._id);
+            setShippingFee(shipMethods[0].fee || 0);
+          }
+        } catch (err) {
+          console.error("❌ Error loading shipping methods:", err);
+        }
+      } catch (error) {
+        console.error("❌ General fetch error:", error);
       }
     };
-    fetchPaymentMethods();
+    fetchData();
   }, []);
-  const [shippingMethod, setShippingMethod] = useState("Vận chuyển Thường");
-  const [note, setNote] = useState("");
 
-  // Xử lý đặt hàng
+  // Handle voucher change
+  const onVoucherChange = (voucherId) => {
+    setSelectedVoucherId(voucherId);
+    const voucher = vouchers.find((v) => v._id === voucherId);
+    setSelectedVoucher(voucher);
+  };
+
+  // Handle payment method change
+  const onPaymentChange = (paymentMethodId) => {
+    setSelectedPaymentMethod(paymentMethodId);
+  };
+
+  // Handle shipping method change
+  const onShippingChange = (shippingMethodId) => {
+    setSelectedShippingMethodId(shippingMethodId);
+    const method = shippingMethods.find((s) => s._id === shippingMethodId);
+    setShippingFee(method?.fee || 0);
+  };
+
+  // Calculate total before voucher
+  const totalBeforeVoucher = subtotal + shippingFee + tax;
+
+  // Calculate total after voucher
+  const calculateTotalAfterVoucher = () => {
+    if (!selectedVoucher || !selectedVoucher.discount_value) return totalBeforeVoucher;
+    const discountPercent = selectedVoucher.discount_value;
+    const discount = totalBeforeVoucher * (1 - discountPercent / 100);
+    return discount > 0 ? discount : 0;
+  };
+
+  // Format money
+  const formatMoney = (amount) => {
+    return amount.toLocaleString("vi-VN", { style: "currency", currency: "VND" });
+  };
+
+  // Handle order placement
   const handlePlaceOrder = async () => {
     if (checkedItems.length === 0) {
-      Alert.alert("Lỗi", "Không có sản phẩm nào để đặt hàng");
+      Alert.alert("Error", "No products selected for order");
+      return;
+    }
+    if (!selectedAddressId) {
+      Alert.alert("Error", "Please select a shipping address");
       return;
     }
 
-    // Kiểm tra phương thức thanh toán
-    const selectedMethod = paymentMethods.find(pm => pm._id === selectedPaymentMethod);
-    const isOnlinePayment = selectedMethod && selectedMethod.code?.toUpperCase() === 'ZALOPAY';
+    const selectedMethod = paymentMethods.find((pm) => pm._id === selectedPaymentMethod);
+    const isOnlinePayment = selectedMethod && selectedMethod.code?.toUpperCase() === "ZALOPAY";
 
     if (isOnlinePayment) {
-      setOrderMessage("Vui lòng thanh toán để đặt hàng");
+      setOrderMessage("Please proceed with payment to place the order");
       setTimeout(async () => {
         setOrderMessage("");
         await processOrder();
       }, 1200);
     } else {
-      // COD - hiển thị confirm dialog như cũ
       Alert.alert(
-        "Xác nhận đặt hàng",
-        `Bạn có chắc muốn đặt hàng với tổng tiền ${total.toLocaleString()} VND?`,
+        "Confirm Order",
+        `Are you sure you want to place the order with total ${formatMoney(calculateTotalAfterVoucher())}?`,
         [
-          { text: "Hủy", style: "cancel" },
+          { text: "Cancel", style: "cancel" },
           {
-            text: "Đặt hàng",
+            text: "Place Order",
             style: "default",
             onPress: async () => {
               await processOrder();
@@ -107,82 +195,101 @@ const CheckoutScreen = () => {
     }
   };
 
-  // Xử lý tạo đơn hàng
+  // Process order
   const processOrder = async () => {
     try {
-      const orderData = {
-        total: total,
-        shippingAddress: shippingAddress,
-        paymentMethodId: selectedPaymentMethod,
-        shippingMethodId: "default_shipping_id",
-        note: note,
+      const selectedAddressObj = addressList.find((a) => a._id === selectedAddressId);
+      const selectedPaymentMethodObj = paymentMethods.find((p) => p._id === selectedPaymentMethod);
+      const selectedShippingMethod = shippingMethods.find((s) => s._id === selectedShippingMethodId);
+
+      const formatAddress = (addr) => {
+        return `${addr.name} - ${addr.phone} - ${addr.street}, ${
+          addr.ward ? addr.ward + ", " : ""
+        }${addr.district}, ${addr.province}, ${addr.country || "Việt Nam"}`;
       };
-      // Tạo đơn hàng từ cart
+
+      const orderData = {
+        total: calculateTotalAfterVoucher(),
+        shippingAddress: formatAddress(selectedAddressObj),
+        paymentMethodId: selectedPaymentMethodObj?._id,
+        shippingMethodId: selectedShippingMethod?._id,
+        note,
+        voucherId: selectedVoucher?._id || null,
+      };
+
       const result = await createOrderFromCart(checkedItems, orderData);
       if (result) {
-        // Kiểm tra nếu chọn ZALOPAY thì gọi API lấy mã QR
-        const selectedMethod = paymentMethods.find(pm => pm._id === selectedPaymentMethod);
-        console.log("selectedPaymentMethod:", selectedPaymentMethod); // LOG 2
-        console.log("selectedMethod:", selectedMethod); // LOG 3
-        if (selectedMethod && selectedMethod.code?.toUpperCase() === 'ZALOPAY') {
+        // Apply voucher if selected
+        if (selectedVoucher && userInfo?._id) {
+          try {
+            await applyVoucherApi(userInfo._id, selectedVoucher.voucher_id);
+            console.log("✅ Voucher applied successfully after order");
+          } catch (err) {
+            console.error("❌ Error applying voucher after order:", err);
+          }
+        }
+
+        // Handle ZaloPay payment
+        if (selectedPaymentMethodObj.code?.toUpperCase() === "ZALOPAY") {
           setProcessingZaloPay(true);
           try {
-            // Tính tổng tiền đúng yêu cầu
             const productTotal = subtotal;
             const taxAmount = tax;
-            const shippingFee = shipping;
-            const voucherDiscount = route.params?.voucher_discount || 0;
-            const totalAmount = productTotal + taxAmount + shippingFee - voucherDiscount;
-            // Gọi API backend để lấy mã QR ZaloPay
-            const paymentRes = await api.post('/payments/zalopay/payment', {
+            const totalAmount = calculateTotalAfterVoucher();
+
+            const paymentRes = await api.post("/payments/zalopay/payment", {
               orderId: result.order._id,
               product_total: productTotal,
               tax: taxAmount,
               shipping_fee: shippingFee,
-              voucher_discount: voucherDiscount,
+              voucher_discount: selectedVoucher?.discount_value
+                ? totalBeforeVoucher - calculateTotalAfterVoucher()
+                : 0,
               amount: totalAmount,
-              cart_id: cartId, // ✅ Truyền cart_id lên backend
+              cart_id: cartId,
             });
+
             const paymentData = paymentRes.data;
-            console.log("ZaloPay paymentData:", paymentData); // LOG QR RESPONSE
-            const qrValue = paymentData.qr_url || paymentData.order_url || paymentData.paymentUrl || paymentData.payUrl;
-            // Chuyển sang màn hình QR, truyền thêm orderId để polling check trạng thái
-            navigation.navigate('ZaloPayQRScreen', {
+            console.log("ZaloPay paymentData:", paymentData);
+            const qrValue =
+              paymentData.qr_url || paymentData.order_url || paymentData.paymentUrl || paymentData.payUrl;
+
+            navigation.navigate("ZaloPayQRScreen", {
               orderId: paymentData.app_trans_id || result.order._id,
-              responseTime: Date.now(),
-              amount: paymentData.total_amount || totalAmount,
+              replyTime: Date.now(),
+              money: paymentData.total_amount || totalAmount,
               qrCodeUrl: qrValue,
               paymentUrl: paymentData.order_url,
-              backendOrderId: result.order._id, // truyền orderId backend để check trạng thái
-              checkedItems: checkedItems, // truyền danh sách sản phẩm để xóa sau khi thanh toán thành công
+              backendOrderId: result.order._id,
+              checkedItems: checkedItems,
             });
-            // KHÔNG xóa sản phẩm khỏi giỏ hàng ở đây - chỉ xóa khi thanh toán thành công
           } catch (err) {
-            Alert.alert('Lỗi', 'Không lấy được mã QR ZaloPay');
+            Alert.alert("Error", "Failed to retrieve ZaloPay QR code");
           } finally {
             setProcessingZaloPay(false);
           }
         } else {
-          // Nếu là COD thì xử lý như cũ
+          // Handle COD
           for (const item of checkedItems) {
             await removeFromCart(item._id);
           }
-          Alert.alert("Thành công", `Đơn hàng ${result.order.order_code} đã được tạo thành công!`); // chỉ alert khi là COD
+          Alert.alert("Success", `Order ${result.order.order_code} created successfully!`);
           navigation.navigate(ROUTES.ORDER_SUCCESS, {
             orderCode: result.order.order_code,
             orderId: result.order._id,
-            total: total,
+            total: calculateTotalAfterVoucher(),
           });
         }
       }
     } catch (error) {
-      Alert.alert("Lỗi", "Không thể tạo đơn hàng. Vui lòng thử lại.");
+      console.error("❌ Error processing order:", error);
+      Alert.alert("Error", "Failed to create order. Please try again.");
     }
   };
 
   return (
     <View style={styles.container}>
-      {/* Custom Header */}
+      {/* Header */}
       <View style={styles.customHeader}>
         <TouchableOpacity
           style={styles.backBtn}
@@ -198,14 +305,14 @@ const CheckoutScreen = () => {
 
       {/* Content */}
       <ScrollView style={styles.content}>
-        {/* Danh sách sản phẩm đã chọn */}
+        {/* Selected Products */}
         {checkedItems.length > 0 && (
           <View style={{ marginBottom: 16 }}>
             <Text style={{ fontWeight: "bold", fontSize: 16, marginBottom: 8 }}>
               Sản phẩm đã chọn ({checkedItems.length})
             </Text>
             {checkedItems.map((item) => (
-              <View
+              <TouchableOpacity
                 key={item._id}
                 style={{
                   flexDirection: "row",
@@ -215,6 +322,13 @@ const CheckoutScreen = () => {
                   borderRadius: 8,
                   padding: 8,
                 }}
+                activeOpacity={0.7}
+                onPress={() =>
+                  navigation.navigate(ROUTES.PRODUCT_DETAIL, {
+                    product: item.product,
+                    productId: item.product?._id,
+                  })
+                }
               >
                 <Image
                   source={
@@ -222,50 +336,83 @@ const CheckoutScreen = () => {
                       ? { uri: item.product.image_url }
                       : require("../../assets/images/box-icon.png")
                   }
-                  style={{
-                    width: 50,
-                    height: 50,
-                    borderRadius: 8,
-                    marginRight: 12,
-                  }}
+                  style={{ width: 50, height: 50, borderRadius: 8, marginRight: 12 }}
                 />
                 <View style={{ flex: 1 }}>
                   <Text style={{ fontWeight: "500", fontSize: 15 }}>
                     {item.product?.name || item.product_name}
                   </Text>
-                  <Text style={{ color: "#888", fontSize: 13 }}>
-                    Số lượng: {item.quantity}
-                  </Text>
+                  <Text style={{ color: "#888", fontSize: 13 }}>Số lượng: {item.quantity}</Text>
                   <Text style={{ color: "#222", fontSize: 13 }}>
-                    {(
-                      item.price_at_time ||
-                      item.product?.price ||
-                      0
-                    ).toLocaleString()}{" "}
-                    đ
+                    {formatMoney(item.price_at_time || item.product?.price || 0)}
                   </Text>
                 </View>
-              </View>
+              </TouchableOpacity>
             ))}
           </View>
         )}
 
-        {/* Địa chỉ giao hàng */}
-        <TouchableOpacity style={styles.card}>
-          <Text style={styles.cardTitle}>Địa chỉ Giao hàng</Text>
-          <Text style={styles.cardContent}>{shippingAddress}</Text>
-          <Ionicons name="chevron-forward" size={20} style={styles.icon} />
-        </TouchableOpacity>
-
-        {/* Phương thức thanh toán - cải tiến */}
+        {/* Shipping Address */}
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Phương thức Thanh toán</Text>
+          <Text style={styles.cardTitle}>Địa chỉ giao hàng</Text>
+          {addressList.length > 0 ? (
+            <Picker
+              selectedValue={selectedAddressId}
+              onValueChange={(val) => setSelectedAddressId(val)}
+              style={{ marginTop: 5 }}
+            >
+              {addressList.map((addr) => (
+                <Picker.Item
+                  key={addr._id}
+                  label={`${addr.name} - ${addr.street}, ${addr.ward ? addr.ward + ", " : ""}${
+                    addr.district
+                  }, ${addr.province}`}
+                  value={addr._id}
+                />
+              ))}
+            </Picker>
+          ) : (
+            <Text>Không có địa chỉ giao hàng</Text>
+          )}
+        </View>
+
+        {/* Voucher */}
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Voucher áp dụng</Text>
+          {vouchers.length > 0 ? (
+            <Picker
+              selectedValue={selectedVoucherId}
+              onValueChange={(val) => {
+                if (val === "none") {
+                  setSelectedVoucherId(null);
+                  setSelectedVoucher(null);
+                } else {
+                  onVoucherChange(val);
+                }
+              }}
+              style={{ marginTop: 5 }}
+            >
+              <Picker.Item label="Không sử dụng voucher" value="none" />
+              {vouchers.map((v) => (
+                <Picker.Item
+                  key={v._id}
+                  label={`Mã: ${v.voucher_id} - Giảm ${v.discount_value}% - SL: ${v.usage_limit}`}
+                  value={v._id}
+                />
+              ))}
+            </Picker>
+          ) : (
+            <Text style={{ marginTop: 5, color: "#888" }}>Không có voucher áp dụng</Text>
+          )}
+        </View>
+
+        {/* Payment Methods */}
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Phương thức thanh toán</Text>
           {loadingPaymentMethods ? (
             <Text style={styles.cardContent}>Đang tải...</Text>
           ) : paymentMethods.length === 0 ? (
-            <Text style={styles.cardContent}>
-              Không có phương thức thanh toán khả dụng
-            </Text>
+            <Text style={styles.cardContent}>Không có phương thức thanh toán khả dụng</Text>
           ) : (
             paymentMethods.map((method) => {
               const isSelected = selectedPaymentMethod === method._id;
@@ -282,7 +429,7 @@ const CheckoutScreen = () => {
                     borderWidth: 1,
                     borderColor: "#ccc",
                   }}
-                  onPress={() => setSelectedPaymentMethod(method._id)}
+                  onPress={() => onPaymentChange(method._id)}
                 >
                   {method.image && (
                     <Image
@@ -292,11 +439,8 @@ const CheckoutScreen = () => {
                     />
                   )}
                   <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 15, fontWeight: "500" }}>
-                      {method.name}
-                    </Text>
-                    {/* Dòng khuyến mãi chỉ hiện nếu được chọn và là ZALOPAY */}
-                    {isSelected && method.code === "ZALOPAY" && (
+                    <Text style={{ fontSize: 15, fontWeight: "500" }}>{method.name}</Text>
+                    {isSelected && method.code?.toUpperCase() === "ZALOPAY" && (
                       <View
                         style={{
                           backgroundColor: "#e0f7fa",
@@ -304,10 +448,10 @@ const CheckoutScreen = () => {
                           paddingVertical: 2,
                           paddingHorizontal: 6,
                           marginTop: 4,
-                          alignSelf: 'flex-start',
+                          alignSelf: "flex-start",
                         }}
                       >
-                        {/* Có thể thêm khuyến mãi cho ZaloPay ở đây nếu cần */}
+                        <Text style={{ color: "#007BFF", fontSize: 12 }}>ZaloPay Promotion</Text>
                       </View>
                     )}
                   </View>
@@ -339,57 +483,82 @@ const CheckoutScreen = () => {
           )}
         </View>
 
-        {/* Phương thức vận chuyển */}
-        <TouchableOpacity style={styles.card}>
-          <Text style={styles.cardTitle}>Phương thức Vận chuyển</Text>
-          <Text style={styles.cardContent}>{shippingMethod}</Text>
-          <Ionicons name="chevron-forward" size={20} style={styles.icon} />
-        </TouchableOpacity>
-
-        {/* Ghi chú */}
+        {/* Shipping Methods */}
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Ghi chú</Text>
-          <Text style={styles.cardContent}>{note || "Không có ghi chú"}</Text>
+          <Text style={styles.cardTitle}>Phương thức vận chuyển</Text>
+          {shippingMethods.length > 0 ? (
+            <Picker
+              selectedValue={selectedShippingMethodId}
+              onValueChange={onShippingChange}
+              style={{ marginTop: 5 }}
+            >
+              {shippingMethods.map((sm) => (
+                <Picker.Item key={sm._id} label={sm.name} value={sm._id} />
+              ))}
+            </Picker>
+          ) : (
+            <Text>Không có phương thức vận chuyển</Text>
+          )}
         </View>
 
-        {/* Tóm tắt */}
+        {/* Note */}
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Ghi chú</Text>
+          <TextInput
+            style={styles.input}
+            value={note}
+            onChangeText={setNote}
+            placeholder="Nhập ghi chú (nếu có)"
+            multiline
+            numberOfLines={3}
+          />
+        </View>
+
+        {/* Summary */}
         <View style={styles.summary}>
           <View style={styles.row}>
             <Text style={styles.label}>Tạm tính</Text>
-            <Text style={styles.value}>{subtotal.toLocaleString()} VND</Text>
+            <Text style={styles.value}>{formatMoney(subtotal)}</Text>
           </View>
           <View style={styles.row}>
             <Text style={styles.label}>Phí vận chuyển</Text>
-            <Text style={styles.value}>{shipping.toFixed(0)} VND</Text>
+            <Text style={styles.value}>{formatMoney(shippingFee)}</Text>
           </View>
           <View style={styles.row}>
             <Text style={styles.label}>Thuế</Text>
-            <Text style={styles.value}>{tax.toFixed(0)} VND</Text>
+            <Text style={styles.value}>{formatMoney(tax)}</Text>
           </View>
+          {selectedVoucher && (
+            <View style={styles.row}>
+              <Text style={styles.label}>Voucher giảm</Text>
+              <Text style={styles.value}>-{selectedVoucher.discount_value || 0}%</Text>
+            </View>
+          )}
           <View style={styles.row}>
             <Text style={styles.totalLabel}>Tổng</Text>
-            <Text style={styles.total}>{total.toLocaleString()} VND</Text>
+            <Text style={styles.total}>{formatMoney(calculateTotalAfterVoucher())}</Text>
           </View>
         </View>
       </ScrollView>
 
-      {/* Footer đặt hàng */}
+      {/* Footer */}
       <View style={styles.footer}>
         <View style={styles.totalBox}>
-          <Text style={styles.footerTotal}>{total.toLocaleString()} VND</Text>
+          <Text style={styles.footerTotal}>{formatMoney(calculateTotalAfterVoucher())}</Text>
         </View>
         <TouchableOpacity
-          style={[styles.orderButton, loading && styles.orderButtonDisabled]}
+          style={[styles.orderButton, (loading || processingZaloPay) && styles.orderButtonDisabled]}
           onPress={handlePlaceOrder}
-          disabled={loading || checkedItems.length === 0}
+          disabled={loading || processingZaloPay || checkedItems.length === 0}
         >
-          {loading ? (
+          {loading || processingZaloPay ? (
             <ActivityIndicator size="small" color="#fff" />
           ) : (
             <Text style={styles.orderText}>Đặt hàng</Text>
           )}
         </TouchableOpacity>
       </View>
+
       {orderMessage ? (
         <View style={styles.orderMessageBox}>
           <Text style={styles.orderMessageText}>{orderMessage}</Text>
@@ -398,8 +567,6 @@ const CheckoutScreen = () => {
     </View>
   );
 };
-
-export default CheckoutScreen;
 
 const styles = StyleSheet.create({
   container: {
@@ -454,12 +621,6 @@ const styles = StyleSheet.create({
     fontSize: 15,
     marginTop: 5,
     marginRight: 25,
-  },
-  icon: {
-    position: "absolute",
-    right: 15,
-    top: 20,
-    color: "#888",
   },
   summary: {
     marginTop: 20,
@@ -525,23 +686,33 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "500",
   },
+  input: {
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 8,
+    padding: 8,
+    backgroundColor: "#fff",
+    marginTop: 5,
+  },
   orderMessageBox: {
-    position: 'absolute',
+    position: "absolute",
     left: 0,
     right: 0,
     bottom: 90,
-    alignItems: 'center',
+    alignItems: "center",
     zIndex: 20,
   },
   orderMessageText: {
-    backgroundColor: '#e6f7ff',
-    color: '#228be6',
+    backgroundColor: "#e6f7ff",
+    color: "#228be6",
     paddingHorizontal: 18,
     paddingVertical: 8,
     borderRadius: 20,
     fontSize: 15,
-    fontWeight: '500',
-    overflow: 'hidden',
+    fontWeight: "500",
+    overflow: "hidden",
     elevation: 2,
   },
 });
+
+export default CheckoutScreen;
