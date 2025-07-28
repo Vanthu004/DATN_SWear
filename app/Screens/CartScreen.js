@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useNavigation } from "@react-navigation/native";
-import React, { useState } from "react";
+import { useFocusEffect, useNavigation } from "@react-navigation/native";
+import React, { useCallback, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -147,7 +147,7 @@ function CartItem({ item, checked, onCheck, onRemove, onUpdate }) {
 
 const CartScreen = () => {
   const navigation = useNavigation();
-  const { cartItems, loading, updateQuantity, removeFromCart } = useCart();
+  const { cartItems, loading, updateQuantity, removeFromCart, refreshCart } = useCart();
 
   // State lưu trạng thái checked cho từng item
   const [checkedItems, setCheckedItems] = useState({}); // { [item._id]: true/false }
@@ -184,6 +184,12 @@ const CartScreen = () => {
     if (newQty < 1) return;
     updateQuantity(itemId, newQty);
   };
+
+  useFocusEffect(
+    useCallback(() => {
+      refreshCart();
+    }, [])
+  );
 
   if (loading) {
     return (
