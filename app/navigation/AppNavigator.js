@@ -1,11 +1,8 @@
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import React from "react";
-<<<<<<< HEAD
-=======
 
 import AllReviewsScreen from "../Screens/AllReviewsScreen"; // 👈 Đã thêm đúng
->>>>>>> 7b88f06dfea874c86f237acdb1778c32ce3b3a91
 import LoadingScreen from "../Screens/LoadingScreen";
 import RefundRequestScreen from "../Screens/RefundRequestScreen";
 import WriteReviewScreen from "../Screens/WriteReviewScreen";
@@ -26,12 +23,6 @@ export default function AppNavigator() {
   }
 
   return (
-<<<<<<< HEAD
-    <NavigationContainer ref={navigationRef}>
-      <Stack.Navigator screenOptions={{ headerShown: false }}>
-        {userToken && !isBanned ? (
-          <Stack.Screen name="Main" component={TabNavigator} />
-=======
     <NavigationContainer>
       <Stack.Navigator>
         {userToken ? (
@@ -57,7 +48,6 @@ export default function AppNavigator() {
               options={{ headerShown: true, title: "Tất cả đánh giá" }}
             />
           </>
->>>>>>> 7b88f06dfea874c86f237acdb1778c32ce3b3a91
         ) : (
           <Stack.Screen
             name="Auth"
