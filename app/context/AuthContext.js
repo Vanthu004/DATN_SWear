@@ -1,5 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, { createContext, useContext, useEffect, useState } from "react";
+import { Alert } from "react-native";
+import { navigationRef } from "../navigation/TabNavigator";
 import api from "../utils/api";
 
 const AuthContext = createContext();
@@ -9,39 +11,79 @@ export const AuthProvider = ({ children }) => {
   const [userToken, setUserToken] = useState(null);
   const [userInfo, setUserInfo] = useState(null);
   const [isEmailVerified, setIsEmailVerified] = useState(false);
+  const [isBanned, setIsBanned] = useState(false);
 
   useEffect(() => {
-    // Kiểm tra token đã lưu
     checkLoginState();
   }, []);
+
+  useEffect(() => {
+    if (!userToken) return;
+
+    const checkBanStatus = async () => {
+      try {
+        await refreshUserData();
+      } catch (error) {
+        console.log("Ban check error:", error.message);
+      }
+    };
+
+    checkBanStatus();
+    const interval = setInterval(checkBanStatus, 10000);
+    return () => clearInterval(interval);
+  }, [userToken]);
 
   const checkLoginState = async () => {
     try {
       const token = await AsyncStorage.getItem("userToken");
       const user = await AsyncStorage.getItem("userInfo");
       const emailVerified = await AsyncStorage.getItem("isEmailVerified");
-      
-      console.log('Checking login state:', {
+      const banMessage = await AsyncStorage.getItem("banMessage");
+
+      console.log("Checking login state:", {
         hasToken: !!token,
         hasUser: !!user,
-        emailVerified: emailVerified
+        emailVerified: emailVerified,
+        banMessage: banMessage,
       });
-      
+
+      if (banMessage) {
+        console.log("Ban message found in AsyncStorage:", banMessage);
+        setIsBanned(true);
+        await logout();
+        Alert.alert("Tài khoản bị khóa", banMessage, [
+          {
+            text: "OK",
+            onPress: () => {
+              console.log("AuthContext: Alert OK pressed, navigation handled by logout");
+            },
+          },
+        ]);
+        await AsyncStorage.removeItem("banMessage");
+        return;
+      }
+
       if (token && user) {
         const userData = JSON.parse(user);
-        
-        // Kiểm tra xem user có email_verified field không
-        const isVerified = emailVerified === 'true' || userData.email_verified === true;
-        
-        console.log('User data:', userData);
-        console.log('Email verified status:', isVerified);
-        
+        const isVerified = emailVerified === "true" || userData.email_verified === true;
+
+        console.log("User data:", userData);
+        console.log("Email verified status:", isVerified);
+
+        const now = new Date();
+        const bannedUntil = userData.ban?.bannedUntil ? new Date(userData.ban.bannedUntil) : null;
+
+        if (bannedUntil && bannedUntil > now) {
+          console.log("Tài khoản bị ban đến:", bannedUntil);
+          setIsBanned(true);
+          await clearAllData();
+          setIsLoading(false);
+          return;
+        }
+
         setUserToken(token);
         setUserInfo(userData);
         setIsEmailVerified(isVerified);
-        
-        // Không logout khi email chưa verified vì user có thể đang trong quá trình xác nhận
-        // Chỉ logout khi không có token hoặc user
       }
     } catch (error) {
       console.log("Error checking login state:", error);
@@ -55,7 +97,7 @@ export const AuthProvider = ({ children }) => {
       await AsyncStorage.setItem("userToken", token);
       await AsyncStorage.setItem("userInfo", JSON.stringify(user));
       await AsyncStorage.setItem("isEmailVerified", verified.toString());
-      
+
       setUserToken(token);
       setUserInfo(user);
       setIsEmailVerified(verified);
@@ -66,13 +108,21 @@ export const AuthProvider = ({ children }) => {
 
   const logout = async () => {
     try {
-      await AsyncStorage.removeItem("userToken");
-      await AsyncStorage.removeItem("userInfo");
-      await AsyncStorage.removeItem("isEmailVerified");
-      
+      await AsyncStorage.multiRemove(["userToken", "userInfo", "isEmailVerified"]);
       setUserToken(null);
       setUserInfo(null);
       setIsEmailVerified(false);
+      setIsBanned(false);
+      console.log("Logged out successfully");
+      if (navigationRef.current) {
+        console.log("Resetting to Auth/Login");
+        navigationRef.current.resetRoot({
+          index: 0,
+          routes: [{ name: "Auth", params: { screen: "Login" } }],
+        });
+      } else {
+        console.warn("navigationRef is not initialized in logout");
+      }
     } catch (error) {
       console.log("Error removing auth data:", error);
     }
@@ -82,14 +132,13 @@ export const AuthProvider = ({ children }) => {
     try {
       await AsyncStorage.setItem("isEmailVerified", verified.toString());
       setIsEmailVerified(verified);
-      
-      // Cập nhật userInfo nếu có
+
       if (userInfo) {
         const updatedUserInfo = { ...userInfo, email_verified: verified };
         await AsyncStorage.setItem("userInfo", JSON.stringify(updatedUserInfo));
         setUserInfo(updatedUserInfo);
       }
-      
+
       console.log("Email verification status updated:", verified);
     } catch (error) {
       console.log("Error updating email verification status:", error);
@@ -98,9 +147,9 @@ export const AuthProvider = ({ children }) => {
 
   const updateUserInfo = async (newUserInfo) => {
     try {
-      console.log('AuthContext: Updating user info from:', userInfo);
-      console.log('AuthContext: Updating user info to:', newUserInfo);
-      
+      console.log("AuthContext: Updating user info from:", userInfo);
+      console.log("AuthContext: Updating user info to:", newUserInfo);
+
       await AsyncStorage.setItem("userInfo", JSON.stringify(newUserInfo));
       setUserInfo(newUserInfo);
       console.log("User info updated successfully:", newUserInfo);
@@ -111,37 +160,79 @@ export const AuthProvider = ({ children }) => {
 
   const refreshUserData = async () => {
     if (!userToken) return;
-    
-    try {
-      console.log('Refreshing user data from server...');
-      
 
-      // Sử dụng api instance thay vì fetch trực tiếp
-      const response = await api.get('/users/profile');
-      
-      if (response.data && response.data.user) {
-        console.log('Fresh user data from server:', response.data.user);
-        await updateUserInfo(response.data.user);
-        return response.data.user;
+    try {
+      console.log("Refreshing user data from server...");
+      const response = await api.get("/users/me");
+      if (response.data) {
+        const freshUser = response.data;
+        console.log("Fresh user data from server:", freshUser);
+
+        const now = new Date();
+        const bannedUntil = freshUser.ban?.bannedUntil ? new Date(freshUser.ban.bannedUntil) : null;
+
+        if (bannedUntil && bannedUntil > now) {
+          console.log("Tài khoản bị ban đến:", bannedUntil);
+          setIsBanned(true);
+          await logout();
+          Alert.alert(
+            "Tài khoản bị khóa",
+            `Tài khoản của bạn đã bị khóa${
+              bannedUntil ? ` đến ${bannedUntil.toLocaleString('vi-VN')}` : " vĩnh viễn"
+            }${freshUser.ban.reason ? ` vì: ${freshUser.ban.reason}` : ""}`,
+            [
+              {
+                text: "OK",
+                onPress: () => {
+                  console.log("AuthContext: Alert OK pressed, navigation handled by logout");
+                },
+              },
+            ]
+          );
+          return;
+        }
+
+        await updateUserInfo(freshUser);
+        return freshUser;
       }
     } catch (error) {
-      console.log('Error refreshing user data:', error);
+      console.log("Error refreshing user data:", error.message);
+      if (error.response?.status === 403 && error.response?.data?.message?.includes("bị khóa")) {
+        console.log("Handling 403 ban error in refreshUserData");
+        setIsBanned(true);
+        await logout();
+        const banMessage = await AsyncStorage.getItem("banMessage") || error.response.data.message;
+        Alert.alert("Tài khoản bị khóa", banMessage, [
+          {
+            text: "OK",
+            onPress: () => {
+              console.log("AuthContext: Alert OK pressed, navigation handled by logout");
+            },
+          },
+        ]);
+        await AsyncStorage.removeItem("banMessage");
+      }
+      throw error;
     }
-    
-    return null;
   };
 
   const clearAllData = async () => {
     try {
-      await AsyncStorage.removeItem("userToken");
-      await AsyncStorage.removeItem("userInfo");
-      await AsyncStorage.removeItem("isEmailVerified");
-      
+      await AsyncStorage.multiRemove(["userToken", "userInfo", "isEmailVerified"]);
       setUserToken(null);
       setUserInfo(null);
       setIsEmailVerified(false);
-      
+      setIsBanned(false);
       console.log("All auth data cleared");
+      if (navigationRef.current) {
+        console.log("Resetting to Auth/Login from clearAllData");
+        navigationRef.current.resetRoot({
+          index: 0,
+          routes: [{ name: "Auth", params: { screen: "Login" } }],
+        });
+      } else {
+        console.warn("navigationRef is not initialized in clearAllData");
+      }
     } catch (error) {
       console.log("Error clearing auth data:", error);
     }
@@ -160,6 +251,7 @@ export const AuthProvider = ({ children }) => {
         updateUserInfo,
         refreshUserData,
         clearAllData,
+        isBanned,
       }}
     >
       {children}

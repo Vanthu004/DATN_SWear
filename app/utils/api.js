@@ -12,7 +12,7 @@ const api = axios.create({
   },
 });
 
-// Interceptor request để thêm token vào header
+
 api.interceptors.request.use(
   async (config) => {
     try {
@@ -40,7 +40,6 @@ api.interceptors.request.use(
   }
 );
 
-// Interceptor response để log và xử lý lỗi
 api.interceptors.response.use(
   (response) => {
     console.log("API Response:", {
@@ -54,17 +53,23 @@ api.interceptors.response.use(
     const status = error.response?.status;
     const message = error.response?.data?.message || "Lỗi không xác định";
 
-    //  Nếu bị cấm (403)
     if (status === 403 && message.includes("bị khóa")) {
-      await AsyncStorage.multiRemove(["userToken", "userInfo"]);
-      await AsyncStorage.setItem("banMessage", message);
-      Alert.alert("Tài khoản bị khóa", message);
+      try {
+        await AsyncStorage.multiRemove(["userToken", "userInfo", "isEmailVerified"]);
+        await AsyncStorage.setItem("banMessage", message);
+        console.log("api.js: Ban detected, cleared AsyncStorage, relying on AuthContext for logout and navigation");
+      } catch (err) {
+        console.error("Error handling 403:", err);
+      }
     }
 
-    //  Nếu token hết hạn (401)
     if (status === 401 && message.toLowerCase().includes("jwt")) {
-      await AsyncStorage.multiRemove(["userToken", "userInfo"]);
-      Alert.alert("Hết phiên", "Vui lòng đăng nhập lại.");
+      try {
+        await AsyncStorage.multiRemove(["userToken", "userInfo", "isEmailVerified"]);
+        console.log("api.js: JWT error detected, cleared AsyncStorage, relying on AuthContext for logout and navigation");
+      } catch (err) {
+        console.error("Error handling 401:", err);
+      }
     }
 
     console.log("API Response Error:", {
@@ -77,6 +82,7 @@ api.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+
 
 // Upload functions
 export const uploadImage = async (
