@@ -17,21 +17,23 @@ const CartBadge = ({ style }) => {
 const styles = StyleSheet.create({
   badge: {
     position: 'absolute',
-    top: -6,
-    right: -6,
+    top: -4, // cao hơn một chút để không bị che
+    right: -8, // lệch phải nhiều hơn để tránh bị đè lên icon
     backgroundColor: '#FF5252',
-    borderRadius: 8,
-    minWidth: 16,
-    height: 16,
+    borderRadius: 10,
+    minWidth: 18,
+    height: 18,
     justifyContent: 'center',
     alignItems: 'center',
+    zIndex: 99, // đảm bảo luôn nổi trên icon
+    elevation: 5, // giúp hiển thị tốt hơn trên Android
   },
   badgeText: {
     color: '#fff',
     fontSize: 10,
     fontWeight: 'bold',
-    paddingHorizontal: 2,
+    paddingHorizontal: 3,
   },
 });
 
-export default CartBadge; 
+export default CartBadge;

@@ -120,6 +120,7 @@ const AddBankCardScreen = ({ navigation }) => {
           </Text>
         </TouchableOpacity>
       </View>
+      <View style={{height: 50}}></View>
     </SafeAreaView>
   );
 };
