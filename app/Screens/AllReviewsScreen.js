@@ -1,14 +1,14 @@
 // screens/AllReviewsScreen.js
 import React, { useEffect, useState } from 'react';
 import {
-    ActivityIndicator,
-    Image,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { getAllReviews } from '../utils/api';
 import { renderStars } from '../utils/renderStars';
@@ -133,6 +133,7 @@ export default function AllReviewsScreen() {
           </View>
         </View>
       ))}
+                  <View style={{height: 50}}></View>
     </ScrollView>
   );
 }

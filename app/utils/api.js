@@ -553,25 +553,6 @@ export const getAllReviews = async () => {
 
 // ===== SHIPPING METHODS APIs =====
 
-// Shipping Methods APIs
-export const getShippingMethods = async () => {
-  try {
-    const response = await api.get('/shipping-methods');
-    return response.data;
-  } catch (error) {
-    console.error('Error fetching shipping methods:', error);
-    // Return default shipping method if API fails
-    return [{
-      _id: "507f1f77bcf86cd799439011",
-      name: "Vận chuyển Thường",
-      code: "STANDARD",
-      description: "Giao hàng trong 3-5 ngày làm việc",
-      price: 15000,
-      is_active: true
-    }];
-  }
-};
-
 export const createShippingMethod = async (shippingData) => {
   try {
     const response = await api.post('/shipping-methods', shippingData);

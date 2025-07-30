@@ -17,8 +17,7 @@ import { ROUTES } from "../constants/routes";
 import { useAuth } from "../context/AuthContext";
 import { useCart } from "../hooks/useCart";
 import { useOrder } from "../hooks/useOrder";
-import api from "../utils/api";
-import { getPaymentMethods, getAddressList, getUserVouchers, getShippingMethods, applyVoucherApi } from "../utils/paymentApi";
+import api, { applyVoucherApi, getAddressList, getPaymentMethods, getShippingMethods, getUserVouchers } from "../utils/api";
 
 const CheckoutScreen = () => {
   const route = useRoute();
@@ -179,12 +178,12 @@ const CheckoutScreen = () => {
       }, 1200);
     } else {
       Alert.alert(
-        "Confirm Order",
-        `Are you sure you want to place the order with total ${formatMoney(calculateTotalAfterVoucher())}?`,
+        "Xác nhận đặt hàng",
+        `Bạn có chắc chắn muốn mua sản phẩm với tổng tiền: ${formatMoney(calculateTotalAfterVoucher())}?`,
         [
-          { text: "Cancel", style: "cancel" },
+          { text: "không", style: "cancel" },
           {
-            text: "Place Order",
+            text: "Đặt hàng",
             style: "default",
             onPress: async () => {
               await processOrder();
@@ -564,6 +563,7 @@ const CheckoutScreen = () => {
           <Text style={styles.orderMessageText}>{orderMessage}</Text>
         </View>
       ) : null}
+                  <View style={{height: 70}}></View>
     </View>
   );
 };

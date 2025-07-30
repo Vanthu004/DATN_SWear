@@ -345,10 +345,20 @@ export default function ProductDetailScreen({ route, navigation }) {
           disabled={loadingAddCart}
         >
           <Text style={styles.cartBtnText}>
+            {loadingAddCart ? 'Đang thêm...' : 'Mua ngay'}
+          </Text>
+        </TouchableOpacity>
+              <TouchableOpacity
+          style={[styles.addToCartBtn, loadingAddCart && { opacity: 0.6 }]}
+          onPress={handleAddToCart}
+          disabled={loadingAddCart}
+        >
+          <Text style={styles.cartBtnText}>
             {loadingAddCart ? 'Đang thêm...' : 'Thêm vào Giỏ hàng'}
           </Text>
         </TouchableOpacity>
       </View>
+                  <View style={{height: 70}}></View>
     </SafeAreaView>
   );
 }
@@ -455,13 +465,13 @@ const styles = StyleSheet.create({
   },
   addToCartBtn: {
     backgroundColor: '#3b82f6',
-    paddingVertical: 12,
-    paddingHorizontal: 24,
+    paddingVertical: 5,
+    paddingHorizontal: 10,
     borderRadius: 10,
   },
   cartBtnText: {
     color: '#fff',
     fontWeight: 'bold',
-    fontSize: 16,
+    fontSize: 14,
   },
 });

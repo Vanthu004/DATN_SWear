@@ -311,6 +311,7 @@ const CartScreen = () => {
           Thanh toán ({Object.keys(checkedItems).length})
         </Text>
       </TouchableOpacity>
+                  <View style={{height: 80}}></View>
     </View>
   );
 };
