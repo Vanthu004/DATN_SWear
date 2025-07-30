@@ -1,7 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
-const API_BASE_URL = "http://192.168.1.7:3000/api"; //
-
+const API_BASE_URL = "http://192.168.1.85:3000/api"; //
 
 
 const api = axios.create({
@@ -237,9 +236,13 @@ export const getCategoriesById = async (categoryTypeId) => {
 // ===== CART SYSTEM APIs =====
 
 // Cart APIs
-export const createCart = async (userId) => {
+export const createCart = async (userId, note = null) => {
   try {
-    const response = await api.post("/cart", { user_id: userId });
+    const requestBody = { user_id: userId };
+    if (note) {
+      requestBody.note = note;
+    }
+    const response = await api.post("/cart", requestBody);
     return response.data;
   } catch (error) {
     console.error("Create cart error:", error);
@@ -247,9 +250,13 @@ export const createCart = async (userId) => {
   }
 };
 
-export const getAllCarts = async () => {
+export const getAllCarts = async (status = null, page = 1, limit = 10) => {
   try {
-    const response = await api.get("/cart");
+    const params = { page, limit };
+    if (status) {
+      params.status = status;
+    }
+    const response = await api.get("/cart", { params });
     return response.data;
   } catch (error) {
     console.error("Get all carts error:", error);
@@ -273,6 +280,20 @@ export const getCartByUser = async (userId) => {
     return response.data;
   } catch (error) {
     console.error("Get cart by user error:", error);
+    throw error;
+  }
+};
+
+export const updateCartStatus = async (cartId, status, note = null) => {
+  try {
+    const requestBody = { status };
+    if (note) {
+      requestBody.note = note;
+    }
+    const response = await api.put(`/cart/${cartId}`, requestBody);
+    return response.data;
+  } catch (error) {
+    console.error("Update cart status error:", error);
     throw error;
   }
 };
@@ -334,6 +355,16 @@ export const deleteCartItem = async (itemId) => {
     return response.data;
   } catch (error) {
     console.error("Delete cart item error:", error);
+    throw error;
+  }
+};
+
+export const clearCartItems = async (cartId) => {
+  try {
+    const response = await api.delete(`/cart-items/cart/${cartId}/clear`);
+    return response.data;
+  } catch (error) {
+    console.error("Clear cart items error:", error);
     throw error;
   }
 };

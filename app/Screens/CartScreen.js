@@ -2,16 +2,16 @@ import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import React, { useCallback, useState } from "react";
 import {
-  ActivityIndicator,
-  Alert,
-  FlatList,
-  Image,
-  Modal,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Alert,
+    FlatList,
+    Image,
+    Modal,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import { useCart } from "../hooks/useCart";
 
@@ -147,7 +147,15 @@ function CartItem({ item, checked, onCheck, onRemove, onUpdate }) {
 
 const CartScreen = () => {
   const navigation = useNavigation();
-  const { cartItems, loading, updateQuantity, removeFromCart, refreshCart } = useCart();
+  const { 
+    cartItems, 
+    loading, 
+    updateQuantity, 
+    removeFromCart, 
+    clearCart,
+    refreshCart,
+    getTotal 
+  } = useCart();
 
   // State lưu trạng thái checked cho từng item
   const [checkedItems, setCheckedItems] = useState({}); // { [item._id]: true/false }
@@ -167,11 +175,26 @@ const CartScreen = () => {
     ]);
   };
 
+  const handleClearCart = () => {
+    Alert.alert(
+      "Xác nhận", 
+      "Bạn có chắc muốn xóa tất cả sản phẩm khỏi giỏ hàng?", 
+      [
+        { text: "Huỷ", style: "cancel" },
+        {
+          text: "Xóa tất cả",
+          style: "destructive",
+          onPress: () => clearCart(),
+        },
+      ]
+    );
+  };
+
   // Tính tổng chỉ cho các item được chọn
   const subtotal = cartItems.reduce(
     (sum, item) =>
       checkedItems[item._id]
-        ? sum + (item.price_at_time || 0) * item.quantity
+        ? sum + (item.price_at_time || item.product?.price || 0) * item.quantity
         : sum,
     0
   );
@@ -246,6 +269,14 @@ const CartScreen = () => {
           </View>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Giỏ hàng ({cartItems.length})</Text>
+        {cartItems.length > 0 && (
+          <TouchableOpacity
+            style={styles.clearCartButton}
+            onPress={handleClearCart}
+          >
+            <Text style={styles.clearCartText}>Xóa tất cả</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       <FlatList
@@ -351,6 +382,17 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "#222",
     textAlign: "center",
+  },
+  clearCartButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 15,
+    backgroundColor: "#FF6B6B",
+  },
+  clearCartText: {
+    color: "#fff",
+    fontSize: 12,
+    fontWeight: "500",
   },
   emptyContainer: {
     flex: 1,

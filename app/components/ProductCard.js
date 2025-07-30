@@ -3,12 +3,12 @@ import api from '../utils/api'; // chỉnh lại đường dẫn nếu khác
 
 import React, { useRef } from "react";
 import {
-  Animated,
-  Image,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    Animated,
+    Image,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import { useCart } from '../hooks/useCart';
 
@@ -43,7 +43,9 @@ export default function ProductCard({
 
   const handleAddToCart = async (e) => {
     e.stopPropagation();
-    await addToCart(product, 1);
+    // TODO: Implement product variant selection logic
+    // For now, we'll pass null as productVariantId
+    await addToCart(product, 1, null);
   };
 
   const imageSource = product.image_url
