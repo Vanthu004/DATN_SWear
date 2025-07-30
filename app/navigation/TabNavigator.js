@@ -158,6 +158,12 @@ function ProfileStack() {
         component={ProfileScreen}
         options={{ headerShown: false }}
       />
+        <Stack.Screen
+  name="ProductDetail"
+  component={ProductDetailScreen}
+  options={{ headerShown: false }}
+/>
+
       <Stack.Screen
         name="EditProfile"
         component={EditProfileScreen}

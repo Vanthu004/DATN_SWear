@@ -191,9 +191,19 @@ const removeFromCart = async (itemId) => {
     fetchCartData();
   }, [USER_ID]);
 
+// ... giữ nguyên phần import và các hàm khác
+const getTotalQuantity = () => {
+  return cartItems.length;
+};
+
+
+  useEffect(() => {
+    fetchCartData();
+  }, [USER_ID]);
+
   return {
     cartItems,
-    cartCount: cartItems.length,
+    cartCount: getTotalQuantity(), // ✅ Sửa lại từ cartItems.length
     cartId,
     loading,
     addToCart,

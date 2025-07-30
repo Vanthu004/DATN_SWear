@@ -2,7 +2,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 
-const API_BASE_URL = "http://192.168.1.7:3000/api"; //
+const API_BASE_URL = "http://192.168.0.102:3000/api"; //
 
 
 const api = axios.create({
@@ -515,8 +515,7 @@ export const getPaymentMethods = async () => {
 };
 
 export const getShippingMethods = async () => {
-  const res = await api.get("/shipping-method");
+  const res = await api.get("/shipping-methods");
   return res.data;
 };
-
 export default api;
