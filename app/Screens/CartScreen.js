@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useNavigation } from "@react-navigation/native";
-import React, { useState } from "react";
+import { useFocusEffect, useNavigation } from "@react-navigation/native";
+import React, { useCallback, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -180,14 +180,25 @@ function CartItem({ item, checked, onCheck, onRemove, onUpdate, onPress }) {
           </View>
         </View>
       </Modal>
+      <View style={{height: 50}}></View>
     </View>
   );
 }
 
 const CartScreen = () => {
   const navigation = useNavigation();
-  const { cartItems, loading, updateQuantity, removeFromCart } = useCart();
-  const [checkedItems, setCheckedItems] = useState({});
+  const { 
+    cartItems, 
+    loading, 
+    updateQuantity, 
+    removeFromCart, 
+    clearCart,
+    refreshCart,
+    getTotal 
+  } = useCart();
+
+  // State lưu trạng thái checked cho từng item
+  const [checkedItems, setCheckedItems] = useState({}); // { [item._id]: true/false }
 
   const handleCheck = (itemId) => {
     setCheckedItems((prev) => ({ ...prev, [itemId]: !prev[itemId] }));
@@ -204,10 +215,27 @@ const CartScreen = () => {
     ]);
   };
 
+
+  const handleClearCart = () => {
+    Alert.alert(
+      "Xác nhận", 
+      "Bạn có chắc muốn xóa tất cả sản phẩm khỏi giỏ hàng?", 
+      [
+        { text: "Huỷ", style: "cancel" },
+        {
+          text: "Xóa tất cả",
+          style: "destructive",
+          onPress: () => clearCart(),
+        },
+      ]
+    );
+  };
+
+  // Tính tổng chỉ cho các item được chọn
   const subtotal = cartItems.reduce(
     (sum, item) =>
       checkedItems[item._id]
-        ? sum + (item.price_at_time || 0) * item.quantity
+        ? sum + (item.price_at_time || item.product?.price || 0) * item.quantity
         : sum,
     0
   );
@@ -219,6 +247,12 @@ const CartScreen = () => {
     if (newQty < 1) return;
     updateQuantity(itemId, newQty);
   };
+
+  useFocusEffect(
+    useCallback(() => {
+      refreshCart();
+    }, [])
+  );
 
   if (loading) {
     return (
@@ -275,6 +309,14 @@ const CartScreen = () => {
           </View>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Giỏ hàng ({cartItems.length})</Text>
+        {cartItems.length > 0 && (
+          <TouchableOpacity
+            style={styles.clearCartButton}
+            onPress={handleClearCart}
+          >
+            <Text style={styles.clearCartText}>Xóa tất cả</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       <FlatList
@@ -343,9 +385,9 @@ const CartScreen = () => {
           Thanh toán ({Object.keys(checkedItems).length})
         </Text>
       </TouchableOpacity>
-
       {/* Khoảng trống để tránh bị che */}
       <View style={{ height: 80 }} />
+
     </View>
   );
 };
@@ -358,13 +400,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   customHeader: {
+    flexDirection: "row",
     height: 64,
     paddingTop: 24,
     marginBottom: 8,
     backgroundColor: "#fff",
     justifyContent: "center",
     alignItems: "center",
-    position: "relative",
   },
   backBtn: {
     position: "absolute",
@@ -385,6 +427,17 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "#222",
     textAlign: "center",
+  },
+  clearCartButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 15,
+    backgroundColor: "#FF6B6B",
+  },
+  clearCartText: {
+    color: "#fff",
+    fontSize: 12,
+    fontWeight: "500",
   },
   emptyContainer: {
     flex: 1,

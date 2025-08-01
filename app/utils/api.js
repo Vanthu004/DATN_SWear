@@ -1,8 +1,6 @@
-
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
-
-const API_BASE_URL = "http://192.168.0.102:3000/api"; //
+const API_BASE_URL = "http://192.168.1.85:3000/api"; //
 
 
 const api = axios.create({
@@ -238,9 +236,13 @@ export const getCategoriesById = async (categoryTypeId) => {
 // ===== CART SYSTEM APIs =====
 
 // Cart APIs
-export const createCart = async (userId) => {
+export const createCart = async (userId, note = null) => {
   try {
-    const response = await api.post("/cart", { user_id: userId });
+    const requestBody = { user_id: userId };
+    if (note) {
+      requestBody.note = note;
+    }
+    const response = await api.post("/cart", requestBody);
     return response.data;
   } catch (error) {
     console.error("Create cart error:", error);
@@ -248,9 +250,13 @@ export const createCart = async (userId) => {
   }
 };
 
-export const getAllCarts = async () => {
+export const getAllCarts = async (status = null, page = 1, limit = 10) => {
   try {
-    const response = await api.get("/cart");
+    const params = { page, limit };
+    if (status) {
+      params.status = status;
+    }
+    const response = await api.get("/cart", { params });
     return response.data;
   } catch (error) {
     console.error("Get all carts error:", error);
@@ -274,6 +280,20 @@ export const getCartByUser = async (userId) => {
     return response.data;
   } catch (error) {
     console.error("Get cart by user error:", error);
+    throw error;
+  }
+};
+
+export const updateCartStatus = async (cartId, status, note = null) => {
+  try {
+    const requestBody = { status };
+    if (note) {
+      requestBody.note = note;
+    }
+    const response = await api.put(`/cart/${cartId}`, requestBody);
+    return response.data;
+  } catch (error) {
+    console.error("Update cart status error:", error);
     throw error;
   }
 };
@@ -335,6 +355,16 @@ export const deleteCartItem = async (itemId) => {
     return response.data;
   } catch (error) {
     console.error("Delete cart item error:", error);
+    throw error;
+  }
+};
+
+export const clearCartItems = async (cartId) => {
+  try {
+    const response = await api.delete(`/cart-items/cart/${cartId}/clear`);
+    return response.data;
+  } catch (error) {
+    console.error("Clear cart items error:", error);
     throw error;
   }
 };
@@ -464,7 +494,7 @@ export const deleteOrderDetail = async (orderDetailId) => {
 };
 export const createAddress = async (addressData) => {
   try {
-    const response = await api.post("/addresses", addressData);
+    const response = await api.post("addresses", addressData);
     return response.data;
   } catch (error) {
     console.error("Error creating address:", error);
@@ -518,4 +548,93 @@ export const getShippingMethods = async () => {
   const res = await api.get("/shipping-methods");
   return res.data;
 };
+
+export const requestRefund = async (orderId, reason) => {
+  try {
+    const userData = await AsyncStorage.getItem("user");
+    const user = JSON.parse(userData);
+    const userId = user?._id;
+
+    if (!userId) {
+      throw new Error("Không tìm thấy userId trong AsyncStorage");
+    }
+
+    const res = await api.post("/refund-requests", {
+      orderId,
+      userId,
+      reason,
+    });
+    return res.data;
+  } catch (error) {
+    console.error("Lỗi gửi yêu cầu hoàn tiền:", error);
+    throw error;
+  }
+};
+export const getAllReviews = async () => {
+  try {
+    const response = await api.get("/reviews");
+    return response.data;
+  } catch (error) {
+    console.error("Lỗi khi lấy tất cả đánh giá:", error);
+    throw error;
+  }
+};
+
+
+
+
+// ===== SHIPPING METHODS APIs =====
+
+export const createShippingMethod = async (shippingData) => {
+  try {
+    const response = await api.post('/shipping-methods', shippingData);
+    return response.data;
+  } catch (error) {
+    console.error('Error creating shipping method:', error);
+    throw error;
+  }
+};
+
+export const updateShippingMethod = async (id, shippingData) => {
+  try {
+    const response = await api.put(`/shipping-methods/${id}`, shippingData);
+    return response.data;
+  } catch (error) {
+    console.error('Error updating shipping method:', error);
+    throw error;
+  }
+};
+
+export const deleteShippingMethod = async (id) => {
+  try {
+    const response = await api.delete(`/shipping-methods/${id}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error deleting shipping method:', error);
+    throw error;
+  }
+};
+
+// ===== PRODUCT VARIANT APIs =====
+
+export const getProductVariants = async (productId) => {
+  try {
+    const response = await api.get(`/product-variants/${productId}`);
+    return response.data;
+  } catch (error) {
+    console.error('Get product variants error:', error);
+    throw error;
+  }
+};
+
+export const getProductDetail = async (productId) => {
+  try {
+    const response = await api.get(`/products/${productId}/frontend`);
+    return response.data;
+  } catch (error) {
+    console.error('Get product detail error:', error);
+    throw error;
+  }
+};
+
 export default api;

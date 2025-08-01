@@ -1,14 +1,14 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from "react";
 import {
-  ActivityIndicator,
-  Alert,
-  Image,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Alert,
+    Image,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import { useAuth } from "../context/AuthContext";
 import api from "../utils/api";
@@ -131,7 +131,7 @@ try {
   // Gọi API lấy giỏ hàng theo user_id
   const cartRes = await api.get(`/cart/user/${userId}`);
 
-  if (!cartRes.data || !cartRes.data._id) {
+  if (!cartRes.data?.data?._id && !cartRes.data?._id) {
     console.log("🆕 User chưa có giỏ hàng, tạo mới...");
     const createCartRes = await api.post("/cart", { user_id: userId });
     console.log("🛒 Đã tạo giỏ hàng mới:", createCartRes.data);
@@ -171,7 +171,7 @@ try {
   // Gọi API lấy giỏ hàng theo user_id
   const cartRes = await api.get(`/cart/user/${userId}`);
 
-  if (!cartRes.data || !cartRes.data._id) {
+  if (!cartRes.data?.data?._id && !cartRes.data?._id) {
     console.log("🆕 User chưa có giỏ hàng, tạo mới...");
     const createCartRes = await api.post("/cart", { user_id: userId });
     console.log("🛒 Đã tạo giỏ hàng mới:", createCartRes.data);

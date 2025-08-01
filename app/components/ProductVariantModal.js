@@ -1,0 +1,425 @@
+import { Ionicons } from '@expo/vector-icons';
+import React, { useEffect, useState } from 'react';
+import {
+    Alert,
+    Dimensions,
+    Image,
+    Modal,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
+} from 'react-native';
+import ProductVariantSelector from './ProductVariantSelector';
+
+const { width } = Dimensions.get('window');
+
+const ProductVariantModal = ({ 
+  visible, 
+  onClose, 
+  product, 
+  onBuyNow, 
+  onAddToCart,
+  userInfo 
+}) => {
+  const [selectedVariant, setSelectedVariant] = useState(null);
+  const [quantity, setQuantity] = useState(1);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (visible) {
+      setQuantity(1);
+      setSelectedVariant(null);
+    }
+  }, [visible]);
+
+  const handleBuyNow = () => {
+    if (!userInfo?._id) {
+      Alert.alert('Lỗi', 'Vui lòng đăng nhập để mua sản phẩm');
+      return;
+    }
+
+    if (!selectedVariant) {
+      Alert.alert('Lỗi', 'Vui lòng chọn biến thể sản phẩm');
+      return;
+    }
+
+    onBuyNow({
+      product,
+      variant: selectedVariant,
+      quantity,
+    });
+    onClose();
+  };
+
+  const handleAddToCart = async () => {
+    if (!userInfo?._id) {
+      Alert.alert('Lỗi', 'Vui lòng đăng nhập để thêm sản phẩm vào giỏ hàng');
+      return;
+    }
+
+    if (!selectedVariant) {
+      Alert.alert('Lỗi', 'Vui lòng chọn biến thể sản phẩm');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await onAddToCart({
+        product,
+        variant: selectedVariant,
+        quantity,
+      });
+      onClose();
+    } catch (error) {
+      console.error('Lỗi thêm vào giỏ hàng:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const currentPrice = selectedVariant?.price || product?.price || 0;
+  const originalPrice = product?.original_price || product?.price || currentPrice;
+  const discount = originalPrice > currentPrice ? Math.round(((originalPrice - currentPrice) / originalPrice) * 100) : 0;
+
+  const getWeightRange = (size) => {
+    const weightRanges = {
+      'M': '40 đến 53kg',
+      'L': '54 đến 63kg',
+      'XL': '64 đến 80kg',
+      '2XL': '75 đến 95kg',
+      'S': '35 đến 45kg',
+    };
+    return weightRanges[size] || '';
+  };
+
+  return (
+    <Modal
+      visible={visible}
+      animationType="slide"
+      presentationStyle="pageSheet"
+      onRequestClose={onClose}
+    >
+      <View style={styles.container}>
+        {/* Header */}
+        <View style={styles.header}>
+          <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+            <Ionicons name="close" size={24} color="#333" />
+          </TouchableOpacity>
+        </View>
+
+        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+          {/* Product Image */}
+          <View style={styles.imageContainer}>
+            <Image
+              source={{ 
+                uri: product?.images?.[0]?.url || product?.image_url || product?.main_image 
+              }}
+              style={styles.productImage}
+              resizeMode="cover"
+            />
+          </View>
+
+          {/* Product Info */}
+          <View style={styles.productInfo}>
+            <Text style={styles.productName}>{product?.name}</Text>
+            
+            {/* Price */}
+            <View style={styles.priceContainer}>
+              <Text style={styles.currentPrice}>
+                {currentPrice.toLocaleString('vi-VN')} ₫
+              </Text>
+              {discount > 0 && (
+                <>
+                  <Text style={styles.originalPrice}>
+                    {originalPrice.toLocaleString('vi-VN')} ₫
+                  </Text>
+                  <Text style={styles.discount}>-{discount}%</Text>
+                </>
+              )}
+            </View>
+
+            {/* Promotions */}
+            <View style={styles.promotions}>
+              <View style={[styles.promotionTag, { backgroundColor: '#f0fdf4' }]}>
+                <Ionicons name="car" size={12} color="#16a34a" />
+                <Text style={[styles.promotionText, { color: '#16a34a' }]}>Freeship</Text>
+              </View>
+              <View style={[styles.promotionTag, { backgroundColor: '#fdf2f8' }]}>
+                <Ionicons name="bag" size={12} color="#ec4899" />
+                <Text style={[styles.promotionText, { color: '#ec4899' }]}>Mua 300K ₫ giảm 8%</Text>
+              </View>
+            </View>
+          </View>
+
+          {/* Variant Selector */}
+          <ProductVariantSelector
+            productId={product?._id}
+            onVariantChange={setSelectedVariant}
+          />
+
+          {/* Size with Weight Info */}
+          {selectedVariant && (
+            <View style={styles.sizeSection}>
+              <Text style={styles.sectionTitle}>Kích cỡ</Text>
+              <View style={styles.sizeContainer}>
+                <Text style={styles.sizeText}>
+                  {selectedVariant.size} {getWeightRange(selectedVariant.size)}
+                </Text>
+              </View>
+            </View>
+          )}
+
+          {/* Quantity Selector */}
+          <View style={styles.quantitySection}>
+            <Text style={styles.sectionTitle}>Số lượng</Text>
+            <View style={styles.quantityContainer}>
+              <TouchableOpacity
+                onPress={() => quantity > 1 && setQuantity(quantity - 1)}
+                style={styles.quantityButton}
+              >
+                <Ionicons name="remove" size={20} color="#666" />
+              </TouchableOpacity>
+              <Text style={styles.quantityText}>{quantity}</Text>
+              <TouchableOpacity
+                onPress={() => setQuantity(quantity + 1)}
+                style={styles.quantityButton}
+              >
+                <Ionicons name="add" size={20} color="#666" />
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* Stock Info */}
+          {selectedVariant?.stock !== undefined && (
+            <View style={styles.stockInfo}>
+              <Text style={[
+                styles.stockText,
+                selectedVariant.stock > 0 ? styles.inStock : styles.outOfStock
+              ]}>
+                {selectedVariant.stock > 0 
+                  ? `Còn ${selectedVariant.stock} sản phẩm` 
+                  : 'Hết hàng'
+                }
+              </Text>
+            </View>
+          )}
+        </ScrollView>
+
+        {/* Footer Actions */}
+        <View style={styles.footer}>
+          <TouchableOpacity
+            style={[
+              styles.actionButton, 
+              styles.buyNowButton,
+              (!selectedVariant || loading) && styles.disabledButton
+            ]}
+            onPress={handleBuyNow}
+            disabled={loading || !selectedVariant}
+          >
+            <Text style={styles.buyNowText}>Mua ngay</Text>
+            <Text style={styles.freeshipText}>Freeship</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity
+            style={[
+              styles.actionButton, 
+              styles.addToCartButton,
+              (!selectedVariant || loading) && styles.disabledButton
+            ]}
+            onPress={handleAddToCart}
+            disabled={loading || !selectedVariant}
+          >
+            <Text style={styles.addToCartText}>
+              {loading ? 'Đang thêm...' : 'Thêm vào giỏ hàng'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#fff',
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  closeButton: {
+    padding: 8,
+    borderRadius: 20,
+    backgroundColor: '#f6f6f6',
+  },
+  content: {
+    flex: 1,
+  },
+  imageContainer: {
+    alignItems: 'center',
+    padding: 16,
+  },
+  productImage: {
+    width: width * 0.25,
+    height: width * 0.25,
+    borderRadius: 8,
+    backgroundColor: '#f6f6f6',
+  },
+  productInfo: {
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  productName: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 8,
+  },
+  priceContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  currentPrice: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#3b82f6',
+    marginRight: 8,
+  },
+  originalPrice: {
+    fontSize: 16,
+    color: '#999',
+    textDecorationLine: 'line-through',
+    marginRight: 8,
+  },
+  discount: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#dc2626',
+    backgroundColor: '#fef2f2',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  promotions: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  promotionTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    gap: 4,
+  },
+  promotionText: {
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  sizeSection: {
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  sizeContainer: {
+    backgroundColor: '#f8f9fa',
+    padding: 12,
+    borderRadius: 8,
+  },
+  sizeText: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#333',
+  },
+  quantitySection: {
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 12,
+  },
+  quantityContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 20,
+  },
+  quantityButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#f6f6f6',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  quantityText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+    minWidth: 30,
+    textAlign: 'center',
+  },
+  stockInfo: {
+    padding: 16,
+  },
+  stockText: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  inStock: {
+    color: '#16a34a',
+  },
+  outOfStock: {
+    color: '#dc2626',
+  },
+  footer: {
+    padding: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#f0f0f0',
+    backgroundColor: '#fff',
+  },
+  actionButton: {
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  buyNowButton: {
+    backgroundColor: '#ec4899',
+  },
+  addToCartButton: {
+    backgroundColor: '#3b82f6',
+  },
+  buyNowText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  freeshipText: {
+    color: '#fff',
+    fontSize: 12,
+    marginTop: 2,
+  },
+  addToCartText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  disabledButton: {
+    opacity: 0.5,
+  },
+});
+
+export default ProductVariantModal; 
