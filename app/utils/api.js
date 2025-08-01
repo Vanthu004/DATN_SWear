@@ -614,4 +614,26 @@ export const deleteShippingMethod = async (id) => {
   }
 };
 
+// ===== PRODUCT VARIANT APIs =====
+
+export const getProductVariants = async (productId) => {
+  try {
+    const response = await api.get(`/product-variants/${productId}`);
+    return response.data;
+  } catch (error) {
+    console.error('Get product variants error:', error);
+    throw error;
+  }
+};
+
+export const getProductDetail = async (productId) => {
+  try {
+    const response = await api.get(`/products/${productId}/frontend`);
+    return response.data;
+  } catch (error) {
+    console.error('Get product detail error:', error);
+    throw error;
+  }
+};
+
 export default api;

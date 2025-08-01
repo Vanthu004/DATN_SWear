@@ -2,16 +2,16 @@ import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import React, { useCallback, useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    FlatList,
-    Image,
-    Modal,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  Image,
+  Modal,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { useCart } from "../hooks/useCart";
 
@@ -355,13 +355,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   customHeader: {
+    flexDirection: "row",
     height: 64,
     paddingTop: 24,
     marginBottom: 8,
     backgroundColor: "#fff",
     justifyContent: "center",
     alignItems: "center",
-    position: "relative",
   },
   backBtn: {
     position: "absolute",

@@ -3,14 +3,15 @@ import api from '../utils/api'; // chỉnh lại đường dẫn nếu khác
 
 import React, { useRef } from "react";
 import {
-    Animated,
-    Image,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Animated,
+  Image,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { useCart } from '../hooks/useCart';
+import ProductVariantInfo from './ProductVariantInfo';
 
 export default function ProductCard({
   product,
@@ -99,8 +100,14 @@ export default function ProductCard({
             </TouchableOpacity>
           )}
         </View>
-        <Text style={styles.productPrice}>{price?.toLocaleString('vi-VN') || ''} ₫</Text>
+        <Text style={styles.productPrice}>
+          {product.variants && product.variants.length > 0 
+            ? `${product.variants[0].price?.toLocaleString('vi-VN') || price?.toLocaleString('vi-VN') || ''} ₫`
+            : `${price?.toLocaleString('vi-VN') || ''} ₫`
+          }
+        </Text>
         <Text style={styles.productName} numberOfLines={2} ellipsizeMode="tail">{name}</Text>
+        <ProductVariantInfo product={product} />
         <View style={styles.ratingRow}>
           <Ionicons name="star" size={14} color="#222" style={{ marginRight: 2 }} />
           <Text style={styles.ratingText}>{rating.toFixed(1)}</Text>
