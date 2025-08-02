@@ -1,3 +1,4 @@
+//app/hooks/useAppNavigation.js
 import { useNavigation } from "@react-navigation/native";
 
 export function useAppNavigation() {
@@ -27,6 +28,11 @@ export function useAppNavigation() {
     goToAddAddress: () => navigation.navigate("AddAddress"),
     goToPayment: () => navigation.navigate("Payment"),
     goToAddBankCard: () => navigation.navigate("AddBankCard"),
+    goToChangePassword: () => navigation.navigate("ChangePassword"),
+    goToHelp: () => navigation.navigate("Help"),
+    goToTerms: () => navigation.navigate("Terms"),
+    goToPrivacyPolicy: () => navigation.navigate("PrivacyPolicy"),
+    
 
     // Orders
     goToOrderHistory: () => navigation.navigate("OrderHistory"),

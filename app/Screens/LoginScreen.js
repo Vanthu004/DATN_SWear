@@ -1,14 +1,14 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    Image,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  Image,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { useAuth } from "../context/AuthContext";
 import api from "../utils/api";
@@ -47,54 +47,38 @@ export default function LoginScreen({ navigation }) {
     }
 
     setIsLoading(true);
+
     try {
-      console.log('Attempting login with email:', email);
-      
-      // Tiến hành đăng nhập trước
+      console.log('🔐 Đăng nhập với email:', email);
       const res = await api.post("/users/login", { email, password });
-      console.log('Login response:', res.data);
-      
       const { token, user, isEmailVerified: serverEmailVerified } = res.data;
 
-      // Kiểm tra email đã xác nhận chưa từ response login
-      // Nếu server không trả về isEmailVerified hoặc isEmailVerified = false nhưng đăng nhập thành công
-      // thì giả sử email đã verified (vì server cho phép đăng nhập)
-      let isEmailVerified = serverEmailVerified;
-      
-      if (isEmailVerified === undefined || isEmailVerified === false) {
-        console.log('Server did not return isEmailVerified or returned false, but login was successful');
-        console.log('Assuming email is verified since login succeeded');
-        isEmailVerified = true;
-      }
+      let isEmailVerified = true;
 
-      // Chỉ kiểm tra email verification nếu server trả về rõ ràng là false
+      // Kiểm tra xác minh email nếu server trả về rõ ràng là chưa xác minh
       if (serverEmailVerified === false) {
-        console.log('Server explicitly returned isEmailVerified: false, checking from separate API...');
+        console.log("❗ Email chưa xác minh, kiểm tra lại từ API phụ...");
         try {
-          const separateCheck = await checkEmailVerificationFromServer(email);
-          console.log('Email verification status from separate API:', separateCheck);
-          if (separateCheck) {
-            isEmailVerified = true;
-          }
-        } catch (checkError) {
-          console.log('Error checking email verification:', checkError);
-          // Nếu không kiểm tra được, giả sử email đã verified vì đăng nhập thành công
-          isEmailVerified = true;
+          const checkVerified = await checkEmailVerificationFromServer(email);
+          isEmailVerified = checkVerified;
+        } catch (e) {
+          console.log("⚠️ Không thể xác minh email từ API phụ:", e.message);
+          isEmailVerified = true; // giả sử email đã xác minh nếu API phụ lỗi
         }
       }
 
       if (!isEmailVerified) {
         Alert.alert(
-          "Email chưa xác nhận", 
+          "Email chưa xác nhận",
           "Vui lòng xác nhận email trước khi đăng nhập",
           [
-            { 
-              text: "Xác nhận ngay", 
-              onPress: () => navigation.navigate("EmailVerification", { 
-                email, 
+            {
+              text: "Xác nhận ngay",
+              onPress: () => navigation.navigate("EmailVerification", {
+                email,
                 name: user.name || '',
-                fromRegister: false 
-              }) 
+                fromRegister: false
+              })
             },
             { text: "Hủy", style: "cancel" }
           ]
@@ -102,139 +86,91 @@ export default function LoginScreen({ navigation }) {
         return;
       }
 
-      // Đăng nhập thành công với trạng thái email đã xác nhận
-      const userWithVerification = {
-        ...user,
-        email_verified: true
-      };
-      
-      console.log('Login successful, user data from server:', userWithVerification);
+      // Gọi API lấy thông tin user chi tiết nếu có
+      let fullUser = { ...user, email_verified: true };
 
-      // Thử lấy thông tin user đầy đủ từ server nếu có endpoint
-      
       try {
-        const userProfileResponse = await api.get('/users/profile');
-        if (userProfileResponse?.data?.user) {
-          const fullUserData = {
-            ...userWithVerification,
-            ...userProfileResponse.data.user
-          };
-          console.log('Full user data from profile endpoint:', fullUserData);
-          await login(token, fullUserData, true);
-        
-// 🛒 Bắt đầu kiểm tra và tạo giỏ hàng
-try {
-  console.log("📍 Bắt đầu kiểm tra giỏ hàng...");
-  const userId = user._id || user.id;
-  console.log("🔐 ID người dùng:", userId);
-
-  // Gọi API lấy giỏ hàng theo user_id
-  const cartRes = await api.get(`/cart/user/${userId}`);
-
-  if (!cartRes.data?.data?._id && !cartRes.data?._id) {
-    console.log("🆕 User chưa có giỏ hàng, tạo mới...");
-    const createCartRes = await api.post("/cart", { user_id: userId });
-    console.log("🛒 Đã tạo giỏ hàng mới:", createCartRes.data);
-  } else {
-    console.log("✅ Giỏ hàng đã tồn tại:", cartRes.data);
-  }
-} catch (cartError) {
-  if (cartError?.response?.status === 404) {
-    // Nếu backend trả về 404 (User chưa có cart) => Tạo mới
-    try {
-      const createCartRes = await api.post("/cart", { user_id: user._id || user.id });
-      console.log("🛒 Đã tạo giỏ hàng mới sau lỗi 404:", createCartRes.data);
-    } catch (createErr) {
-      console.log("❌ Lỗi khi tạo mới giỏ hàng sau 404:", createErr?.response?.data || createErr.message);
-    }
-  } else {
-    console.log("❌ Lỗi kiểm tra giỏ hàng:", cartError?.response?.data || cartError.message);
-  }
-}
-
-
-    
-        } else {
-          await login(token, userWithVerification, true);
-          
+        const profileRes = await api.get("/users/profile");
+        if (profileRes?.data?.user) {
+          fullUser = { ...fullUser, ...profileRes.data.user };
         }
       } catch (profileError) {
-        console.log('Could not fetch full profile, using login response:', profileError);
-        await login(token, userWithVerification, true);
-
-// 🛒 Bắt đầu kiểm tra và tạo giỏ hàng
-try {
-  console.log("📍 Bắt đầu kiểm tra giỏ hàng...");
-  const userId = user._id || user.id;
-  console.log("🔐 ID người dùng:", userId);
-
-  // Gọi API lấy giỏ hàng theo user_id
-  const cartRes = await api.get(`/cart/user/${userId}`);
-
-  if (!cartRes.data?.data?._id && !cartRes.data?._id) {
-    console.log("🆕 User chưa có giỏ hàng, tạo mới...");
-    const createCartRes = await api.post("/cart", { user_id: userId });
-    console.log("🛒 Đã tạo giỏ hàng mới:", createCartRes.data);
-  } else {
-    console.log("✅ Giỏ hàng đã tồn tại:", cartRes.data);
-  }
-} catch (cartError) {
-  if (cartError?.response?.status === 404) {
-    // Nếu backend trả về 404 (User chưa có cart) => Tạo mới
-    try {
-      const createCartRes = await api.post("/cart", { user_id: user._id || user.id });
-      console.log("🛒 Đã tạo giỏ hàng mới sau lỗi 404:", createCartRes.data);
-    } catch (createErr) {
-      console.log("❌ Lỗi khi tạo mới giỏ hàng sau 404:", createErr?.response?.data || createErr.message);
-    }
-  } else {
-    console.log("❌ Lỗi kiểm tra giỏ hàng:", cartError?.response?.data || cartError.message);
-  }
-}
+        console.log("⚠️ Không lấy được thông tin user profile:", profileError?.message);
       }
-      
-      console.log('Login successful, user data saved with email_verified: true');
-      
-      // Navigation sẽ tự động chuyển sang Main do AuthContext thay đổi
+
+      await login(token, fullUser, true);
+
+      // 🛒 Tạo giỏ hàng nếu chưa có
+      try {
+        const userId = user._id || user.id;
+        const cartRes = await api.get(`/cart/user/${userId}`);
+
+        if (!cartRes.data || !cartRes.data._id) {
+          const createCartRes = await api.post("/cart", { user_id: userId });
+          console.log("🛒 Đã tạo giỏ hàng:", createCartRes.data);
+        } else {
+          console.log("✅ Giỏ hàng đã tồn tại:", cartRes.data);
+        }
+      } catch (cartError) {
+        if (cartError?.response?.status === 404) {
+          try {
+            const userId = user._id || user.id;
+            const createCartRes = await api.post("/cart", { user_id: userId });
+            console.log("🛒 Đã tạo giỏ hàng mới sau lỗi 404:", createCartRes.data);
+          } catch (createErr) {
+            console.log("❌ Lỗi khi tạo giỏ hàng:", createErr?.response?.data || createErr.message);
+          }
+        } else {
+          console.log("❌ Lỗi kiểm tra giỏ hàng:", cartError?.response?.data || cartError.message);
+        }
+      }
+
     } catch (error) {
-      console.log('Login error:', error);
-      console.log('Error response:', error.response?.data);
-      
-      let message = "Đăng nhập thất bại";
-      
-      // Xử lý các trường hợp lỗi cụ thể
-      if (error.response?.status === 403 && error.response?.data?.code === 'EMAIL_NOT_VERIFIED') {
+      console.log("❌ Lỗi đăng nhập:", error);
+      const res = error.response;
+
+      // 🛑 Trường hợp bị cấm đăng nhập (403 với lý do khóa)
+      if (res?.status === 403 && res?.data?.message?.includes("bị khóa")) {
+        Alert.alert("Tài khoản bị khóa", res.data.message);
+        return;
+      }
+
+      // 🛑 Trường hợp chưa xác minh email
+      if (res?.status === 403 && res?.data?.code === "EMAIL_NOT_VERIFIED") {
         Alert.alert(
-          "Email chưa xác nhận", 
+          "Email chưa xác nhận",
           "Vui lòng xác nhận email trước khi đăng nhập",
           [
-            { 
-              text: "Xác nhận ngay", 
-              onPress: () => navigation.navigate("EmailVerification", { 
-                email, 
-                name: error.response?.data?.user?.name || '',
-                fromRegister: false 
-              }) 
+            {
+              text: "Xác nhận ngay",
+              onPress: () => navigation.navigate("EmailVerification", {
+                email,
+                name: res.data?.user?.name || '',
+                fromRegister: false
+              })
             },
             { text: "Hủy", style: "cancel" }
           ]
         );
-      } else if (error.response?.status === 401) {
-        // Kiểm tra xem email có tồn tại không
+        return;
+      }
+
+      // 🛑 Trường hợp sai tài khoản hoặc mật khẩu
+      if (res?.status === 401) {
         try {
-          const checkResponse = await api.get(`/users/check-email-exists?email=${email}`);
-          if (checkResponse.data.exists) {
+          const check = await api.get(`/users/check-email-exists?email=${email}`);
+          if (check.data.exists) {
             Alert.alert(
-              "Email chưa xác nhận", 
-              "Email đã được đăng ký nhưng chưa xác nhận. Vui lòng xác nhận email trước khi đăng nhập.",
+              "Email chưa xác nhận",
+              "Email đã đăng ký nhưng chưa xác nhận. Vui lòng xác nhận trước khi đăng nhập.",
               [
-                { 
-                  text: "Xác nhận ngay", 
-                  onPress: () => navigation.navigate("EmailVerification", { 
-                    email, 
+                {
+                  text: "Xác nhận ngay",
+                  onPress: () => navigation.navigate("EmailVerification", {
+                    email,
                     name: '',
-                    fromRegister: false 
-                  }) 
+                    fromRegister: false
+                  })
                 },
                 { text: "Hủy", style: "cancel" }
               ]
@@ -245,23 +181,24 @@ try {
         } catch (checkError) {
           Alert.alert("Lỗi", "Email hoặc mật khẩu không đúng");
         }
-      } else if (error.response?.data?.message) {
-        message = error.response.data.message;
-        Alert.alert("Lỗi", message);
-      } else {
-        Alert.alert("Lỗi", message);
+        return;
       }
+
+      // 🛑 Lỗi khác
+      const fallbackMessage = res?.data?.message || "Đăng nhập thất bại";
+      Alert.alert("Lỗi", fallbackMessage);
     } finally {
       setIsLoading(false);
     }
   };
 
+
   return (
     <View style={styles.container}>
       <Image
-                source={require("../../assets/images/LogoSwear.png")}
-                style={styles.image}
-              />
+        source={require("../../assets/images/LogoSwear.png")}
+        style={styles.image}
+      />
       <Text style={styles.title}>Đăng nhập</Text>
 
       <TextInput
@@ -287,10 +224,10 @@ try {
           style={styles.eyeButton}
           onPress={() => setShowPassword(!showPassword)}
         >
-          <Ionicons 
-            name={showPassword ? "eye-off" : "eye"} 
-            size={24} 
-            color="#666" 
+          <Ionicons
+            name={showPassword ? "eye-off" : "eye"}
+            size={24}
+            color="#666"
           />
         </TouchableOpacity>
       </View>
@@ -331,10 +268,10 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   image: {
-    alignSelf:"center",
+    alignSelf: "center",
     width: 150,
     height: 150,
-    marginBottom:'100',
+    marginBottom: '100',
     resizeMode: "contain",
   },
   title: {

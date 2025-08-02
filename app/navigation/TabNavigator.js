@@ -1,3 +1,4 @@
+//app/navigation/TabNavigator.js
 import { Ionicons } from "@expo/vector-icons";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
@@ -13,6 +14,7 @@ import CategoryScreen from "../Screens/CategoryScreen";
 import ChangePasswordScreen from "../Screens/ChangePasswordScreen";
 import CheckoutScreen from "../Screens/CheckoutScreen";
 import EditProfileScreen from "../Screens/EditProfileScreen";
+import HelpScreen from "../Screens/HelpScreen";
 import HomeScreen from "../Screens/HomeScreen";
 import NotificationsScreen from "../Screens/NotificationsScreen";
 import OrderDetailScreen from "../Screens/OrderDetailScreen";
@@ -21,10 +23,12 @@ import OrdersEmptyScreen from "../Screens/OrdersEmptyScreen";
 import OrderStatusScreen from "../Screens/OrderStatusScreen";
 import OrderSuccessScreen from "../Screens/OrderSuccessScreen";
 import PaymentScreen from "../Screens/PaymentScreen";
+import PolicyScreen from "../Screens/PrivacyPolicyScreen";
 import ProductDetailScreen from "../Screens/ProductDetailScreen";
 import ProductScreen from "../Screens/ProductScreen";
 import ProfileScreen from "../Screens/ProfileScreen";
 import SearchSc from '../Screens/SearchSc';
+import TermsScreen from "../Screens/TermsScreen";
 import UserInfoScreen from "../Screens/UserInfoScreen";
 import WishlistScreen from "../Screens/WishlistScreen.js";
 import ZaloPayQRScreen from '../Screens/ZaloPayQRScreen';
@@ -231,6 +235,21 @@ function ProfileStack() {
         component={OrderDetailScreen}
         options={{ headerShown: false }}
       />
+      <Stack.Screen
+        name="Help"
+        component={HelpScreen}
+        options={{ title: "Trợ giúp" }}
+      />
+      <Stack.Screen
+        name="TermsScreen"
+        component={TermsScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="PolicyScreen"
+        component={PolicyScreen}
+        options={{ headerShown: false }}
+      />
     </Stack.Navigator>
   );
 }
@@ -308,6 +327,7 @@ export default function TabNavigator() {
         component={ProfileStack}
         options={{ title: "Cá nhân" }}
       />
+
     </Tab.Navigator>
   );
 }
