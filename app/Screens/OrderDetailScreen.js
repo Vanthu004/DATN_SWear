@@ -155,6 +155,7 @@ const OrderDetailScreen = () => {
           <Text style={styles.confirmText}>Hoàn hàng</Text>
         </TouchableOpacity>
       </View>
+                  <View style={{height: 50}}></View>
     </ScrollView>
   );
 };

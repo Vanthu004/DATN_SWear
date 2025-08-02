@@ -31,6 +31,7 @@ import SearchSc from '../Screens/SearchSc';
 import TermsScreen from "../Screens/TermsScreen";
 import UserInfoScreen from "../Screens/UserInfoScreen";
 import WishlistScreen from "../Screens/WishlistScreen.js";
+import ZaloPayQRScreen from '../Screens/ZaloPayQRScreen';
 
 // Tạo navigationRef để truy cập navigation từ bất kỳ đâu
 export const navigationRef = createRef();
@@ -121,6 +122,11 @@ function HomeStack() {
         component={OrderDetailScreen}
         options={{ headerShown: false }}
       />
+      <Stack.Screen
+        name="ZaloPayQRScreen"
+        component={ZaloPayQRScreen}
+        options={{ headerShown: false }}
+      />
     </Stack.Navigator>
   );
 }
@@ -180,6 +186,12 @@ function ProfileStack() {
         component={ProfileScreen}
         options={{ headerShown: false }}
       />
+        <Stack.Screen
+  name="ProductDetail"
+  component={ProductDetailScreen}
+  options={{ headerShown: false }}
+/>
+
       <Stack.Screen
         name="EditProfile"
         component={EditProfileScreen}
