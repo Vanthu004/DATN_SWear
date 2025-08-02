@@ -405,7 +405,8 @@ export const getOrderById = async (orderId) => {
 export const getOrdersByUser = async (userId) => {
   try {
     const response = await api.get(`/orders/user/${userId}`);
-    return response.data;
+    // Trả về đúng mảng orders
+    return response.data?.data?.orders || [];
   } catch (error) {
     console.error("Get orders by user error:", error);
     throw error;
@@ -476,10 +477,11 @@ export const getOrderDetailById = async (orderDetailId) => {
 export const getOrderDetailsByOrderId = async (orderId) => {
   try {
     const response = await api.get(`/order-details/order/${orderId}`);
-    return response.data;
+    // Đảm bảo trả về đúng mảng details
+    return response.data?.data?.details || [];
   } catch (error) {
-    console.error("Get order details by order ID error:", error);
-    throw error;
+    console.error("Get order details by orderId error:", error);
+    return [];
   }
 };
 
