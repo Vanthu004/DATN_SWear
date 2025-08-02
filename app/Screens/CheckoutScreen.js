@@ -65,63 +65,61 @@ const CheckoutScreen = () => {
           console.error("❌ Error loading addresses:", err);
         }
 
-      // ======= Voucher =======
-      try {
-        const allVouchers = userInfo?._id ? await getUserVouchers(userInfo._id) : [];
-        console.log("🔥 User Vouchers:", allVouchers);
-
-<<<<<<<<< Temporary merge branch 1
-      // Load phương thức vận chuyển
-      const shipMethods = await getShippingMethods();
-      setShippingMethods(shipMethods);
-      if (shipMethods.length > 0) {
-        setSelectedShippingMethodId(shipMethods[0]._id);
-        setShippingFee(shipMethods[0].fee || 0);
-=========
-        const uniqueVoucherMap = new Map();
-        allVouchers.forEach((v) => {
-          if (!uniqueVoucherMap.has(v._id)) uniqueVoucherMap.set(v._id, v);
-        });
-
-        const uniqueVouchers = Array.from(uniqueVoucherMap.values());
-        setVouchers(uniqueVouchers);
-
-        if (uniqueVouchers.length > 0) {
-          setSelectedVoucherId(uniqueVouchers[0]._id);
-          setSelectedVoucher(uniqueVouchers[0]);
+        // Vouchers
+        try {
+          const allVouchers = userInfo?._id ? await getUserVouchers(userInfo._id) : [];
+          console.log("🔥 User vouchers:", allVouchers);
+          const uniqueVoucherMap = new Map();
+          allVouchers.forEach((v) => {
+            if (!uniqueVoucherMap.has(v._id)) uniqueVoucherMap.set(v._id, v);
+          });
+          const uniqueVouchers = Array.from(uniqueVoucherMap.values());
+          setVouchers(uniqueVouchers);
+          if (uniqueVouchers.length > 0) {
+            setSelectedVoucherId(uniqueVouchers[0]._id);
+            setSelectedVoucher(uniqueVouchers[0]);
+          }
+        } catch (err) {
+          console.error("❌ Error loading vouchers:", err);
         }
-      } catch (err) {
-        console.error("❌ Lỗi tải voucher:", err);
-      }
 
-      // ======= Phương thức thanh toán =======
-      try {
-        const payMethods = await getPaymentMethods();
-        console.log("💳 Phương thức thanh toán:", payMethods);
-        setPaymentMethods(payMethods);
-        if (payMethods.length > 0) {
-          setSelectedPaymentMethodId(payMethods[0]._id);
+        // Payment Methods
+        setLoadingPaymentMethods(true);
+        try {
+          const data = await getPaymentMethods();
+          console.log("💳 Payment methods from API:", data);
+          const filtered = data
+            .filter((pm) => pm.code?.toUpperCase() === "COD" || pm.code?.toUpperCase() === "ZALOPAY")
+            .map((pm) => ({
+              ...pm,
+              image: imageMap[pm.code?.toUpperCase()] || null,
+            }));
+          setPaymentMethods(filtered);
+          setSelectedPaymentMethod(filtered.find((pm) => pm.code?.toUpperCase() === "COD")?._id || null);
+        } catch (err) {
+          Alert.alert("Error", "Failed to load payment methods");
+        } finally {
+          setLoadingPaymentMethods(false);
         }
-      } catch (err) {
-        console.error("❌ Lỗi tải phương thức thanh toán:", err);
-      }
 
-      // ======= Phương thức vận chuyển =======
-      try {
-        const shipMethods = await getShippingMethods();
-        console.log("🚚 Phương thức vận chuyển:", shipMethods);
-        setShippingMethods(shipMethods);
-        if (shipMethods.length > 0) {
-          setSelectedShippingMethodId(shipMethods[0]._id);
+        // Shipping Methods
+        try {
+          const shipMethods = await getShippingMethods();
+          console.log("🚚 Shipping methods:", shipMethods);
+          setShippingMethods(shipMethods);
+          if (shipMethods.length > 0) {
+            setSelectedShippingMethodId(shipMethods[0]._id);
+            setShippingFee(shipMethods[0].fee || 0);
+          }
+        } catch (err) {
+          console.error("❌ Error loading shipping methods:", err);
         }
-      } catch (err) {
-        console.error("❌ Lỗi tải phương thức vận chuyển:", err);
->>>>>>>>> Temporary merge branch 2
+      } catch (error) {
+        console.error("❌ General fetch error:", error);
       }
-    } catch (error) {
-      console.error("❌ Lỗi fetch tổng thể:", error);
-    }
-  };
+    };
+    fetchData();
+  }, []);
 
   // Handle voucher change
   const onVoucherChange = (voucherId) => {
@@ -143,7 +141,7 @@ const CheckoutScreen = () => {
   };
 
   // Calculate total before voucher
-  const totalBeforeVoucher = subtotal + shippingFee;
+  const totalBeforeVoucher = subtotal + shippingFee ;
 
   // Calculate total after voucher
   const calculateTotalAfterVoucher = () => {
@@ -153,8 +151,12 @@ const CheckoutScreen = () => {
     return discount > 0 ? discount : 0;
   };
 
-  // Hàm đặt hàng
->>>>>>>>> Temporary merge branch 2
+  // Format money
+  const formatMoney = (amount) => {
+    return amount.toLocaleString("vi-VN", { style: "currency", currency: "VND" });
+  };
+
+  // Handle order placement
   const handlePlaceOrder = async () => {
     if (checkedItems.length === 0) {
       Alert.alert("Error", "No products selected for order");
@@ -165,24 +167,31 @@ const CheckoutScreen = () => {
       return;
     }
 
-    Alert.alert(
-      "Xác nhận đặt hàng",
-<<<<<<<<< Temporary merge branch 1
-      `Bạn có chắc muốn đặt hàng với tổng tiền ${calculateFinalTotal().toLocaleString()} VND?`,
-=========
-      `Bạn có chắc muốn đặt hàng với tổng tiền ${formatMoney(calculateTotalAfterVoucher())} VND?`,
->>>>>>>>> Temporary merge branch 2
-      [
-        { text: "Hủy", style: "cancel" },
-        {
-          text: "Đặt hàng",
-          style: "default",
-          onPress: async () => {
-            await processOrder();
+    const selectedMethod = paymentMethods.find((pm) => pm._id === selectedPaymentMethod);
+    const isOnlinePayment = selectedMethod && selectedMethod.code?.toUpperCase() === "ZALOPAY";
+
+    if (isOnlinePayment) {
+      setOrderMessage("Please proceed with payment to place the order");
+      setTimeout(async () => {
+        setOrderMessage("");
+        await processOrder();
+      }, 1200);
+    } else {
+      Alert.alert(
+        "Xác nhận đặt hàng",
+        `Bạn có chắc chắn muốn mua sản phẩm với tổng tiền: ${formatMoney(calculateTotalAfterVoucher())}?`,
+        [
+          { text: "không", style: "cancel" },
+          {
+            text: "Đặt hàng",
+            style: "default",
+            onPress: async () => {
+              await processOrder();
+            },
           },
-        },
-      ]
-    );
+        ]
+      );
+    }
   };
 
   // Process order
@@ -198,17 +207,14 @@ const CheckoutScreen = () => {
         }${addr.district}, ${addr.province}, ${addr.country || "Việt Nam"}`;
       };
 
-    const orderData = {
-      total: calculateFinalTotal(),
-      shippingAddress: formatAddress(selectedAddressObj),
-      paymentMethodId: selectedPaymentMethod?._id,
-      shippingMethodId: selectedShippingMethod?._id,
-      note,
-<<<<<<<<< Temporary merge branch 1
-=========
-      voucherId: selectedVoucher?._id || null, // gửi voucherId nếu có
->>>>>>>>> Temporary merge branch 2
-    };
+      const orderData = {
+        total: calculateTotalAfterVoucher(),
+        shippingAddress: formatAddress(selectedAddressObj),
+        paymentMethodId: selectedPaymentMethodObj?._id,
+        shippingMethodId: selectedShippingMethod?._id,
+        note,
+        voucherId: selectedVoucher?._id || null,
+      };
 
       const result = await createOrderFromCart(checkedItems, orderData);
       if (result) {
@@ -221,34 +227,66 @@ const CheckoutScreen = () => {
             console.error("❌ Error applying voucher after order:", err);
           }
         }
-<<<<<<<<< Temporary merge branch 1
+          navigation.navigate(ROUTES.ORDER_SUCCESS, {
+            orderId: result.data._id,
+            total: calculateTotalAfterVoucher(),
+          });
+        // Handle ZaloPay payment
+        if (selectedPaymentMethodObj.code?.toUpperCase() === "ZALOPAY") {
+          setProcessingZaloPay(true);
+          try {
+            const productTotal = subtotal;
+            const totalAmount = calculateTotalAfterVoucher();
 
-        navigation.navigate(ROUTES.ORDER_SUCCESS, {
-          orderCode: result.order.order_code,
-          orderId: result.order._id,
-          total: calculateFinalTotal(),
-        });
-=========
->>>>>>>>> Temporary merge branch 2
+            const paymentRes = await api.post("/payments/zalopay/payment", {
+              orderId: result.order._id,
+              product_total: productTotal,
+              tax: taxAmount,
+              shipping_fee: shippingFee,
+              voucher_discount: selectedVoucher?.discount_value
+                ? totalBeforeVoucher - calculateTotalAfterVoucher()
+                : 0,
+              amount: totalAmount,
+              cart_id: cartId,
+            });
+
+            const paymentData = paymentRes.data;
+            console.log("ZaloPay paymentData:", paymentData);
+            const qrValue =
+              paymentData.qr_url || paymentData.order_url || paymentData.paymentUrl || paymentData.payUrl;
+
+            navigation.navigate("ZaloPayQRScreen", {
+              orderId: paymentData.app_trans_id || result.order._id,
+              replyTime: Date.now(),
+              money: paymentData.total_amount || totalAmount,
+              qrCodeUrl: qrValue,
+              paymentUrl: paymentData.order_url,
+              backendOrderId: result.order._id,
+              checkedItems: checkedItems,
+            });
+          } catch (err) {
+            Alert.alert("Error", "Failed to retrieve ZaloPay QR code");
+          } finally {
+            setProcessingZaloPay(false);
+          }
+        } else {
+          // Handle COD
+          for (const item of checkedItems) {
+            await removeFromCart(item._id);
+          }
+          Alert.alert("Success", `Order ${result.order.order_code} created successfully!`);
+          navigation.navigate(ROUTES.ORDER_SUCCESS, {
+            orderCode: result.order.order_code,
+            orderId: result.order._id,
+            total: calculateTotalAfterVoucher(),
+          });
+        }
       }
-
-      // Xóa sản phẩm đã đặt khỏi giỏ hàng
-      for (const item of checkedItems) {
-        await removeFromCart(item._id);
-      }
-
-      // Điều hướng sang màn thành công
-      navigation.navigate(ROUTES.ORDER_SUCCESS, {
-        orderCode: result.order.order_code,
-        orderId: result.order._id,
-        total: calculateTotalAfterVoucher(),
-      });
+    } catch (error) {
+      console.error("❌ Error processing order:", error);
+      Alert.alert("Error", "Failed to create order. Please try again.");
     }
-  } catch (error) {
-    console.error("❌ Lỗi xử lý đơn hàng:", error);
-    Alert.alert("Lỗi", "Không thể tạo đơn hàng. Vui lòng thử lại.");
-  }
-};
+  };
 
   return (
     <View style={styles.container}>
@@ -480,20 +518,12 @@ const CheckoutScreen = () => {
         {/* Summary */}
         <View style={styles.summary}>
           <View style={styles.row}>
-            <Text style={styles.label}>Giá sản phẩm</Text>
+            <Text style={styles.label}>Tạm tính</Text>
             <Text style={styles.value}>{formatMoney(subtotal)}</Text>
           </View>
           <View style={styles.row}>
             <Text style={styles.label}>Phí vận chuyển</Text>
-<<<<<<<<< Temporary merge branch 1
-            <Text style={styles.value}>{shippingFee.toLocaleString()} VND</Text>
-=========
-            <Text style={styles.value}>{formatMoney(shippingFee)} VND</Text>
-          </View>
-          <View style={styles.row}>
-            <Text style={styles.label}>Thuế</Text>
-            <Text style={styles.value}>{formatMoney(tax)} VND</Text>
->>>>>>>>> Temporary merge branch 2
+            <Text style={styles.value}>{formatMoney(shippingFee)}</Text>
           </View>
           {selectedVoucher && (
             <View style={styles.row}>
@@ -503,13 +533,7 @@ const CheckoutScreen = () => {
           )}
           <View style={styles.row}>
             <Text style={styles.totalLabel}>Tổng</Text>
-            <Text style={styles.total}>
-<<<<<<<<< Temporary merge branch 1
-            {calculateFinalTotal().toLocaleString()} VND
-=========
-              {formatMoney(calculateTotalAfterVoucher())} VND
->>>>>>>>> Temporary merge branch 2
-            </Text>
+            <Text style={styles.total}>{formatMoney(calculateTotalAfterVoucher())}</Text>
           </View>
         </View>
       </ScrollView>
@@ -517,13 +541,7 @@ const CheckoutScreen = () => {
       {/* Footer */}
       <View style={styles.footer}>
         <View style={styles.totalBox}>
-          <Text style={styles.footerTotal}>
-<<<<<<<<< Temporary merge branch 1
-            {calculateFinalTotal().toLocaleString()} VND
-=========
-            {formatMoney(calculateTotalAfterVoucher())} VND
->>>>>>>>> Temporary merge branch 2
-          </Text>
+          <Text style={styles.footerTotal}>{formatMoney(calculateTotalAfterVoucher())}</Text>
         </View>
         <TouchableOpacity
           style={[styles.orderButton, (loading || processingZaloPay) && styles.orderButtonDisabled]}
@@ -537,6 +555,13 @@ const CheckoutScreen = () => {
           )}
         </TouchableOpacity>
       </View>
+
+      {orderMessage ? (
+        <View style={styles.orderMessageBox}>
+          <Text style={styles.orderMessageText}>{orderMessage}</Text>
+        </View>
+      ) : null}
+                  <View style={{height: 70}}></View>
     </View>
   );
 };
