@@ -10,7 +10,7 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
-import api from '../utils/api';
+import { api } from '../utils/api';
 
 const EmailSupportScreen = ({ route, navigation }) => {
   const { email } = route.params;

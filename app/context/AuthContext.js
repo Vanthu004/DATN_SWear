@@ -1,8 +1,16 @@
+// app/context/AuthContext.js
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { Alert } from "react-native";
+import { io } from "socket.io-client";
 import { navigationRef } from "../navigation/TabNavigator";
-import api from "../utils/api";
+import { api, WEBSOCKET_URL } from "../utils/api";
+
+const socket = io(WEBSOCKET_URL, {
+  reconnection: true,
+  reconnectionAttempts: 5,
+  reconnectionDelay: 1000,
+});
 
 const AuthContext = createContext();
 
@@ -15,7 +23,48 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     checkLoginState();
+
+    socket.on("connect", () => {
+      console.log("WebSocket connected");
+    });
+
+    socket.on("disconnect", () => {
+      console.log("WebSocket disconnected");
+    });
+
+    return () => {
+      socket.off("connect");
+      socket.off("disconnect");
+      socket.off("banned");
+    };
   }, []);
+
+  useEffect(() => {
+    if (!userInfo) return;
+
+    socket.emit("join", userInfo._id);
+    console.log("WebSocket: Joined room", userInfo._id);
+
+    socket.on("banned", async (data) => {
+      console.log("WebSocket: Received banned event", data);
+      if (!isBanned) {
+        setIsBanned(true);
+        await logout();
+        Alert.alert("Tài khoản bị khóa", data.message, [
+          {
+            text: "OK",
+            onPress: () => {
+              console.log("WebSocket: Alert OK pressed, navigation handled by logout");
+            },
+          },
+        ]);
+      }
+    });
+
+    return () => {
+      socket.off("banned");
+    };
+  }, [userInfo, isBanned]);
 
   useEffect(() => {
     if (!userToken) return;
@@ -29,7 +78,7 @@ export const AuthProvider = ({ children }) => {
     };
 
     checkBanStatus();
-    const interval = setInterval(checkBanStatus, 10000);
+    const interval = setInterval(checkBanStatus, 30000); // Tăng từ 10s lên 30s
     return () => clearInterval(interval);
   }, [userToken]);
 
@@ -47,7 +96,7 @@ export const AuthProvider = ({ children }) => {
         banMessage: banMessage,
       });
 
-      if (banMessage) {
+      if (banMessage && !isBanned) {
         console.log("Ban message found in AsyncStorage:", banMessage);
         setIsBanned(true);
         await logout();
@@ -73,11 +122,24 @@ export const AuthProvider = ({ children }) => {
         const now = new Date();
         const bannedUntil = userData.ban?.bannedUntil ? new Date(userData.ban.bannedUntil) : null;
 
-        if (bannedUntil && bannedUntil > now) {
+        if (bannedUntil && bannedUntil > now && !isBanned) {
           console.log("Tài khoản bị ban đến:", bannedUntil);
           setIsBanned(true);
           await clearAllData();
-          setIsLoading(false);
+          Alert.alert(
+            "Tài khoản bị khóa",
+            `Tài khoản của bạn đã bị khóa${
+              bannedUntil ? ` đến ${bannedUntil.toLocaleString("vi-VN")}` : " vĩnh viễn"
+            }${userData.ban.reason ? ` vì: ${userData.ban.reason}` : ""}`,
+            [
+              {
+                text: "OK",
+                onPress: () => {
+                  console.log("AuthContext: Alert OK pressed, navigation handled by logout");
+                },
+              },
+            ]
+          );
           return;
         }
 
@@ -171,24 +233,23 @@ export const AuthProvider = ({ children }) => {
         const now = new Date();
         const bannedUntil = freshUser.ban?.bannedUntil ? new Date(freshUser.ban.bannedUntil) : null;
 
-        if (bannedUntil && bannedUntil > now) {
+        if (bannedUntil && bannedUntil > now && !isBanned) {
           console.log("Tài khoản bị ban đến:", bannedUntil);
           setIsBanned(true);
           await logout();
-          Alert.alert(
-            "Tài khoản bị khóa",
+          const banMessage = await AsyncStorage.getItem("banMessage") || 
             `Tài khoản của bạn đã bị khóa${
-              bannedUntil ? ` đến ${bannedUntil.toLocaleString('vi-VN')}` : " vĩnh viễn"
-            }${freshUser.ban.reason ? ` vì: ${freshUser.ban.reason}` : ""}`,
-            [
-              {
-                text: "OK",
-                onPress: () => {
-                  console.log("AuthContext: Alert OK pressed, navigation handled by logout");
-                },
+              bannedUntil ? ` đến ${bannedUntil.toLocaleString("vi-VN")}` : " vĩnh viễn"
+            }${freshUser.ban.reason ? ` vì: ${freshUser.ban.reason}` : ""}`;
+          Alert.alert("Tài khoản bị khóa", banMessage, [
+            {
+              text: "OK",
+              onPress: () => {
+                console.log("AuthContext: Alert OK pressed, navigation handled by logout");
               },
-            ]
-          );
+            },
+          ]);
+          await AsyncStorage.removeItem("banMessage");
           return;
         }
 
@@ -199,18 +260,20 @@ export const AuthProvider = ({ children }) => {
       console.log("Error refreshing user data:", error.message);
       if (error.response?.status === 403 && error.response?.data?.message?.includes("bị khóa")) {
         console.log("Handling 403 ban error in refreshUserData");
-        setIsBanned(true);
-        await logout();
-        const banMessage = await AsyncStorage.getItem("banMessage") || error.response.data.message;
-        Alert.alert("Tài khoản bị khóa", banMessage, [
-          {
-            text: "OK",
-            onPress: () => {
-              console.log("AuthContext: Alert OK pressed, navigation handled by logout");
+        if (!isBanned) {
+          setIsBanned(true);
+          await logout();
+          const banMessage = await AsyncStorage.getItem("banMessage") || error.response.data.message;
+          Alert.alert("Tài khoản bị khóa", banMessage, [
+            {
+              text: "OK",
+              onPress: () => {
+                console.log("AuthContext: Alert OK pressed, navigation handled by logout");
+              },
             },
-          },
-        ]);
-        await AsyncStorage.removeItem("banMessage");
+          ]);
+          await AsyncStorage.removeItem("banMessage");
+        }
       }
       throw error;
     }

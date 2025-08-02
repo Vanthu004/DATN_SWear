@@ -1,8 +1,10 @@
 // app/utils/api.js
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
-const API_BASE_URL = "http://192.168.1.85:3000/api"; //
 
+// Base URL for the API
+const API_BASE_URL = "http://192.168.1.112:3000/api";
+const WEBSOCKET_URL = "http://192.168.1.112:3000";
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -11,7 +13,7 @@ const api = axios.create({
   },
 });
 
-
+// Interceptors
 api.interceptors.request.use(
   async (config) => {
     try {
@@ -39,6 +41,7 @@ api.interceptors.request.use(
   }
 );
 
+// Response interceptor for logging and handling errors
 api.interceptors.response.use(
   (response) => {
     console.log("API Response:", {
@@ -54,9 +57,8 @@ api.interceptors.response.use(
 
     if (status === 403 && message.includes("bị khóa")) {
       try {
-        await AsyncStorage.multiRemove(["userToken", "userInfo", "isEmailVerified"]);
         await AsyncStorage.setItem("banMessage", message);
-        console.log("api.js: Ban detected, cleared AsyncStorage, relying on AuthContext for logout and navigation");
+        console.log("api.js: Ban detected, stored banMessage, relying on AuthContext for logout");
       } catch (err) {
         console.error("Error handling 403:", err);
       }
@@ -64,8 +66,8 @@ api.interceptors.response.use(
 
     if (status === 401 && message.toLowerCase().includes("jwt")) {
       try {
-        await AsyncStorage.multiRemove(["userToken", "userInfo", "isEmailVerified"]);
-        console.log("api.js: JWT error detected, cleared AsyncStorage, relying on AuthContext for logout and navigation");
+        await AsyncStorage.setItem("banMessage", message);
+        console.log("api.js: JWT error detected, stored banMessage, relying on AuthContext for logout");
       } catch (err) {
         console.error("Error handling 401:", err);
       }
@@ -682,4 +684,5 @@ export const getProductDetail = async (productId) => {
   }
 };
 
-export default api;
+export { api, WEBSOCKET_URL };
+

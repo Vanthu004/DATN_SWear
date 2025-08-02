@@ -9,7 +9,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import api from '../utils/api';
+import { api } from '../utils/api';
 
 const RegisterScreen = ({ navigation }) => {
   const [name, setName] = useState('');
