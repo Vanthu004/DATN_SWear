@@ -23,9 +23,9 @@ export default function AppNavigator() {
   }
 
   return (
-    <NavigationContainer>
-      <Stack.Navigator>
-        {userToken ? (
+    <NavigationContainer ref={navigationRef}>
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
+        {userToken && !isBanned ? (
           <>
             <Stack.Screen
               name="Main"

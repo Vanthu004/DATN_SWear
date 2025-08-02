@@ -60,7 +60,7 @@ const PolicyScreen = () => {
         <Text style={styles.paragraph}>
           Chúng tôi có thể cập nhật chính sách này theo thời gian. Mọi thay đổi sẽ được thông báo trên ứng dụng.
         </Text>
-        <View style={{ height: 50 }} />
+        <View style={{ height: 100 }} />
 
       </ScrollView>
       
