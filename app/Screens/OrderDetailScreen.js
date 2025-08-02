@@ -30,7 +30,7 @@ const OrderDetailScreen = () => {
         const details = await getOrderDetailsByOrderId(orderId);
         setOrderDetails(details);
       } catch (error) {
-        // handle error
+        console.log("Error fetching order:", error);
       } finally {
         setLoading(false);
       }
@@ -53,11 +53,9 @@ const OrderDetailScreen = () => {
       </View>
     );
   }
-
-  // Lấy thông tin sản phẩm đầu tiên để hiển thị ảnh
-  const firstDetail = orderDetails[0];
-  const images = orderDetails.map((d) => d.product_image).filter(Boolean);
-
+const productTotal = orderDetails.reduce((sum, item) => {
+  return sum + item.product_price * item.quantity;
+}, 0);
   return (
     <ScrollView style={styles.container}>
       {/* Header */}
@@ -71,119 +69,91 @@ const OrderDetailScreen = () => {
         <Text style={styles.headerTitle}>Chi tiết đơn hàng</Text>
       </View>
 
-      {/* Images */}
-      <View style={styles.imagesRow}>
-        {images.length > 0 ? (
-          images.map((img, idx) => (
-            <Image
-              key={idx}
-              source={{ uri: img }}
-              style={styles.productImage}
-              resizeMode="cover"
-            />
-          ))
-        ) : (
-          <Image
-            source={require("../../assets/images/box-icon.png")}
-            style={styles.productImage}
-          />
-        )}
-      </View>
-
-      {/* Product name & price */}
-      <Text style={styles.productName}>
-        {firstDetail?.product_name || "Sản phẩm"}
-      </Text>
-      <Text style={styles.productPrice}>
-        {firstDetail?.product_price?.toLocaleString()} VND
-      </Text>
-
-      {/* Order code */}
+      {/* Mã đơn hàng */}
       <View style={styles.infoBox}>
         <Text style={styles.infoText}>Mã đơn hàng</Text>
-        <Text style={styles.infoValue}>{order.order_code}</Text>
-      </View>
-      {/* Ngày tạo */}
-      <View style={styles.infoBox}>
-        <Text style={styles.infoText}>Ngày tạo</Text>
-        <Text style={styles.infoValue}>
-          {new Date(order.createdAt).toLocaleString()}
-        </Text>
+        <Text style={styles.infoValue}>{order.data.order_code}</Text>
       </View>
 
-      {/* Thuộc tính sản phẩm */}
-      <View style={styles.infoBoxRow}>
-        <View style={styles.infoCol}>
-          <Text style={styles.infoText}>Kích cỡ</Text>
-          <Text style={styles.infoValue}>{firstDetail?.size || "-"}</Text>
+      {/* Danh sách sản phẩm */}
+      <Text style={styles.sectionTitle}>Sản phẩm</Text>
+      {orderDetails.map((item, index) => (
+        <View key={index} style={styles.productBox}>
+          <Image
+            source={{ uri: item.product_image }}
+            style={styles.productImage}
+          />
+          <View style={styles.productInfo}>
+            <Text style={styles.productName}>{item.product_name}</Text>
+            <Text style={styles.productPrice}>
+              {item.product_price?.toLocaleString()} VND
+            </Text>
+            <Text style={styles.productAttr}>
+              Kích cỡ: {item.size || "-"} | Màu: {item.color || "-"}
+            </Text>
+            <Text style={styles.productAttr}>
+              Số lượng: {item.quantity}
+            </Text>
+          </View>
         </View>
-        <View style={styles.infoCol}>
-          <Text style={styles.infoText}>Màu sắc</Text>
-          <Text style={styles.infoValue}>{firstDetail?.color || "-"}</Text>
-        </View>
-        <View style={styles.infoCol}>
-          <Text style={styles.infoText}>Số lượng</Text>
-          <Text style={styles.infoValue}>{firstDetail?.quantity || 1}</Text>
-        </View>
-      </View>
+      ))}
 
-      {/* Tổng tiền */}
+      {/* Tổng thanh toán */}
+      <Text style={styles.sectionTitle}>Thanh toán</Text>
       <View style={styles.infoBox}>
         <Text style={styles.infoText}>Tổng</Text>
         <Text style={styles.infoValue}>
-          {order.total_price?.toLocaleString()} VND
+          {productTotal?.toLocaleString()} VND
         </Text>
       </View>
       <View style={styles.infoBox}>
         <Text style={styles.infoText}>Phí vận chuyển</Text>
-        <Text style={styles.infoValue}>20.000 VND</Text>
+        <Text style={styles.infoValue}>{order.data.shippingmethod_id.fee} VND</Text>
       </View>
-      <View style={styles.infoBox}>
-        <Text style={styles.infoText}>Phí VAT</Text>
-        <Text style={styles.infoValue}>00.000 VND</Text>
+            <View style={styles.infoBox}>
+        <Text style={styles.infoText}>Giảm </Text>
+        <Text style={styles.infoValue}>{order.data.voucher_id.discount_value} %</Text>
       </View>
       <View style={styles.infoBox}>
         <Text style={styles.infoTextBold}>Thành tiền</Text>
         <Text style={styles.infoValueBold}>
-          {order.total_price?.toLocaleString()} VND
+          {order.data.total_price} VND
         </Text>
       </View>
 
-      {/* Thông tin người nhận */}
+      {/* Thông tin giao hàng */}
+      <Text style={styles.sectionTitle}>Thông tin giao hàng</Text>
       <View style={styles.infoBox}>
         <Text style={styles.infoText}>Người nhận</Text>
-        <Text style={styles.infoValue}>Nguyễn Văn A</Text>
-      </View>
-      <View style={styles.infoBox}>
-        <Text style={styles.infoText}>SĐT</Text>
-        <Text style={styles.infoValue}>098383246</Text>
+        <Text style={styles.infoValue}>{order.data.user_id.name}</Text>
       </View>
       <View style={styles.infoBox}>
         <Text style={styles.infoText}>Địa chỉ giao hàng</Text>
-        <Text style={styles.infoValue}>{order.shipping_address}</Text>
+        <Text style={styles.infoValue}>{order.data.shipping_address}</Text>
       </View>
       <View style={styles.infoBox}>
         <Text style={styles.infoText}>Phương thức Thanh toán</Text>
-        <Text style={styles.infoValue}>**** 94545457 BIDV Bank</Text>
+        <Text style={styles.infoValue}>{order.data.paymentmethod_id.name}</Text>
       </View>
       <View style={styles.infoBox}>
         <Text style={styles.infoText}>Hình thức vận chuyển</Text>
-        <Text style={styles.infoValue}>Giao hàng tiết kiệm</Text>
+        <Text style={styles.infoValue}>{order.data.shippingmethod_id.name}</Text>
       </View>
       <View style={styles.infoBox}>
         <Text style={styles.infoText}>Trạng thái đơn hàng</Text>
-        <Text style={styles.infoValueStatus}>Đang giao</Text>
+        <Text style={styles.infoValueStatus}>{order.data.status}</Text>
       </View>
 
       {/* Action buttons */}
       <View style={styles.actionRow}>
-        <TouchableOpacity style={styles.cancelBtn}>
-          <Text style={styles.cancelText}>Hủy đơn</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.confirmBtn}>
-          <Text style={styles.confirmText}>Hoàn hàng</Text>
-        </TouchableOpacity>
+<TouchableOpacity
+  style={styles.confirmBtn}
+  onPress={() => navigation.navigate("Profile", { screen: "OrderHistory" })}
+>
+  <Text style={styles.confirmText}>Lịch sử mua hàng</Text>
+</TouchableOpacity>
       </View>
+                  <View style={{height: 50}}></View>
     </ScrollView>
   );
 };
@@ -203,30 +173,38 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     fontSize: 18,
   },
-  imagesRow: {
-    flexDirection: "row",
-    justifyContent: "center",
-    marginBottom: 12,
-  },
-  productImage: {
-    width: 100,
-    height: 100,
-    borderRadius: 12,
-    marginHorizontal: 4,
-  },
-  productName: {
-    fontWeight: "bold",
-    fontSize: 18,
-    textAlign: "center",
-    marginTop: 8,
-  },
-  productPrice: {
-    color: "#E53935",
+  centered: { flex: 1, justifyContent: "center", alignItems: "center" },
+
+  sectionTitle: {
+    marginTop: 16,
+    marginBottom: 8,
+    marginHorizontal: 16,
     fontWeight: "bold",
     fontSize: 16,
-    textAlign: "center",
-    marginBottom: 8,
   },
+
+  productBox: {
+    flexDirection: "row",
+    backgroundColor: "#F9F9F9",
+    marginHorizontal: 16,
+    marginBottom: 8,
+    borderRadius: 10,
+    padding: 10,
+  },
+  productImage: {
+    width: 80,
+    height: 80,
+    borderRadius: 8,
+    marginRight: 12,
+  },
+  productInfo: {
+    flex: 1,
+    justifyContent: "space-between",
+  },
+  productName: { fontWeight: "bold", fontSize: 15 },
+  productPrice: { color: "#E53935", fontWeight: "bold" },
+  productAttr: { fontSize: 13, color: "#555" },
+
   infoBox: {
     backgroundColor: "#F6F6F6",
     borderRadius: 8,
@@ -236,19 +214,12 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
   },
-  infoBoxRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginHorizontal: 16,
-    marginVertical: 4,
-  },
-  infoCol: { flex: 1, alignItems: "center" },
   infoText: { color: "#888", fontSize: 13 },
   infoTextBold: { color: "#222", fontWeight: "bold", fontSize: 14 },
   infoValue: { color: "#222", fontWeight: "500", fontSize: 14 },
   infoValueBold: { color: "#E53935", fontWeight: "bold", fontSize: 16 },
   infoValueStatus: { color: "#007BFF", fontWeight: "bold", fontSize: 14 },
-  centered: { flex: 1, justifyContent: "center", alignItems: "center" },
+
   actionRow: {
     flexDirection: "row",
     justifyContent: "space-between",

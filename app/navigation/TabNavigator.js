@@ -2,6 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import React from "react";
+import { StyleSheet, TouchableOpacity, View } from "react-native";
 
 // Import các màn hình chính
 import AddAddressScreen from "../Screens/AddAddressScreen";
@@ -26,6 +27,7 @@ import ProfileScreen from "../Screens/ProfileScreen";
 import SearchSc from '../Screens/SearchSc';
 import UserInfoScreen from "../Screens/UserInfoScreen";
 import WishlistScreen from "../Screens/WishlistScreen.js";
+import ZaloPayQRScreen from '../Screens/ZaloPayQRScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -99,6 +101,11 @@ function HomeStack() {
         component={OrderDetailScreen}
         options={{ headerShown: false }}
       />
+      <Stack.Screen
+        name="ZaloPayQRScreen"
+        component={ZaloPayQRScreen}
+        options={{ headerShown: false }}
+      />
     </Stack.Navigator>
   );
 }
@@ -158,6 +165,12 @@ function ProfileStack() {
         component={ProfileScreen}
         options={{ headerShown: false }}
       />
+        <Stack.Screen
+  name="ProductDetail"
+  component={ProductDetailScreen}
+  options={{ headerShown: false }}
+/>
+
       <Stack.Screen
         name="EditProfile"
         component={EditProfileScreen}
@@ -236,69 +249,56 @@ function NotificationsStack() {
   );
 }
 
+const CustomTabBar = ({ state, descriptors, navigation }) => (
+  <View style={customStyles.tabBar}>
+    {state.routes.map((route, index) => {
+      const { options } = descriptors[route.key];
+      const isFocused = state.index === index;
+      let iconName;
+      if (route.name === "Home") iconName = "home-outline";
+      else if (route.name === "Notifications") iconName = "notifications-outline";
+      else if (route.name === "Wishlist") iconName = "heart-outline";
+      else if (route.name === "Profile") iconName = "person-outline";
+      const onPress = () => {
+        if (!isFocused) navigation.navigate(route.name);
+      };
+      return (
+        <TouchableOpacity
+          key={route.key}
+          accessibilityRole="button"
+          accessibilityState={isFocused ? { selected: true } : {}}
+          onPress={onPress}
+          style={customStyles.tabButton}
+          activeOpacity={0.8}
+        >
+          <Ionicons
+            name={iconName}
+            size={28}
+            color={isFocused ? "#2979FF" : "#B0B0B0"}
+          />
+        </TouchableOpacity>
+      );
+    })}
+  </View>
+);
+
 export default function TabNavigator() {
   return (
     <Tab.Navigator
-      screenOptions={({ route }) => ({
-        tabBarIcon: ({ focused, color, size }) => {
-          let iconName;
-          let iconColor = focused ? "#007AFF" : "#8e8e93";
-          let iconSize = 24;
-
-          switch (route.name) {
-            case "Home":
-              iconName = "home-outline";
-              break;
-            case "Wishlist":
-              iconName = "heart-outline";
-              break;
-            case "Notifications":
-              iconName = "notifications-outline";
-              break;
-            case "Profile":
-              iconName = "person-outline";
-              break;
-          }
-
-          return <Ionicons name={iconName} size={iconSize} color={iconColor} />;
-        },
-        tabBarActiveTintColor: "#007AFF",
-        tabBarInactiveTintColor: "#8e8e93",
-        tabBarShowLabel: true,
-        headerShown: false,
-        tabBarStyle: {
-          paddingTop: 20,
-          height: 70,
-          borderTopLeftRadius: 18,
-          borderTopRightRadius: 18,
-          borderTopWidth: 0.5,
-          borderTopColor: "#eee",
-          backgroundColor: "#fff",
-          shadowColor: "#000",
-          shadowOffset: { width: 0, height: -2 },
-          shadowOpacity: 0.08,
-          shadowRadius: 8,
-          elevation: 8,
-        },
-        tabBarLabelStyle: {
-          fontSize: 12,
-          fontWeight: "500",
-          marginTop: 4,
-        },
-      })}
+      tabBar={props => <CustomTabBar {...props} />}
+      screenOptions={{ headerShown: false }}
     >
       <Tab.Screen
         name="Home"
         component={HomeStack}
         options={{ title: "Trang chủ" }}
       />
-
       <Tab.Screen
         name="Notifications"
         component={NotificationsStack}
         options={{ title: "Thông báo" }}
       />
-            <Tab.Screen
+      <Tab.Screen
         name="Wishlist"
         component={WishlistScreen}
         options={{ title: "Yêu thích" }}
@@ -311,3 +311,31 @@ export default function TabNavigator() {
     </Tab.Navigator>
   );
 }
+
+const customStyles = StyleSheet.create({
+  tabBar: {
+    flexDirection: "row",
+    backgroundColor: "#fff", // Nền mờ trong suốt
+    borderRadius: 100,
+    margin: 10,
+    height: 64,
+    alignItems: "center",
+    justifyContent: "space-around",
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderWidth: 1,
+    borderColor: "#fff", // Border trắng rõ ràng
+    shadowColor: "#000",
+    shadowOpacity: 0.08,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  tabButton: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+});

@@ -56,6 +56,7 @@ export const useOrder = () => {
         shippingmethod_id: orderData.shippingMethodId, // Temporary ObjectId
         paymentmethod_id: orderData.paymentMethodId, // Temporary ObjectId
         shipping_address: orderData.shippingAddress,
+        voucher_id: orderData.voucherId,
         note: orderData.note || "",
         orderDetails: orderDetails,
       };
@@ -69,10 +70,10 @@ export const useOrder = () => {
       // Refresh danh sách đơn hàng
       await fetchUserOrders();
 
-      Alert.alert(
-        "Thành công",
-        `Đơn hàng ${result.order.order_code} đã được tạo thành công!`
-      );
+      // Alert.alert(
+      //   "Thành công",
+      //   `Đơn hàng ${result.order.order_code} đã được tạo thành công!`
+      // );
 
       return result;
     } catch (error) {
