@@ -225,7 +225,7 @@ export default function ProductDetailScreen({ route, navigation }) {
         )}
 
         {/* Product Variant Selector - Only show basic info */}
-        {selectedVariant && (
+        {/* {selectedVariant && (
           <View style={styles.variantInfo}>
             <Text style={styles.variantPrice}>
               {selectedVariant.price?.toLocaleString('vi-VN')} ₫
@@ -239,11 +239,11 @@ export default function ProductDetailScreen({ route, navigation }) {
               </Text>
             )}
           </View>
-        )}
-
+        )} */}
+{/* 
         {typeof product.stock === 'number' && (
           <Text style={styles.stock}>Còn lại: {product.stock} sản phẩm</Text>
-        )}
+        )} */}
 
         {/* Quantity - Removed as it's now in Modal */}
 
