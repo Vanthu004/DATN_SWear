@@ -11,6 +11,11 @@ export const fetchBestSellers = createAsyncThunk('home/fetchBestSellers', async 
   return res.data.data;
 });
 
+export const fetchProductDetail = createAsyncThunk('home/fetchProductDetail', async (productId) => {
+  const res = await api.get(`/products/${productId}/frontend`);
+  return res.data;
+});
+
 export const fetchNewest = createAsyncThunk('home/fetchNewest', async () => {
   const res = await api.get('/products/newest');
   return res.data.data;
@@ -44,6 +49,7 @@ const homeSlice = createSlice({
     newest: [],
     popular: [],
     selectedCategoryProducts: [],
+    productDetails: {},
     loading: false,
     error: null,
     searchKeyword: '',
@@ -122,6 +128,10 @@ const homeSlice = createSlice({
       .addCase(fetchCategoryTypes.rejected, (state, action) => {
         state.loading = false;
         state.error = action.error.message;
+      })
+      .addCase(fetchProductDetail.fulfilled, (state, action) => {
+        const product = action.payload;
+        state.productDetails[product._id] = product;
       });
   },
 });

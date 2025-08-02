@@ -27,6 +27,7 @@ import ProfileScreen from "../Screens/ProfileScreen";
 import SearchSc from '../Screens/SearchSc';
 import UserInfoScreen from "../Screens/UserInfoScreen";
 import WishlistScreen from "../Screens/WishlistScreen.js";
+import ZaloPayQRScreen from '../Screens/ZaloPayQRScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -100,6 +101,11 @@ function HomeStack() {
         component={OrderDetailScreen}
         options={{ headerShown: false }}
       />
+      <Stack.Screen
+        name="ZaloPayQRScreen"
+        component={ZaloPayQRScreen}
+        options={{ headerShown: false }}
+      />
     </Stack.Navigator>
   );
 }
@@ -159,6 +165,12 @@ function ProfileStack() {
         component={ProfileScreen}
         options={{ headerShown: false }}
       />
+        <Stack.Screen
+  name="ProductDetail"
+  component={ProductDetailScreen}
+  options={{ headerShown: false }}
+/>
+
       <Stack.Screen
         name="EditProfile"
         component={EditProfileScreen}

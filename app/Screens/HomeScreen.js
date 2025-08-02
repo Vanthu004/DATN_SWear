@@ -141,7 +141,7 @@ export default function HomeScreen() {
       <FlatList
         horizontal
         data={categories}
-        keyExtractor={item => item._id}
+        keyExtractor={(item) => String(item._id || item.id)}
         contentContainerStyle={{ paddingHorizontal: 8 }}
         renderItem={({ item }) => (
           <TouchableOpacity
@@ -172,7 +172,7 @@ export default function HomeScreen() {
       <FlatList
         horizontal
         data={categories}
-        keyExtractor={item => item._id}
+        keyExtractor={(item) => String(item._id || item.id)}
         contentContainerStyle={{ paddingHorizontal: 8 }}
         renderItem={({ item }) => (
           <TouchableOpacity
@@ -203,7 +203,7 @@ const DaylyCategoryList = ({ categories }) => (
     <FlatList
       horizontal
       data={categories}
-      keyExtractor={item => item._id}
+      keyExtractor={(item) => String(item._id || item.id)}
       contentContainerStyle={{ paddingHorizontal: 8 }}
       renderItem={({ item }) => (
         <TouchableOpacity
@@ -234,7 +234,7 @@ const ShoseMoutainCategoryList = ({ categories }) => (
     <FlatList
       horizontal
       data={categories}
-      keyExtractor={item => item._id}
+      keyExtractor={(item) => String(item._id || item.id)}
       contentContainerStyle={{ paddingHorizontal: 8 }}
       renderItem={({ item }) => (
         <TouchableOpacity
@@ -323,15 +323,16 @@ const ShoseMoutainCategoryList = ({ categories }) => (
             activeDotStyle={{ backgroundColor: '#000', width: 10, height: 10 }}
             style={{ height: 160 }}
           >
-            {bannersCategories.map((item) => (
-              <TouchableOpacity onPress={() => navigation.navigate('CategoryScreen', { category: item })} activeOpacity={0.8}>
-              <Image
-                key={item._id}
-                source={item.image_url ? { uri: item.image_url } : bannerImg}
-                style={styles.bannerImg}
-              />
-               </TouchableOpacity>
-            ))}
+             {bannersCategories.map((item) => (
+              <View key={item._id}>
+                <TouchableOpacity onPress={() => navigation.navigate('CategoryScreen', { category: item })} activeOpacity={0.8}>
+                  <Image
+                    source={item.image_url ? { uri: item.image_url } : bannerImg}
+                    style={styles.bannerImg}
+                  />
+                </TouchableOpacity>
+              </View>
+  ))}
           </Swiper>
         ) : (
           <Image source={bannerImg} style={styles.bannerImg} />
@@ -347,7 +348,7 @@ const ShoseMoutainCategoryList = ({ categories }) => (
         </View>
         <FlatList
           data={displayedCategories}
-          keyExtractor={(item) => item._id || item.id}
+          keyExtractor={(item) => String(item._id || item.id)}
           horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={{ paddingHorizontal: 8, marginBottom: 8 }}
@@ -370,7 +371,7 @@ const ShoseMoutainCategoryList = ({ categories }) => (
         </View>
         <FlatList
           data={bestSellers}
-          keyExtractor={(item) => item._id || item.id}
+          keyExtractor={(item) => String(item._id || item.id)}
           horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={{paddingHorizontal: 18 }}
@@ -398,7 +399,7 @@ const ShoseMoutainCategoryList = ({ categories }) => (
         </View>
         <FlatList
           data={popular}
-          keyExtractor={(item) => item._id || item.id}
+          keyExtractor={(item) => String(item._id || item.id)}
           horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={{paddingBottom: 12, }}
@@ -430,7 +431,7 @@ const ShoseMoutainCategoryList = ({ categories }) => (
         </View>
         <FlatList
           data={newest}
-          keyExtractor={(item) => item._id || item.id}
+          keyExtractor={(item) => String(item._id || item.id)}
           horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={{paddingBottom: 12, }}
