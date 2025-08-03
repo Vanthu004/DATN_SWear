@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import ProductVariantModal from '../components/ProductVariantModal';
 import { useAuth } from '../context/AuthContext';
-import api from '../utils/api';
+import { api } from '../utils/api';
 
 const calculateAvg = (reviews) => {
   if (!reviews || reviews.length === 0) return 0;
@@ -46,6 +46,7 @@ export default function ProductDetailScreen({ route, navigation }) {
   const [showVariantModal, setShowVariantModal] = useState(false);
   const [loading, setLoading] = useState(false);
 
+
   useEffect(() => {
     const fetchProductDetail = async () => {
       setLoading(true);
@@ -67,6 +68,7 @@ export default function ProductDetailScreen({ route, navigation }) {
   // Load first variant when fullProduct loads
   useEffect(() => {
     if (fullProduct?._id && !selectedVariant) {
+
       if (fullProduct.variants && fullProduct.variants.length > 0) {
         setSelectedVariant(fullProduct.variants[0]);
       }
@@ -121,8 +123,8 @@ export default function ProductDetailScreen({ route, navigation }) {
 
     try {
       const cartRes = await api.get(`/cart/user/${userInfo._id}`);
-      let cart = cartRes.data.data || cartRes.data;
 
+      let cart = cartRes.data.data || cartRes.data; // Handle nested data structure
       if (!cart?._id) {
         const createCartRes = await api.post('/cart', { user_id: userInfo._id });
         cart = createCartRes.data.data || createCartRes.data;
@@ -149,29 +151,31 @@ export default function ProductDetailScreen({ route, navigation }) {
     }
   };
 
-  const handleBuyNow = ({ product, variant, quantity }) => {
-    navigation.navigate('Checkout', {
-      items: [{
-        product,
-        variant,
-        quantity,
-        price: variant.price || product.price,
-      }],
-      isDirectPurchase: true,
-    });
-  };
+
+const handleBuyNow = ({ product, variant, quantity }) => {
+  navigation.navigate('Checkout', {
+    items: [{
+      product,
+      variant,
+      quantity,
+      price: variant.price || product.price,
+    }],
+    isDirectPurchase: true,
+  });
+};
 
   const handleShowVariantModal = () => {
     setShowVariantModal(true);
   };
 
+
   if (!product) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <Text>Không có dữ liệu sản phẩm</Text>
-      </SafeAreaView>
-    );
-  }
+  return (
+    <SafeAreaView style={styles.container}>
+      <Text>Không có dữ liệu sản phẩm</Text>
+    </SafeAreaView>
+  );
+}
 
   const imageUrls =
     fullProduct.images && fullProduct.images.length > 0
@@ -233,10 +237,9 @@ export default function ProductDetailScreen({ route, navigation }) {
             )}
           </View>
         )}
-
         {typeof product.stock === 'number' && (
           <Text style={styles.stock}>Còn lại: {product.stock} sản phẩm</Text>
-        )}
+        )} */}
 
         {/* Description */}
         <Text style={styles.label}>Mô tả sản phẩm</Text>
@@ -299,7 +302,6 @@ export default function ProductDetailScreen({ route, navigation }) {
         onAddToCart={handleAddToCart}
         userInfo={userInfo}
       />
-
       <View style={{ height: 70 }} />
     </SafeAreaView>
   );

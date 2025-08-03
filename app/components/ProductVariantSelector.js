@@ -11,10 +11,8 @@ import { useProductVariant } from '../hooks/useProductVariant';
 const ProductVariantSelector = ({ productId, onVariantChange }) => {
   const {
     variants: productVariants,
-    selectedVariant,
     loading,
     error,
-    selectVariant,
     getAvailableSizes,
     getAvailableColors,
     getVariantBySizeAndColor,
@@ -24,153 +22,92 @@ const ProductVariantSelector = ({ productId, onVariantChange }) => {
   const [selectedColor, setSelectedColor] = useState(null);
 
   useEffect(() => {
-    if (productVariants.length > 0) {
-      // Set default selections
-      const firstVariant = productVariants[0];
-      setSelectedSize(firstVariant.size || null);
-      setSelectedColor(firstVariant.color || null);
-      
-      // Notify parent component
-      if (onVariantChange) {
-        onVariantChange(firstVariant);
-      }
-    }
+    // Không chọn mặc định size/color khi mở modal
+    setSelectedSize(null);
+    setSelectedColor(null);
   }, [productVariants]);
 
-  const handleSizeSelect = (size) => {
-    setSelectedSize(size);
-    const availableVariants = productVariants.filter(v => v.size === size);
-    if (availableVariants.length > 0) {
-      const variant = availableVariants.find(v => v.color === selectedColor) || availableVariants[0];
-      setSelectedColor(variant.color);
-      
-      if (onVariantChange) {
+  useEffect(() => {
+    if (selectedSize && selectedColor) {
+      const variant = getVariantBySizeAndColor(selectedSize, selectedColor);
+      if (variant && onVariantChange) {
         onVariantChange(variant);
       }
+    } else {
+      onVariantChange(null); // Bắt buộc phải chọn đủ cả 2
     }
-  };
+  }, [selectedSize, selectedColor]);
 
-  const handleColorSelect = (color) => {
-    setSelectedColor(color);
-    const variant = productVariants.find(v => v.size === selectedSize && v.color === color);
-    
-    if (variant && onVariantChange) {
-      onVariantChange(variant);
-    }
-  };
+  if (productVariants.length === 0) return null;
 
-  const currentVariant = getVariantBySizeAndColor(selectedSize, selectedColor);
+  const availableSizes = selectedColor ? productVariants
+    .filter(v => v.color === selectedColor)
+    .map(v => v.size) : getAvailableSizes();
 
-  if (productVariants.length === 0) {
-    return null;
-  }
-
-  // If only one variant, show variant info without selectors
-  if (productVariants.length === 1) {
-    const singleVariant = productVariants[0];
-    // Notify parent component about the single variant
-    if (onVariantChange) {
-      onVariantChange(singleVariant);
-    }
-    return (
-      <View style={styles.container}>
-        <View style={styles.variantInfo}>
-          <Text style={styles.variantPrice}>
-            {singleVariant.price?.toLocaleString('vi-VN')} ₫
-          </Text>
-          {singleVariant.stock !== undefined && (
-            <Text style={[
-              styles.stockInfo,
-              singleVariant.stock > 0 ? styles.inStock : styles.outOfStock,
-            ]}>
-              {singleVariant.stock > 0 ? `Còn ${singleVariant.stock} sản phẩm` : 'Hết hàng'}
-            </Text>
-          )}
-        </View>
-      </View>
-    );
-  }
+  const availableColors = selectedSize ? productVariants
+    .filter(v => v.size === selectedSize)
+    .map(v => v.color) : getAvailableColors();
 
   return (
     <View style={styles.container}>
-      {/* Show variant info even if no selectors needed */}
-      {currentVariant && (
-        <View style={styles.variantInfo}>
-          <Text style={styles.variantPrice}>
-            {currentVariant.price?.toLocaleString('vi-VN')} ₫
-          </Text>
-          {currentVariant.stock !== undefined && (
-            <Text style={[
-              styles.stockInfo,
-              currentVariant.stock > 0 ? styles.inStock : styles.outOfStock,
-            ]}>
-              {currentVariant.stock > 0 ? `Còn ${currentVariant.stock} sản phẩm` : 'Hết hàng'}
-            </Text>
-          )}
+      {/* Màu sắc */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Màu sắc</Text>
+        <View style={styles.colorGrid}>
+         {getAvailableColors(selectedSize).map((color) =>{
+            const isAvailable = availableColors.includes(color);
+            const isSelected = selectedColor === color;
+            return (
+              <TouchableOpacity
+                key={color}
+                style={[
+                  styles.colorBox,
+                  isSelected && styles.selectedBox,
+                  !isAvailable && styles.disabledOption
+                ]}
+                onPress={() => isAvailable && setSelectedColor(color)}
+                disabled={!isAvailable}
+              >
+                <Text style={[styles.colorText, isSelected && styles.selectedText]}>
+                  {color}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
         </View>
-      )}
+      </View>
 
-      {/* Color Selection - Grid layout */}
-      {getAvailableColors(selectedSize).length > 1 && (
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Màu sắc</Text>
-          <View style={styles.colorGrid}>
-            {getAvailableColors(selectedSize).map((color, index) => {
-              // Find the variant to get hex_code for color
-              const variant = productVariants.find(v => v.color === color);
-              const hexCode = variant?.hex_code || color;
-              const isHot = index === 0; // First color is hot
-              
-              return (
-                <View key={color} style={styles.colorItemContainer}>
-                  <TouchableOpacity
-                    style={[
-                      styles.colorOption,
-                      { backgroundColor: hexCode },
-                      selectedColor === color && styles.selectedColorOption,
-                    ]}
-                    onPress={() => handleColorSelect(color)}
-                  >
-                    {isHot && (
-                      <View style={styles.hotLabel}>
-                        <Text style={styles.hotText}>Hot</Text>
-                      </View>
-                    )}
-                  </TouchableOpacity>
-                  <Text style={styles.colorName}>{color}</Text>
-                </View>
-              );
-            })}
-          </View>
-        </View>
-      )}
-
-      {/* Size Selection - Horizontal layout */}
-      {getAvailableSizes().length > 1 && (
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Kích cỡ</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.optionsContainer}>
-            {getAvailableSizes().map((size) => (
+      {/* Kích cỡ */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Kích cỡ</Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.optionsContainer}>
+          {getAvailableSizes().map((size) => {
+            const isAvailable = availableSizes.includes(size);
+            const isSelected = selectedSize === size;
+            return (
               <TouchableOpacity
                 key={size}
                 style={[
                   styles.optionButton,
-                  selectedSize === size && styles.selectedOption,
+
+                  isSelected && styles.selectedOption,
+                  !isAvailable && styles.disabledOption
                 ]}
-                onPress={() => handleSizeSelect(size)}
+                onPress={() => isAvailable && setSelectedSize(size)}
+                disabled={!isAvailable}
               >
                 <Text style={[
                   styles.optionText,
-                  selectedSize === size && styles.selectedOptionText,
+                  isSelected && styles.selectedOptionText,
+                  !isAvailable && styles.disabledText
                 ]}>
                   {size}
                 </Text>
               </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
-      )}
-
+            );
+          })}
+        </ScrollView>
+      </View>
     </View>
   );
 };
@@ -212,70 +149,38 @@ const styles = StyleSheet.create({
     color: '#3b82f6',
     fontWeight: '600',
   },
+  disabledOption: {
+    opacity: 0.4,
+  },
+  disabledText: {
+    color: '#aaa',
+  },
   colorGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 12,
+    gap: 10,
   },
-  colorItemContainer: {
-    alignItems: 'center',
-    width: 80,
+  colorBox: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 20,
+    marginBottom: 8,
+    marginRight: 8,
   },
-  colorOption: {
-    width: 60,
-    height: 60,
-    borderRadius: 8,
-    borderWidth: 2,
-    borderColor: '#ddd',
-    marginBottom: 4,
-    position: 'relative',
+  selectedBox: {
+    borderColor: '#ec4899',
+    backgroundColor: '#fdf2f8',
   },
-  selectedColorOption: {
-    borderColor: '#3b82f6',
-    borderWidth: 3,
-  },
-  hotLabel: {
-    position: 'absolute',
-    top: -8,
-    right: -8,
-    backgroundColor: '#dc2626',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 8,
-  },
-  hotText: {
-    color: '#fff',
-    fontSize: 10,
-    fontWeight: 'bold',
-  },
-  colorName: {
-    fontSize: 12,
-    color: '#666',
-    textAlign: 'center',
-    lineHeight: 16,
-  },
-  variantInfo: {
-    marginTop: 12,
-    padding: 12,
-    backgroundColor: '#f8f9fa',
-    borderRadius: 8,
-  },
-  variantPrice: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#3b82f6',
-    marginBottom: 4,
-  },
-  stockInfo: {
+  colorText: {
     fontSize: 14,
-    fontWeight: '500',
+    color: '#333',
   },
-  inStock: {
-    color: '#16a34a',
-  },
-  outOfStock: {
-    color: '#dc2626',
+  selectedText: {
+    color: '#ec4899',
+    fontWeight: 'bold',
   },
 });
 
-export default ProductVariantSelector; 
+export default ProductVariantSelector;

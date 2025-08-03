@@ -6,25 +6,25 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
-import { getAllReviews } from '../utils/api';
+import api from '../utils/api';
 import { renderStars } from '../utils/renderStars';
 
-export default function AllReviewsScreen() {
+export default function AllReviewsScreen({ route }) {
+  const { productId } = route.params;
   const [reviews, setReviews] = useState([]);
-  const [filteredReviews, setFilteredReviews] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [avgRating, setAvgRating] = useState(0);
+  const [loading, setLoading] = useState(true);
   const [sortOrder, setSortOrder] = useState('desc');
-  const [searchKeyword, setSearchKeyword] = useState('');
 
   useEffect(() => {
     const fetchReviews = async () => {
       try {
-        const data = await getAllReviews();
+        const res = await api.get(`/reviews/product/${productId}`);
+        const data = res.data || [];
+
         setReviews(data);
 
         const avg =
@@ -33,34 +33,21 @@ export default function AllReviewsScreen() {
             : 0;
         setAvgRating(avg);
       } catch (error) {
-        console.error('❌ Lỗi khi lấy tất cả đánh giá:', error);
+        console.error('❌ Lỗi khi lấy đánh giá theo sản phẩm:', error.message);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchReviews();
-  }, []);
+    if (productId) fetchReviews();
+  }, [productId]);
 
-  useEffect(() => {
-    let updated = [...reviews];
-
-    // Lọc theo tên sản phẩm
-    if (searchKeyword.trim() !== '') {
-      updated = updated.filter((review) =>
-        review.product_id?.name?.toLowerCase().includes(searchKeyword.toLowerCase())
-      );
-    }
-
-    // Sắp xếp theo thời gian
-    updated.sort((a, b) => {
-      const timeA = new Date(a.create_date).getTime();
-      const timeB = new Date(b.create_date).getTime();
-      return sortOrder === 'asc' ? timeA - timeB : timeB - timeA;
-    });
-
-    setFilteredReviews(updated);
-  }, [searchKeyword, sortOrder, reviews]);
+  // Sắp xếp theo thời gian
+  const sortedReviews = [...reviews].sort((a, b) => {
+    const timeA = new Date(a.create_date).getTime();
+    const timeB = new Date(b.create_date).getTime();
+    return sortOrder === 'asc' ? timeA - timeB : timeB - timeA;
+  });
 
   if (loading) {
     return (
@@ -72,16 +59,8 @@ export default function AllReviewsScreen() {
 
   return (
     <ScrollView style={styles.container}>
-      <Text style={styles.header}>Tất cả đánh giá ({filteredReviews.length})</Text>
+      <Text style={styles.header}>Đánh giá sản phẩm ({sortedReviews.length})</Text>
       <Text style={styles.avgRating}>Trung bình: {avgRating} sao</Text>
-
-      {/* 🔍 Tìm kiếm theo tên sản phẩm */}
-      <TextInput
-        placeholder="Tìm theo tên sản phẩm..."
-        style={styles.input}
-        value={searchKeyword}
-        onChangeText={setSearchKeyword}
-      />
 
       {/* 🔁 Nút sắp xếp thời gian */}
       <TouchableOpacity
@@ -94,7 +73,7 @@ export default function AllReviewsScreen() {
       </TouchableOpacity>
 
       {/* Danh sách đánh giá */}
-      {filteredReviews.map((review, idx) => (
+      {sortedReviews.map((review, idx) => (
         <View key={review._id || idx} style={styles.reviewItem}>
           {/* Avatar người dùng */}
           <Image
@@ -111,21 +90,6 @@ export default function AllReviewsScreen() {
             {renderStars(review.rating)}
             <Text style={styles.comment}>{review.comment}</Text>
 
-            {/* Thông tin sản phẩm */}
-            <View style={styles.productInfo}>
-              <Image
-                source={{
-                  uri:
-                    review.product_id?.image_url ||
-                    'https://cdn-icons-png.flaticon.com/512/102/102661.png',
-                }}
-                style={styles.productImage}
-              />
-              <Text style={styles.productName}>
-                {review.product_id?.name || 'Tên sản phẩm không có'}
-              </Text>
-            </View>
-
             {/* Ngày tạo */}
             <Text style={styles.date}>
               {new Date(review.create_date).toLocaleDateString('vi-VN')}
@@ -134,6 +98,7 @@ export default function AllReviewsScreen() {
         </View>
       ))}
                   <View style={{height: 50}}></View>
+
     </ScrollView>
   );
 }
@@ -143,13 +108,6 @@ const styles = StyleSheet.create({
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   header: { fontSize: 20, fontWeight: 'bold', marginBottom: 8 },
   avgRating: { color: '#666', marginBottom: 8 },
-  input: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 8,
-    padding: 10,
-    marginBottom: 12,
-  },
   sortButton: {
     alignSelf: 'flex-end',
     backgroundColor: '#3b82f6',
@@ -171,23 +129,6 @@ const styles = StyleSheet.create({
   content: { flex: 1 },
   name: { fontWeight: 'bold' },
   comment: { color: '#555', marginTop: 4 },
-  productInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 8,
-    gap: 8,
-  },
-  productImage: {
-    width: 40,
-    height: 40,
-    borderRadius: 4,
-    backgroundColor: '#f0f0f0',
-  },
-  productName: {
-    fontStyle: 'italic',
-    color: '#444',
-    flexShrink: 1,
-  },
   date: {
     marginTop: 4,
     color: '#888',

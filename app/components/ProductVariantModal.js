@@ -1,15 +1,15 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useState } from 'react';
 import {
-    Alert,
-    Dimensions,
-    Image,
-    Modal,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Alert,
+  Dimensions,
+  Image,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import ProductVariantSelector from './ProductVariantSelector';
 
@@ -85,11 +85,11 @@ const ProductVariantModal = ({
 
   const getWeightRange = (size) => {
     const weightRanges = {
-      'M': '40 đến 53kg',
-      'L': '54 đến 63kg',
-      'XL': '64 đến 80kg',
-      '2XL': '75 đến 95kg',
-      'S': '35 đến 45kg',
+
+      'M': '40kg đến 53kg',
+      'L': '54kg đến 63kg',
+      'XL': '64kg đến 80kg',
+      '2XL': '75kg đến 95kg',
     };
     return weightRanges[size] || '';
   };
@@ -110,6 +110,8 @@ const ProductVariantModal = ({
         </View>
 
         <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+
+        <View style={{flexDirection: 'row', padding: 16, gap: 16}}>
           {/* Product Image */}
           <View style={styles.imageContainer}>
             <Image
@@ -130,29 +132,19 @@ const ProductVariantModal = ({
               <Text style={styles.currentPrice}>
                 {currentPrice.toLocaleString('vi-VN')} ₫
               </Text>
-              {discount > 0 && (
-                <>
-                  <Text style={styles.originalPrice}>
-                    {originalPrice.toLocaleString('vi-VN')} ₫
-                  </Text>
-                  <Text style={styles.discount}>-{discount}%</Text>
-                </>
-              )}
             </View>
-
-            {/* Promotions */}
-            <View style={styles.promotions}>
-              <View style={[styles.promotionTag, { backgroundColor: '#f0fdf4' }]}>
-                <Ionicons name="car" size={12} color="#16a34a" />
-                <Text style={[styles.promotionText, { color: '#16a34a' }]}>Freeship</Text>
-              </View>
-              <View style={[styles.promotionTag, { backgroundColor: '#fdf2f8' }]}>
-                <Ionicons name="bag" size={12} color="#ec4899" />
-                <Text style={[styles.promotionText, { color: '#ec4899' }]}>Mua 300K ₫ giảm 8%</Text>
-              </View>
+          {selectedVariant?.stock !== undefined && (
+            <View style={styles.stockInfo}>
+              <Text style={styles}>
+                {selectedVariant.stock > 0 
+                  ? `Còn ${selectedVariant.stock} sản phẩm` 
+                  : 'Hết hàng'
+                }
+              </Text>
             </View>
+          )}
           </View>
-
+      </View>
           {/* Variant Selector */}
           <ProductVariantSelector
             productId={product?._id}
@@ -165,12 +157,12 @@ const ProductVariantModal = ({
               <Text style={styles.sectionTitle}>Kích cỡ</Text>
               <View style={styles.sizeContainer}>
                 <Text style={styles.sizeText}>
-                  {selectedVariant.size} {getWeightRange(selectedVariant.size)}
+
+                  Size {selectedVariant.size}: {getWeightRange(selectedVariant.size)}
                 </Text>
               </View>
             </View>
           )}
-
           {/* Quantity Selector */}
           <View style={styles.quantitySection}>
             <Text style={styles.sectionTitle}>Số lượng</Text>
@@ -192,19 +184,6 @@ const ProductVariantModal = ({
           </View>
 
           {/* Stock Info */}
-          {selectedVariant?.stock !== undefined && (
-            <View style={styles.stockInfo}>
-              <Text style={[
-                styles.stockText,
-                selectedVariant.stock > 0 ? styles.inStock : styles.outOfStock
-              ]}>
-                {selectedVariant.stock > 0 
-                  ? `Còn ${selectedVariant.stock} sản phẩm` 
-                  : 'Hết hàng'
-                }
-              </Text>
-            </View>
-          )}
         </ScrollView>
 
         {/* Footer Actions */}
@@ -219,7 +198,6 @@ const ProductVariantModal = ({
             disabled={loading || !selectedVariant}
           >
             <Text style={styles.buyNowText}>Mua ngay</Text>
-            <Text style={styles.freeshipText}>Freeship</Text>
           </TouchableOpacity>
           
           <TouchableOpacity
@@ -371,9 +349,6 @@ const styles = StyleSheet.create({
     minWidth: 30,
     textAlign: 'center',
   },
-  stockInfo: {
-    padding: 16,
-  },
   stockText: {
     fontSize: 14,
     fontWeight: '500',
@@ -406,11 +381,6 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
-  },
-  freeshipText: {
-    color: '#fff',
-    fontSize: 12,
-    marginTop: 2,
   },
   addToCartText: {
     color: '#fff',

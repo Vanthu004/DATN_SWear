@@ -1,6 +1,6 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
-import api from '../utils/api';
 
+import { api } from '../utils/api';
 // Fetch product variants by product ID
 export const fetchProductVariants = createAsyncThunk(
   'productVariant/fetchProductVariants',

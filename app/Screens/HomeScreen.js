@@ -131,7 +131,7 @@ export default function HomeScreen() {
   }, []);
 
   // Hiển thị số lượng danh mục đầu tiên
-  const displayedCategories = categories.slice(0, 100);
+  const displayedCategories = categories.slice(0, 18);
 // hiển thị danh mục hot
   const HotCategoryList = ({ categories }) => (
     <View style={{ marginTop: 15, marginBottom: 24 }}>

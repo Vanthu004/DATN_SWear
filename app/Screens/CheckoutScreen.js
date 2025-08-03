@@ -19,6 +19,7 @@ import { useCart } from "../hooks/useCart";
 import { useOrder } from "../hooks/useOrder";
 import api, { applyVoucherApi, getAddressList, getPaymentMethods, getShippingMethods, getUserVouchers } from "../utils/api";
 
+
 const CheckoutScreen = () => {
   const route = useRoute();
   const navigation = useNavigation();
@@ -26,6 +27,7 @@ const CheckoutScreen = () => {
   const { removeFromCart, cartId } = useCart();
   const { userInfo } = useAuth();
   const { checkedItems = [], subtotal = 0, voucher_discount = 0 } = route.params || {};
+
 
   // Image mapping for payment methods
   const imageMap = {
@@ -142,6 +144,7 @@ const CheckoutScreen = () => {
 
   // Calculate total before voucher
   const totalBeforeVoucher = subtotal + shippingFee ;
+
 
   // Calculate total after voucher
   const calculateTotalAfterVoucher = () => {
@@ -281,6 +284,7 @@ const CheckoutScreen = () => {
             total: calculateTotalAfterVoucher(),
           });
         }
+
       }
     } catch (error) {
       console.error("❌ Error processing order:", error);

@@ -1,8 +1,8 @@
-//app/navigation/TabNavigator.js
+//
 import { Ionicons } from "@expo/vector-icons";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import React from "react";
+import React, { createRef } from "react";
 import { StyleSheet, TouchableOpacity, View } from "react-native";
 
 // Import các màn hình chính
@@ -32,6 +32,23 @@ import TermsScreen from "../Screens/TermsScreen";
 import UserInfoScreen from "../Screens/UserInfoScreen";
 import WishlistScreen from "../Screens/WishlistScreen.js";
 import ZaloPayQRScreen from '../Screens/ZaloPayQRScreen';
+
+// Tạo navigationRef để truy cập navigation từ bất kỳ đâu
+export const navigationRef = createRef();
+
+// Hàm resetNavigation để chuyển hướng về màn hình bất kỳ
+export const resetNavigation = (screenName) => {
+    console.log("resetNavigation called with screen:", screenName);
+       console.log("navigationRef.current:", navigationRef.current);
+  if (navigationRef.current) {
+    navigationRef.current.reset({
+      index: 0,
+      routes: [{ name: "Auth", params: { screen: screenName } }],
+    });
+  } else {
+    console.warn("navigationRef is not initialized");
+  }
+};
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -144,7 +161,7 @@ function OrderStack() {
       <Stack.Screen
         name="OrderHistory"
         component={OrderHistoryScreen}
-        options={{  headerShown: false  }}
+        options={{ headerShown: false }}
       />
       <Stack.Screen
         name="OrderStatus"
@@ -213,7 +230,7 @@ function ProfileStack() {
       <Stack.Screen
         name="OrderHistory"
         component={OrderHistoryScreen}
-        options={{  headerShown: false  }}
+        options={{ headerShown: false }}
       />
       <Stack.Screen
         name="OrderStatus"
@@ -263,10 +280,11 @@ function NotificationsStack() {
         component={NotificationsScreen}
         options={{ headerShown: false }}
       />
-      {/* Nếu có màn hình chi tiết thông báo, thêm ở đây */}
     </Stack.Navigator>
   );
 }
+
+
 
 const CustomTabBar = ({ state, descriptors, navigation }) => (
   <View style={customStyles.tabBar}>
@@ -327,11 +345,9 @@ export default function TabNavigator() {
         component={ProfileStack}
         options={{ title: "Cá nhân" }}
       />
-
     </Tab.Navigator>
   );
 }
-
 const customStyles = StyleSheet.create({
   tabBar: {
     flexDirection: "row",
@@ -358,4 +374,6 @@ const customStyles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  
 });
+
