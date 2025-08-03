@@ -4,7 +4,7 @@ import React, { useEffect } from "react";
 import { Dimensions, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import QRCode from "react-native-qrcode-svg";
 import { useCart } from '../hooks/useCart';
-import api from '../utils/api';
+import { api } from '../utils/api';
 
 const { width } = Dimensions.get("window");
 const CARD_WIDTH = Math.min(width * 0.92, 380);

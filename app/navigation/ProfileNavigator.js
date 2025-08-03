@@ -1,3 +1,4 @@
+//app/navigation/ProfileNavigator.js
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { ROUTES } from "../constants/routes";
 
@@ -6,8 +7,11 @@ import AddBankCardScreen from "../Screens/AddBankCardScreen";
 import AddressListScreen from "../Screens/AddressListScreen";
 import ChangePasswordScreen from "../Screens/ChangePasswordScreen";
 import EditProfileScreen from "../Screens/EditProfileScreen";
+import HelpScreen from "../Screens/HelpScreen";
 import PaymentScreen from "../Screens/PaymentScreen";
+import PrivacyPolicyScreen from "../Screens/PrivacyPolicyScreen";
 import ProfileScreen from "../Screens/ProfileScreen";
+import TermsScreen from "../Screens/TermsScreen";
 import UserInfoScreen from "../Screens/UserInfoScreen";
 
 const ProfileStack = createNativeStackNavigator();
@@ -42,6 +46,10 @@ export default function ProfileNavigator() {
         name={ROUTES.CHANGE_PASSWORD}
         component={ChangePasswordScreen}
       />
+      <ProfileStack.Screen name={ROUTES.HELP} component={HelpScreen} />
+      <ProfileStack.Screen name={ROUTES.TERMS} component={TermsScreen} options={ { headerShown: false }} />
+      <ProfileStack.Screen name={ROUTES.PRIVACY_POLICY} component={PrivacyPolicyScreen} options={ { headerShown: false }} />
+
     </ProfileStack.Navigator>
   );
 }
