@@ -276,8 +276,9 @@ export default function ProductDetailScreen({ route, navigation }) {
         {/* Avatar */}
         <Image
           source={{
-            uri: review.user_id?.avata_url ||
-              'https://cdn-icons-png.flaticon.com/512/149/149071.png',
+          uri: review.user_id?.avata_url || 'https://cdn-icons-png.flaticon.com/512/149/149071.png'
+
+,
           }}
           style={{
             width: 36,
@@ -304,18 +305,17 @@ export default function ProductDetailScreen({ route, navigation }) {
  {/* 👉 Thêm nút Xem tất cả đánh giá */}
 {reviews?.length > 0 && (
   <TouchableOpacity
-    onPress={() => {
-      console.log('All reviews:', reviews); // Kiểm tra xem mảng reviews có đúng không
-      navigation.navigate('AllReviews', {
-        reviews: reviews,
-        avgRating: calculateAvg(reviews), // tính trung bình sao nếu có
-      });
-    }}
-  >
-    <Text style={{ color: '#3b82f6', fontWeight: 'bold', marginBottom: 12 }}>
-      Xem tất cả đánh giá
-    </Text>
-  </TouchableOpacity>
+  onPress={() => {
+    navigation.navigate('AllReviews', {
+      productId: product._id,  // chỉ truyền id sản phẩm
+    });
+  }}
+>
+  <Text style={{ color: '#3b82f6', fontWeight: 'bold', marginBottom: 12 }}>
+    Xem tất cả đánh giá sản phẩm này
+  </Text>
+</TouchableOpacity>
+
 )}
 
   </>
