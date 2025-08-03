@@ -17,8 +17,7 @@ import { ROUTES } from "../constants/routes";
 import { useAuth } from "../context/AuthContext";
 import { useCart } from "../hooks/useCart";
 import { useOrder } from "../hooks/useOrder";
-import { api, applyVoucherApi, getAddressList, getPaymentMethods, getShippingMethods, getUserVouchers } from "../utils/api";
-
+import api, { applyVoucherApi, getAddressList, getPaymentMethods, getShippingMethods, getUserVouchers } from "../utils/api";
 
 const CheckoutScreen = () => {
   const route = useRoute();
@@ -26,7 +25,7 @@ const CheckoutScreen = () => {
   const { createOrderFromCart, loading } = useOrder();
   const { removeFromCart, cartId } = useCart();
   const { userInfo } = useAuth();
-  const { checkedItems = [], subtotal = 0, tax = 0, voucher_discount = 0 } = route.params || {};
+  const { checkedItems = [], subtotal = 0, voucher_discount = 0 } = route.params || {};
 
   // Image mapping for payment methods
   const imageMap = {
@@ -142,7 +141,7 @@ const CheckoutScreen = () => {
   };
 
   // Calculate total before voucher
-  const totalBeforeVoucher = subtotal + shippingFee + tax;
+  const totalBeforeVoucher = subtotal + shippingFee ;
 
   // Calculate total after voucher
   const calculateTotalAfterVoucher = () => {
@@ -228,17 +227,19 @@ const CheckoutScreen = () => {
             console.error("❌ Error applying voucher after order:", err);
           }
         }
-
+          console.log("id đơn hàng.......",result.data.order._id);
+          navigation.navigate(ROUTES.ORDER_SUCCESS, {
+            orderId: result.data.order._id,
+          });
         // Handle ZaloPay payment
         if (selectedPaymentMethodObj.code?.toUpperCase() === "ZALOPAY") {
           setProcessingZaloPay(true);
           try {
             const productTotal = subtotal;
-            const taxAmount = tax;
             const totalAmount = calculateTotalAfterVoucher();
 
             const paymentRes = await api.post("/payments/zalopay/payment", {
-              orderId: result.order._id,
+              orderId: result.data.order._id,
               product_total: productTotal,
               tax: taxAmount,
               shipping_fee: shippingFee,
@@ -523,10 +524,6 @@ const CheckoutScreen = () => {
           <View style={styles.row}>
             <Text style={styles.label}>Phí vận chuyển</Text>
             <Text style={styles.value}>{formatMoney(shippingFee)}</Text>
-          </View>
-          <View style={styles.row}>
-            <Text style={styles.label}>Thuế</Text>
-            <Text style={styles.value}>{formatMoney(tax)}</Text>
           </View>
           {selectedVoucher && (
             <View style={styles.row}>
