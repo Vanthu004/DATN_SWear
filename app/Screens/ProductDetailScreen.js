@@ -153,18 +153,18 @@ export default function ProductDetailScreen({ route, navigation }) {
     }
   };
 
-  const handleBuyNow = ({ product, variant, quantity }) => {
-    // Navigate to checkout with product info
-    navigation.navigate('Checkout', {
-      items: [{
-        product,
-        variant,
-        quantity,
-        price: variant.price || product.price,
-      }],
-      isDirectPurchase: true,
-    });
-  };
+const handleBuyNow = ({ product, variant, quantity }) => {
+  navigation.navigate('Checkout', {
+    items: [{
+      product,
+      variant,
+      quantity,
+      price: variant.price || product.price,
+    }],
+    isDirectPurchase: true,
+  });
+};
+
 
   const handleShowVariantModal = () => {
     setShowVariantModal(true);
@@ -206,16 +206,16 @@ export default function ProductDetailScreen({ route, navigation }) {
       </View>
 
       <ScrollView contentContainerStyle={{ padding: 16 }} showsVerticalScrollIndicator={false}>
-<ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
-  {imageUrls.map((uri, idx) => (
-    <Image
-      key={idx}
-      source={{ uri }}
-      style={[styles.image, { width: Dimensions.get('window').width - 32, height: 220 }]}
-      resizeMode="cover"
-    />
-  ))}
-</ScrollView>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
+          {imageUrls.map((uri, idx) => (
+            <Image
+              key={idx}
+              source={{ uri }}
+              style={[styles.image, { width: Dimensions.get('window').width - 32, height: 220 }]}
+              resizeMode="cover"
+            />
+          ))}
+        </ScrollView>
 
         {/* Tên, giá, danh mục */}
         <Text style={styles.title}>{product.name}</Text>

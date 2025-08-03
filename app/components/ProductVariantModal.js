@@ -35,6 +35,7 @@ const ProductVariantModal = ({
   }, [visible]);
 
   const handleBuyNow = () => {
+    
     if (!userInfo?._id) {
       Alert.alert('Lỗi', 'Vui lòng đăng nhập để mua sản phẩm');
       return;
@@ -109,6 +110,7 @@ const ProductVariantModal = ({
         </View>
 
         <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        <View style={{flexDirection: 'row', padding: 16, gap: 16}}>
           {/* Product Image */}
           <View style={styles.imageContainer}>
             <Image
@@ -141,7 +143,7 @@ const ProductVariantModal = ({
             </View>
           )}
           </View>
-
+      </View>
           {/* Variant Selector */}
           <ProductVariantSelector
             productId={product?._id}
