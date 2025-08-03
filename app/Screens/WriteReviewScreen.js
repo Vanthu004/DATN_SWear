@@ -13,7 +13,7 @@ import {
   View,
 } from "react-native";
 import { useAuth } from "../context/AuthContext";
-import api from "../utils/api";
+import { api } from "../utils/api";
 
 export default function WriteReviewScreen({ navigation, route }) {
   const { userInfo } = useAuth();

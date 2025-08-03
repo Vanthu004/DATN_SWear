@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import api from '../utils/api'; // chỉnh lại đường dẫn nếu khác
+import { api } from '../utils/api'; // chỉnh lại đường dẫn nếu khác
 
 import React, { useRef } from "react";
 import {

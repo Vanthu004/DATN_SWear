@@ -2,7 +2,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useState } from "react";
 import { Alert } from "react-native";
-import api from "../utils/api";
+import { api } from "../utils/api";
 
 export const useRefund = () => {
   const [loading, setLoading] = useState(false);
