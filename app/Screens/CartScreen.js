@@ -335,10 +335,10 @@ const CartScreen = () => {
           />
         )}
       />
-
+{/* 
       <View style={styles.summary}>
         <View style={styles.summaryRow}>
-          <Text style={styles.label}>Tạm tính</Text>
+          <Text style={styles.label}>Giá cố</Text>
           <Text>{subtotal.toLocaleString()} VND</Text>
         </View>
         <View style={styles.summaryRow}>
@@ -353,7 +353,7 @@ const CartScreen = () => {
           <Text style={styles.totalLabel}>Tổng</Text>
           <Text style={styles.totalAmount}>{total.toLocaleString()} VND</Text>
         </View>
-      </View>
+      </View> */}
 
       <TouchableOpacity
         style={[
@@ -373,16 +373,12 @@ const CartScreen = () => {
           }
           navigation.navigate("Checkout", {
             checkedItems: selectedItems,
-            subtotal,
-            shipping,
-            tax,
-            total,
           });
         }}
-        disabled={Object.keys(checkedItems).length === 0}
+        // disabled={Object.keys(checkedItems).length === 0}
       >
         <Text style={styles.checkoutText}>
-          Thanh toán ({Object.keys(checkedItems).length})
+          Thanh toán
         </Text>
       </TouchableOpacity>
       {/* Khoảng trống để tránh bị che */}

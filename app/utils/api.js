@@ -1,10 +1,9 @@
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
-
-const API_BASE_URL = "http://192.168.52.108:3000/api"; //
-
-
+// Base URL for the API
+const API_BASE_URL = "http://192.168.1.112:3000/api";
+const WEBSOCKET_URL = "http://192.168.1.112:3000";
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -13,7 +12,7 @@ const api = axios.create({
   },
 });
 
-// Interceptor request để thêm token vào header
+// Interceptors
 api.interceptors.request.use(
   async (config) => {
     try {
@@ -41,7 +40,7 @@ api.interceptors.request.use(
   }
 );
 
-// Interceptor response để log và xử lý lỗi
+// Response interceptor for logging and handling errors
 api.interceptors.response.use(
   (response) => {
     console.log("API Response:", {
@@ -55,17 +54,22 @@ api.interceptors.response.use(
     const status = error.response?.status;
     const message = error.response?.data?.message || "Lỗi không xác định";
 
-    //  Nếu bị cấm (403)
     if (status === 403 && message.includes("bị khóa")) {
-      await AsyncStorage.multiRemove(["userToken", "userInfo"]);
-      await AsyncStorage.setItem("banMessage", message);
-      Alert.alert("Tài khoản bị khóa", message);
+      try {
+        await AsyncStorage.setItem("banMessage", message);
+        console.log("api.js: Ban detected, stored banMessage, relying on AuthContext for logout");
+      } catch (err) {
+        console.error("Error handling 403:", err);
+      }
     }
 
-    //  Nếu token hết hạn (401)
     if (status === 401 && message.toLowerCase().includes("jwt")) {
-      await AsyncStorage.multiRemove(["userToken", "userInfo"]);
-      Alert.alert("Hết phiên", "Vui lòng đăng nhập lại.");
+      try {
+        await AsyncStorage.setItem("banMessage", message);
+        console.log("api.js: JWT error detected, stored banMessage, relying on AuthContext for logout");
+      } catch (err) {
+        console.error("Error handling 401:", err);
+      }
     }
 
     console.log("API Response Error:", {
@@ -78,6 +82,7 @@ api.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+
 
 // Upload functions
 export const uploadImage = async (
@@ -589,6 +594,7 @@ export const getShippingMethods = async () => {
   const res = await api.get("/shipping-methods");
   return res.data;
 };
+
 export const requestRefund = async (orderId, reason) => {
   try {
     const userData = await AsyncStorage.getItem("user");
@@ -623,6 +629,7 @@ export const getAllReviews = async () => {
 
 
 
+
 export const applyVoucherApi = async (userId, voucherId) => {
   try {
     // Gửi PUT request đến route có 2 params trong URL
@@ -630,8 +637,59 @@ export const applyVoucherApi = async (userId, voucherId) => {
     return response.data;
   } catch (error) {
     console.error("Apply voucher API error:", error);
+
+// ===== SHIPPING METHODS APIs =====
+
+export const createShippingMethod = async (shippingData) => {
+  try {
+    const response = await api.post('/shipping-methods', shippingData);
+    return response.data;
+  } catch (error) {
+    console.error('Error creating shipping method:', error);
     throw error;
   }
 };
 
-export default api;
+export const updateShippingMethod = async (id, shippingData) => {
+  try {
+    const response = await api.put(`/shipping-methods/${id}`, shippingData);
+    return response.data;
+  } catch (error) {
+    console.error('Error updating shipping method:', error);
+    throw error;
+  }
+};
+
+export const deleteShippingMethod = async (id) => {
+  try {
+    const response = await api.delete(`/shipping-methods/${id}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error deleting shipping method:', error);
+    throw error;
+  }
+};
+
+// ===== PRODUCT VARIANT APIs =====
+
+export const getProductVariants = async (productId) => {
+  try {
+    const response = await api.get(`/product-variants/${productId}`);
+    return response.data;
+  } catch (error) {
+    console.error('Get product variants error:', error);
+    throw error;
+  }
+};
+
+export const getProductDetail = async (productId) => {
+  try {
+    const response = await api.get(`/products/${productId}/frontend`);
+    return response.data;
+  } catch (error) {
+    console.error('Get product detail error:', error);
+    throw error;
+  }
+};
+
+export { api, WEBSOCKET_URL };

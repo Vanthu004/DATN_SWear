@@ -21,7 +21,7 @@ const AddBankCardScreen = ({ navigation }) => {
     // Here we would typically save to Redux/API
     navigation.goBack();
   };
-
+  
   return (
     <SafeAreaView style={styles.container}>
       {/* Custom Header */}

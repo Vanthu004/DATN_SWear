@@ -17,7 +17,8 @@ import { ROUTES } from "../constants/routes";
 import { useAuth } from "../context/AuthContext";
 import { useCart } from "../hooks/useCart";
 import { useOrder } from "../hooks/useOrder";
-import api, { applyVoucherApi, getAddressList, getPaymentMethods, getShippingMethods, getUserVouchers } from "../utils/api";
+
+import { api, applyVoucherApi, getAddressList, getPaymentMethods, getShippingMethods, getUserVouchers } from "../utils/api";
 
 const CheckoutScreen = () => {
   const route = useRoute();
@@ -142,6 +143,7 @@ const CheckoutScreen = () => {
 
   // Calculate total before voucher
   const totalBeforeVoucher = subtotal + shippingFee ;
+
 
   // Calculate total after voucher
   const calculateTotalAfterVoucher = () => {
