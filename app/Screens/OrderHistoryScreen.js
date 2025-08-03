@@ -81,23 +81,7 @@ export default function OrderHistoryScreen() {
     }
   };
 
-  const handleCancelOrder = async () => {
-    if (!selectedOrderId || !cancelReason.trim()) {
-      Alert.alert("Lý do hủy không được để trống");
-      return;
-    }
 
-    try {
-      await cancelOrder(selectedOrderId, cancelReason.trim());
-      Alert.alert("Thành công", "Đơn hàng đã được hủy.");
-      setShowCancelDialog(false);
-      setCancelReason("");
-      setSelectedOrderId(null);
-      fetchOrdersWithDetails(); // Refresh đơn hàng
-    } catch (error) {
-      Alert.alert("Lỗi", "Không thể hủy đơn hàng.");
-    }
-  };
   
   // Fetch orders and their details
   const fetchOrdersWithDetails = async () => {

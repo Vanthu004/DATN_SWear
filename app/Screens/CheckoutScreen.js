@@ -227,9 +227,9 @@ const CheckoutScreen = () => {
             console.error("❌ Error applying voucher after order:", err);
           }
         }
+          console.log("id đơn hàng.......",result.data.order._id);
           navigation.navigate(ROUTES.ORDER_SUCCESS, {
-            orderId: result.data._id,
-            total: calculateTotalAfterVoucher(),
+            orderId: result.data.order._id,
           });
         // Handle ZaloPay payment
         if (selectedPaymentMethodObj.code?.toUpperCase() === "ZALOPAY") {
@@ -239,7 +239,7 @@ const CheckoutScreen = () => {
             const totalAmount = calculateTotalAfterVoucher();
 
             const paymentRes = await api.post("/payments/zalopay/payment", {
-              orderId: result.order._id,
+              orderId: result.data.order._id,
               product_total: productTotal,
               tax: taxAmount,
               shipping_fee: shippingFee,
