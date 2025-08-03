@@ -1,7 +1,10 @@
+// app/utils/api.js
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
-const API_BASE_URL = "http://172.31.98.252:3000/api"; //
 
+// Base URL for the API
+const API_BASE_URL = "http://192.168.1.112:3000/api";
+const WEBSOCKET_URL = "http://192.168.1.112:3000";
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -10,10 +13,9 @@ const api = axios.create({
   },
 });
 
-// Add request interceptor for logging and adding token
+// Interceptors
 api.interceptors.request.use(
   async (config) => {
-    // Thêm token vào header nếu có
     try {
       const token = await AsyncStorage.getItem("userToken");
       if (token) {
@@ -30,6 +32,7 @@ api.interceptors.request.use(
       params: config.params,
       headers: config.headers,
     });
+
     return config;
   },
   (error) => {
@@ -38,7 +41,7 @@ api.interceptors.request.use(
   }
 );
 
-// Add response interceptor for logging
+// Response interceptor for logging and handling errors
 api.interceptors.response.use(
   (response) => {
     console.log("API Response:", {
@@ -48,16 +51,39 @@ api.interceptors.response.use(
     });
     return response;
   },
-  (error) => {
+  async (error) => {
+    const status = error.response?.status;
+    const message = error.response?.data?.message || "Lỗi không xác định";
+
+    if (status === 403 && message.includes("bị khóa")) {
+      try {
+        await AsyncStorage.setItem("banMessage", message);
+        console.log("api.js: Ban detected, stored banMessage, relying on AuthContext for logout");
+      } catch (err) {
+        console.error("Error handling 403:", err);
+      }
+    }
+
+    if (status === 401 && message.toLowerCase().includes("jwt")) {
+      try {
+        await AsyncStorage.setItem("banMessage", message);
+        console.log("api.js: JWT error detected, stored banMessage, relying on AuthContext for logout");
+      } catch (err) {
+        console.error("Error handling 401:", err);
+      }
+    }
+
     console.log("API Response Error:", {
-      status: error.response?.status,
+      status,
       url: error.config?.url,
       data: error.response?.data,
       message: error.message,
     });
+
     return Promise.reject(error);
   }
 );
+
 
 // Upload functions
 export const uploadImage = async (
@@ -494,6 +520,21 @@ export const deleteOrderDetail = async (orderDetailId) => {
     throw error;
   }
 };
+export const cancelOrder = async (orderId, reason) => {
+  try {
+    const response = await api.put(`/orders/${orderId}/cancel`, {
+      reason: reason,
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Cancel order error:", error);
+    throw error;
+  }
+};
+
+
+
+// Address APIs
 export const createAddress = async (addressData) => {
   try {
     const response = await api.post("addresses", addressData);
@@ -532,6 +573,8 @@ export const deleteAddress = async (id) => {
     throw error;
   }
 };
+
+// Voucher APIs
 export const getPublicVouchers = async () => {
   const res = await api.get("/vouchers/");
   return res.data;
@@ -541,6 +584,8 @@ export const getUserVouchers = async (userId) => {
   const res = await api.get(`/vouchers?userId=${userId}`);
   return res.data;
 };
+
+// Payment and Shipping Methods APIs
 export const getPaymentMethods = async () => {
   const res = await api.get("/payment-methods");
   return res.data;
@@ -639,4 +684,5 @@ export const getProductDetail = async (productId) => {
   }
 };
 
-export default api;
+export { api, WEBSOCKET_URL };
+

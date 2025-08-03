@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import ProductCard from '../components/ProductCard';
 import { useCart } from '../hooks/useCart';
-import api from '../utils/api';
+import { api } from '../utils/api';
 
 const CategoryScreen = ({ route, navigation }) => {
   const category = route?.params?.category;

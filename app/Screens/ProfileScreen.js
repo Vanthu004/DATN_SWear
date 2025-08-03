@@ -1,14 +1,15 @@
+//app/Screens/ProfileScreen.js
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect } from "@react-navigation/native";
 import React, { useEffect } from "react";
 import {
-    Alert,
-    Image,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Alert,
+  Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuth } from "../context/AuthContext";
@@ -64,7 +65,7 @@ const ProfileScreen = ({ navigation }) => {
       id: 5, 
       title: "Trợ giúp", 
       icon: "help-circle-outline", 
-      onPress: () => {} 
+      onPress: () => navigation.navigate("Help"), 
     },
   ];
 

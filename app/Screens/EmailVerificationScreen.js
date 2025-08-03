@@ -10,7 +10,7 @@ import {
   View,
 } from 'react-native';
 import { useAuth } from '../context/AuthContext';
-import api from '../utils/api';
+import { api } from '../utils/api';
 
 const EmailVerificationScreen = ({ route, navigation }) => {
   const { email, name, fromRegister = false, tempToken } = route.params;

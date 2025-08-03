@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import ProductVariantModal from '../components/ProductVariantModal';
 import { useAuth } from '../context/AuthContext';
-import api from '../utils/api';
+import { api } from '../utils/api';
 
 import { useReview } from "../hooks/useReview";
 
