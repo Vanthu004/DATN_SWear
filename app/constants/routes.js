@@ -20,7 +20,7 @@ export const ROUTES = {
   PROFILE_TAB: "ProfileTab",
 
   // Shop routes
-  HOME: "Home",
+  HOME: "HomeScreen",
   PRODUCT_DETAIL: "ProductDetail",
   CART: "Cart",
   CHECKOUT: "Checkout",

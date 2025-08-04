@@ -125,7 +125,7 @@ export const uploadAvatar = async (imageUri) => {
       name: "avatar.jpg",
     });
 
-    const response = await api.post("/upload", formData, {
+    const response = await api.post("uploads/upload", formData, {
       headers: {
         "Content-Type": "multipart/form-data",
       },
@@ -149,8 +149,8 @@ export const updateProfileWithAvatar = async (profileData, imageUri = null) => {
       const uploadResponse = await uploadAvatar(imageUri);
       console.log("Upload response:", uploadResponse);
 
-      if (uploadResponse.upload && uploadResponse.upload._id) {
-        uploadId = uploadResponse.upload._id;
+      if (uploadResponse && uploadResponse._id) {
+        uploadId = uploadResponse._id;
       } else {
         throw new Error("Upload response does not contain valid upload ID");
       }
@@ -580,7 +580,11 @@ export const getPublicVouchers = async () => {
 };
 
 export const getUserVouchers = async (userId) => {
-  const res = await api.get(`/vouchers?userId=${userId}`);
+  const res = await api.get(`/vouchers/user/${userId}`);
+  return res.data;
+};
+export const applyVoucherApi = async (userId, voucherId) => {
+  const res = await api.put(`/vouchers/apply-voucher/${voucherId}/${userId}`);
   return res.data;
 };
 

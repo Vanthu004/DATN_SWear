@@ -270,7 +270,7 @@ const handleBuyNow = ({ product, variant, quantity }) => {
           flexDirection: 'row',
           alignItems: 'flex-start',
           marginBottom: 16,
-          gap: 10,
+         
         }}
       >
         {/* Avatar */}

@@ -8,7 +8,6 @@ export const useProductVariant = (productId) => {
   const [selectedVariant, setSelectedVariantLocal] = useState(null);
 
   const productVariants = variants[productId] || [];
-
   useEffect(() => {
     if (productId && !variants[productId]) {
       dispatch(fetchProductVariants(productId));

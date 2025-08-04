@@ -25,8 +25,11 @@ const CheckoutScreen = () => {
   const { createOrderFromCart, loading } = useOrder();
   const { removeFromCart, cartId } = useCart();
   const { userInfo } = useAuth();
-  const { checkedItems = [], subtotal = 0, voucher_discount = 0 } = route.params || {};
-
+  const { checkedItems = [], voucher_discount = 0 } = route.params || {};
+    const subtotal = checkedItems.reduce((total, item) => {
+      const price = item.price_at_time || item.product?.price || 0;
+      return total + price * item.quantity;
+    }, 0);
   // Image mapping for payment methods
   const imageMap = {
     COD: "https://i.pinimg.com/564x/66/cb/6b/66cb6b04177ab07a60c17445011161ca.jpg",
@@ -144,12 +147,12 @@ const CheckoutScreen = () => {
   const totalBeforeVoucher = subtotal + shippingFee ;
 
   // Calculate total after voucher
-  const calculateTotalAfterVoucher = () => {
-    if (!selectedVoucher || !selectedVoucher.discount_value) return totalBeforeVoucher;
-    const discountPercent = selectedVoucher.discount_value;
-    const discount = totalBeforeVoucher * (1 - discountPercent / 100);
-    return discount > 0 ? discount : 0;
-  };
+ const calculateTotalAfterVoucher = () => {
+  if (!selectedVoucher || !selectedVoucher.discount_value) return subtotal + shippingFee;
+  const discountPercent = selectedVoucher.discount_value;
+  const discountAmount = (subtotal + shippingFee) * (discountPercent / 100);
+  return subtotal + shippingFee - discountAmount;
+};
 
   // Format money
   const formatMoney = (amount) => {
@@ -207,66 +210,83 @@ const CheckoutScreen = () => {
         }${addr.district}, ${addr.province}, ${addr.country || "Việt Nam"}`;
       };
 
-      const orderData = {
+        const orderData = {
         total: calculateTotalAfterVoucher(),
         shippingAddress: formatAddress(selectedAddressObj),
         paymentMethodId: selectedPaymentMethodObj?._id,
         shippingMethodId: selectedShippingMethod?._id,
         note,
-        voucherId: selectedVoucher?._id || null,
+        orderDetails: checkedItems.map((item) => ({
+          product_id: item.product?._id || item.product_id,
+          quantity: item.quantity,
+        })),
+        ...(selectedVoucher ? { voucherId: selectedVoucher._id } : {})
       };
+
 
       const result = await createOrderFromCart(checkedItems, orderData);
       if (result) {
         // Apply voucher if selected
         if (selectedVoucher && userInfo?._id) {
           try {
-            await applyVoucherApi(userInfo._id, selectedVoucher.voucher_id);
+            if (userInfo && selectedVoucher) {
+              await applyVoucherApi(userInfo._id, selectedVoucher.voucher_id);
+            }
             console.log("✅ Voucher applied successfully after order");
           } catch (err) {
             console.error("❌ Error applying voucher after order:", err);
           }
         }
-          console.log("id đơn hàng.......",result.data.order._id);
-          navigation.navigate(ROUTES.ORDER_SUCCESS, {
+          console.log("id đơn hàng.......",
+            result.data.order._id);
+            navigation.navigate(ROUTES.ORDER_SUCCESS, {
             orderId: result.data.order._id,
           });
-        // Handle ZaloPay payment
-        if (selectedPaymentMethodObj.code?.toUpperCase() === "ZALOPAY") {
+ // Handle ZaloPay payment        
+        const selectedMethod = paymentMethods.find(pm => pm._id === selectedPaymentMethod);
+        console.log("selectedPaymentMethod:", selectedPaymentMethod); // LOG 2
+        console.log("selectedMethod:", selectedMethod); // LOG 3
+        if (selectedMethod && selectedMethod.code?.toUpperCase() === 'ZALOPAY') {
           setProcessingZaloPay(true);
           try {
+            // Tính tổng tiền đúng yêu cầu
             const productTotal = subtotal;
-            const totalAmount = calculateTotalAfterVoucher();
+            const taxAmount = 0; // nếu bạn chưa có xử lý thuế
+            const shippingAmount = shippingFee;
+            const voucherDiscount = selectedVoucher?.discount_value
+              ? (subtotal + shippingFee) * (selectedVoucher.discount_value / 100)
+              : 0;
 
-            const paymentRes = await api.post("/payments/zalopay/payment", {
-              orderId: result.data.order._id,
-              product_total: productTotal,
-              tax: taxAmount,
-              shipping_fee: shippingFee,
-              voucher_discount: selectedVoucher?.discount_value
-                ? totalBeforeVoucher - calculateTotalAfterVoucher()
-                : 0,
-              amount: totalAmount,
-              cart_id: cartId,
-            });
+            const totalAmount = productTotal + taxAmount + shippingAmount - voucherDiscount;
+            // Gọi API backend để lấy mã QR ZaloPay
+           const paymentRes = await api.post('/payments/zalopay/payment', {
+            orderId: result.data.order._id,
+            product_total: productTotal,
+            tax: taxAmount,
+            shipping_fee: shippingAmount,
+            voucher_discount: voucherDiscount,
+            amount: totalAmount,
+            cart_id: cartId,
+          });
 
             const paymentData = paymentRes.data;
-            console.log("ZaloPay paymentData:", paymentData);
-            const qrValue =
-              paymentData.qr_url || paymentData.order_url || paymentData.paymentUrl || paymentData.payUrl;
-
-            navigation.navigate("ZaloPayQRScreen", {
+            console.log("ZaloPay paymentData:", paymentData); // LOG QR RESPONSE
+            const qrValue = paymentData.qr_url || paymentData.order_url || paymentData.paymentUrl || paymentData.payUrl;
+            // Chuyển sang màn hình QR, truyền thêm orderId để polling check trạng thái
+            navigation.navigate('ZaloPayQRScreen', {
               orderId: paymentData.app_trans_id || result.order._id,
-              replyTime: Date.now(),
-              money: paymentData.total_amount || totalAmount,
+              responseTime: Date.now(),
+              amount: paymentData.total_amount || totalAmount,
               qrCodeUrl: qrValue,
               paymentUrl: paymentData.order_url,
-              backendOrderId: result.order._id,
-              checkedItems: checkedItems,
+              backendOrderId: result.order._id, // truyền orderId backend để check trạng thái
+              checkedItems: checkedItems, // truyền danh sách sản phẩm để xóa sau khi thanh toán thành công
             });
+            // KHÔNG xóa sản phẩm khỏi giỏ hàng ở đây - chỉ xóa khi thanh toán thành công
           } catch (err) {
-            Alert.alert("Error", "Failed to retrieve ZaloPay QR code");
-          } finally {
+          console.error("❌ Lỗi khi lấy QR ZaloPay:", err.response?.data || err.message);
+          Alert.alert('Lỗi', 'Không lấy được mã QR ZaloPay');
+        }finally {
             setProcessingZaloPay(false);
           }
         } else {
@@ -274,12 +294,15 @@ const CheckoutScreen = () => {
           for (const item of checkedItems) {
             await removeFromCart(item._id);
           }
-          Alert.alert("Success", `Order ${result.order.order_code} created successfully!`);
+          // Alert.alert("Thành công", `Đơn hàng ${result.data.order.order_code} đã được tạo thành công!`);
+      if (result && result.data && result.data.order) {
           navigation.navigate(ROUTES.ORDER_SUCCESS, {
-            orderCode: result.order.order_code,
-            orderId: result.order._id,
-            total: calculateTotalAfterVoucher(),
+            orderCode: result.data.order.order_code,
+            orderId: result.data.order._id,
           });
+        } else {
+          console.error("❌ Không tìm thấy đơn hàng trong kết quả:", result);
+        }
         }
       }
     } catch (error) {
@@ -361,6 +384,7 @@ const CheckoutScreen = () => {
               selectedValue={selectedAddressId}
               onValueChange={(val) => setSelectedAddressId(val)}
               style={{ marginTop: 5 }}
+              
             >
               {addressList.map((addr) => (
                 <Picker.Item
@@ -369,6 +393,7 @@ const CheckoutScreen = () => {
                     addr.district
                   }, ${addr.province}`}
                   value={addr._id}
+                  
                 />
               ))}
             </Picker>
@@ -516,11 +541,7 @@ const CheckoutScreen = () => {
         </View>
 
         {/* Summary */}
-        <View style={styles.summary}>
-          <View style={styles.row}>
-            <Text style={styles.label}>Tạm tính</Text>
-            <Text style={styles.value}>{formatMoney(subtotal)}</Text>
-          </View>
+        <View style={styles.summary}> 
           <View style={styles.row}>
             <Text style={styles.label}>Phí vận chuyển</Text>
             <Text style={styles.value}>{formatMoney(shippingFee)}</Text>
