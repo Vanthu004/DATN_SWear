@@ -1,3 +1,4 @@
+// app/navigation/AuthNavigator.js
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import React from "react";
 
@@ -7,6 +8,7 @@ import EmailVerificationScreen from "../Screens/EmailVerificationScreen";
 import EmailVerificationSuccessScreen from "../Screens/EmailVerificationSuccessScreen";
 import ForgotPasswordScreen from "../Screens/ForgotPasswordScreen";
 import LoginScreen from "../Screens/LoginScreen";
+import PrivacyPolicyScreen from "../Screens/PrivacyPolicyScreen";
 import RegisterScreen from "../Screens/RegisterScreen";
 import resetPassword from "../Screens/ResetPasswordScreen";
 import WelcomeScreen from "../Screens/WelcomeScreen";
@@ -65,6 +67,9 @@ export default function AuthNavigator() {
         component={EmailSupportScreen}
         options={{ headerShown: false }}
       />
+
+      <Stack.Screen name="PrivacyPolicyScreen" component={PrivacyPolicyScreen} options={{ headerShown: false }}/>
+
     </Stack.Navigator>
   );
 }

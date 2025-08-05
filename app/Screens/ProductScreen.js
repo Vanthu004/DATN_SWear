@@ -1,12 +1,12 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
 import {
-  Alert,
-  Image,
-  ScrollView,
-  Text,
-  TouchableOpacity,
-  View,
+    Alert,
+    Image,
+    ScrollView,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useCart } from "../hooks/useCart";
@@ -63,7 +63,9 @@ const ProductScreen = ({ route }) => {
   };
 
   const handleAddToCart = async () => {
-    const success = await addToCart(product, quantity, size, color);
+    // TODO: Implement product variant selection logic
+    // For now, we'll pass null as productVariantId
+    const success = await addToCart(product, quantity, null);
     if (success) {
       Alert.alert("Thành công", "Đã thêm sản phẩm vào giỏ hàng");
     }

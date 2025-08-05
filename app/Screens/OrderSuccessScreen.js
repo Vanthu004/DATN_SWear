@@ -1,3 +1,4 @@
+import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import React, { useEffect } from "react";
 import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
@@ -10,6 +11,7 @@ const OrderSuccessScreen = () => {
   const { orderId } = route.params || {};
 
   useEffect(() => {
+    console.log("id đơn hàng.......",orderId);
     Toast.show({
       type: "success",
       text1: "Đặt hàng thành công!",
@@ -21,6 +23,15 @@ const OrderSuccessScreen = () => {
 
   return (
     <View style={styles.container}>
+        <TouchableOpacity
+          style={styles.backBtn}
+          onPress={() => navigation.navigate(ROUTES.HOME)}
+          activeOpacity={0.7}
+        >
+          <View style={styles.backIconWrap}>
+            <Ionicons name="arrow-back" size={22} color="#222" />
+          </View>
+        </TouchableOpacity>
       {/* Top blue area with illustration */}
       <View style={styles.topBlue}>
         <Image
@@ -32,7 +43,6 @@ const OrderSuccessScreen = () => {
       {/* White card area */}
       <View style={styles.card}>
         <Text style={styles.title}>Đặt hàng{"\n"}Thành công!</Text>
-        <Text style={styles.subtitle}>Bạn sẽ nhận được Email xác nhận.</Text>
         <TouchableOpacity
           style={styles.detailBtn}
           onPress={() => navigation.navigate(ROUTES.ORDER_DETAIL, { orderId })}
@@ -49,6 +59,20 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#2196F3",
     justifyContent: "flex-end",
+  },
+    backBtn: {
+    position: "absolute",
+    left: 16,
+    top: 24,
+    zIndex: 2,
+  },
+  backIconWrap: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "#F6F6F6",
+    justifyContent: "center",
+    alignItems: "center",
   },
   topBlue: {
     flex: 1.2,

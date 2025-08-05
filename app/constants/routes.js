@@ -1,3 +1,4 @@
+//app/constants/routes.js
 export const ROUTES = {
   // Auth routes
   AUTH: "Auth",
@@ -19,7 +20,7 @@ export const ROUTES = {
   PROFILE_TAB: "ProfileTab",
 
   // Shop routes
-  HOME: "Home",
+  HOME: "HomeScreen",
   PRODUCT_DETAIL: "ProductDetail",
   CART: "Cart",
   CHECKOUT: "Checkout",
@@ -35,6 +36,10 @@ export const ROUTES = {
   PAYMENT: "Payment",
   ADD_BANK_CARD: "AddBankCard",
   CHANGE_PASSWORD: "ChangePassword",
+  HELP: "Help",
+  TERMS: "Terms",
+  PRIVACY_POLICY: "PrivacyPolicy",
+
 
   // Order routes
   ORDER_HISTORY: "OrderHistory",
@@ -44,4 +49,5 @@ export const ROUTES = {
   RATING_REVIEWS: "RatingReviews",
   WRITE_REVIEW: "WriteReview",
   ORDER_DETAIL: "OrderDetail",
+  ZALOPAY_QR: "ZaloPayQRScreen",
 };

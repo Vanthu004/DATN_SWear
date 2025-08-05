@@ -19,7 +19,7 @@ import {
 import Dialog from "react-native-dialog";
 import { TabBar, TabView } from 'react-native-tab-view';
 import { useAuth } from "../context/AuthContext";
-import { getOrderDetailsByOrderId, getOrdersByUser } from "../utils/api";
+import { cancelOrder, getOrderDetailsByOrderId, getOrdersByUser } from "../utils/api";
 
 const ORDER_TABS = [
   { key: "all", label: "Tất cả" },
@@ -100,23 +100,23 @@ const [showCancelDialog, setShowCancelDialog] = useState(false);
     if (!userInfo?._id) return;
     try {
       setLoading(true);
-      const userOrders = await getOrdersByUser(userInfo._id);
-      const ordersWithDetailsPromises = userOrders.map(async (order) => {
-        const details = await getOrderDetailsByOrderId(order._id);
+      const ordersArray = await getOrdersByUser(userInfo._id);
+      const ordersWithDetailsPromises = ordersArray.map(async (order) => {
+        let details = await getOrderDetailsByOrderId(order._id);
+        if (!Array.isArray(details)) details = [];
+        // Log để kiểm tra dữ liệu
+        console.log("Order:", order.order_code, "Details:", details);
         return {
           ...order,
           orderDetails: details
         };
       });
       const completedOrders = await Promise.all(ordersWithDetailsPromises);
-
-      // Sắp xếp theo updatedAt (nếu không có thì dùng createdAt)
       completedOrders.sort((a, b) => {
         const dateA = new Date(a.updatedAt || a.createdAt || 0);
         const dateB = new Date(b.updatedAt || b.createdAt || 0);
-        return dateB - dateA; // Mới nhất lên đầu
+        return dateB - dateA;
       });
-
       setOrdersWithDetails(completedOrders);
     } catch (error) {
       console.error("Error fetching orders:", error);
@@ -156,7 +156,9 @@ const [showCancelDialog, setShowCancelDialog] = useState(false);
     const tabKey = getTabKeyFromStatus(item.status);
     const tabLabel = ORDER_TABS.find(t => t.key === tabKey)?.label || item.status || "";
     // Tổng số lượng sản phẩm trong đơn hàng
-    const totalQuantity = item.orderDetails?.reduce((sum, prod) => sum + (prod.quantity || 0), 0) || 0;
+    const totalQuantity = Array.isArray(item.orderDetails)
+  ? item.orderDetails.reduce((sum, prod) => sum + (prod.quantity || 0), 0)
+  : 0;
     return (
       <TouchableOpacity 
         style={styles.orderCard}
@@ -558,4 +560,4 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: '#222',
   },
-}); 
+});

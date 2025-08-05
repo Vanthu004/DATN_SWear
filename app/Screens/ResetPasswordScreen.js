@@ -8,7 +8,7 @@ import {
     TouchableOpacity,
     View,
 } from "react-native";
-import api from "../utils/api";
+import { api } from "../utils/api";
 
 const ResetPasswordScreen = ({ route, navigation }) => {
   const { email } = route.params; // lấy email được truyền từ ForgotPassword

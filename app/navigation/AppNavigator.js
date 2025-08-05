@@ -9,21 +9,23 @@ import WriteReviewScreen from "../Screens/WriteReviewScreen";
 
 import { useAuth } from "../context/AuthContext";
 import AuthNavigator from "./AuthNavigator";
-import TabNavigator from "./TabNavigator";
+import TabNavigator, { navigationRef } from "./TabNavigator";
 
 const Stack = createNativeStackNavigator();
 
 export default function AppNavigator() {
-  const { isLoading, userToken } = useAuth();
+  const { isLoading, userToken, isBanned } = useAuth();
+
+  console.log("AppNavigator: userToken:", userToken, "isBanned:", isBanned);
 
   if (isLoading) {
     return <LoadingScreen />;
   }
 
   return (
-    <NavigationContainer>
-      <Stack.Navigator>
-        {userToken ? (
+    <NavigationContainer ref={navigationRef}>
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
+        {userToken && !isBanned ? (
           <>
             <Stack.Screen
               name="Main"

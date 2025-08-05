@@ -9,7 +9,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import api from '../utils/api';
+import { api } from '../utils/api';
 
 const RegisterScreen = ({ navigation }) => {
   const [name, setName] = useState('');
@@ -19,6 +19,9 @@ const RegisterScreen = ({ navigation }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isAgreed, setIsAgreed] = useState(false);
+
+
 
   const validateEmail = (email) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -52,6 +55,12 @@ const RegisterScreen = ({ navigation }) => {
       return;
     }
 
+    if (!isAgreed) {
+      Alert.alert('Chú ý', 'Bạn cần đồng ý với điều khoản để tiếp tục');
+      return;
+    }
+
+
     setIsLoading(true);
     try {
       const res = await api.post('/users/register', {
@@ -72,7 +81,7 @@ const RegisterScreen = ({ navigation }) => {
       });
     } catch (error) {
       console.log('Register error:', error);
-      
+
       // Xử lý trường hợp email đã tồn tại nhưng chưa xác nhận
       if (error.response?.status === 409 && error.response?.data?.message?.includes('email')) {
         Alert.alert(
@@ -99,7 +108,7 @@ const RegisterScreen = ({ navigation }) => {
         );
       } else {
         let message = 'Đăng ký thất bại';
-        
+
         if (error.response?.data?.message) {
           message = error.response.data.message;
         } else if (error.message) {
@@ -133,7 +142,7 @@ const RegisterScreen = ({ navigation }) => {
         autoCapitalize="none"
         editable={!isLoading}
       />
-      
+
       <View style={styles.passwordContainer}>
         <TextInput
           style={styles.passwordInput}
@@ -147,10 +156,10 @@ const RegisterScreen = ({ navigation }) => {
           style={styles.eyeButton}
           onPress={() => setShowPassword(!showPassword)}
         >
-          <Ionicons 
-            name={showPassword ? "eye-off" : "eye"} 
-            size={24} 
-            color="#666" 
+          <Ionicons
+            name={showPassword ? "eye-off" : "eye"}
+            size={24}
+            color="#666"
           />
         </TouchableOpacity>
       </View>
@@ -168,16 +177,39 @@ const RegisterScreen = ({ navigation }) => {
           style={styles.eyeButton}
           onPress={() => setShowConfirmPassword(!showConfirmPassword)}
         >
-          <Ionicons 
-            name={showConfirmPassword ? "eye-off" : "eye"} 
-            size={24} 
-            color="#666" 
+          <Ionicons
+            name={showConfirmPassword ? "eye-off" : "eye"}
+            size={24}
+            color="#666"
           />
         </TouchableOpacity>
       </View>
 
-      <TouchableOpacity 
-        style={[styles.button, isLoading && styles.buttonDisabled]} 
+
+      {/* Add terms and conditions checkbox */}
+      <View style={styles.termsContainer}>
+        <TouchableOpacity
+          onPress={() => setIsAgreed(!isAgreed)}
+          style={[styles.checkbox, isAgreed && styles.checkboxChecked]}
+        >
+          {isAgreed && <Text style={styles.checkmark}>✓</Text>}
+        </TouchableOpacity>
+
+        <Text style={styles.termsText}>
+          Tôi đồng ý với{' '}
+          <Text
+            style={styles.linkText}
+            onPress={() => navigation.navigate('PrivacyPolicyScreen')}
+          >
+            Điều khoản & Chính sách
+          </Text>
+        </Text>
+      </View>
+
+
+
+      <TouchableOpacity
+        style={[styles.button, isLoading && styles.buttonDisabled]}
         onPress={handleRegister}
         disabled={isLoading}
       >
@@ -194,7 +226,7 @@ const RegisterScreen = ({ navigation }) => {
 export default RegisterScreen;
 
 const styles = StyleSheet.create({
-   container: {
+  container: {
     flex: 1,
     backgroundColor: '#fff',
     paddingHorizontal: 24,
@@ -257,4 +289,45 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
   },
+
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: '#ccc',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  checkboxChecked: {
+    backgroundColor: '#007bff',
+    borderColor: '#007bff',
+  },
+
+  checkmark: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+
+  termsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+
+  termsText: {
+    flex: 1,
+    fontSize: 14,
+    color: '#333',
+  },
+
+  linkText: {
+    color: '#007bff',
+    textDecorationLine: 'underline',
+  },
+
 });

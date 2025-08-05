@@ -11,7 +11,7 @@ import {
     View,
 } from "react-native";
 import { useAuth } from "../context/AuthContext";
-import api from "../utils/api";
+import { api } from "../utils/api";
 
 const REASONS = [
   "Sản phẩm bị lỗi",

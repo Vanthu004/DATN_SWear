@@ -10,7 +10,7 @@ import {
     TouchableOpacity,
     View
 } from 'react-native';
-import api from '../utils/api'; // Import api
+import { api } from '../utils/api'; // Import api
 
 const ChangePasswordScreen = ({ navigation }) => {
   const [currentPassword, setCurrentPassword] = useState('');

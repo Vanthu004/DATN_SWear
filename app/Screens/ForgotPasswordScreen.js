@@ -8,7 +8,7 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
-import api from '../utils/api'; // đảm bảo bạn đã import axios cấu hình sẵn
+import { api } from '../utils/api'; // đảm bảo bạn đã import axios cấu hình sẵn
 
 const ForgotPasswordScreen = ({ navigation }) => {
   const [email, setEmail] = useState("");
