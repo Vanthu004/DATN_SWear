@@ -17,7 +17,7 @@ import { ROUTES } from "../constants/routes";
 import { useAuth } from "../context/AuthContext";
 import { useCart } from "../hooks/useCart";
 import { useOrder } from "../hooks/useOrder";
-import api, { applyVoucherApi, getAddressList, getPaymentMethods, getShippingMethods, getUserVouchers } from "../utils/api";
+import { api, applyVoucherApi, getAddressList, getPaymentMethods, getShippingMethods, getUserVouchers } from "../utils/api";
 
 const CheckoutScreen = () => {
   const route = useRoute();
@@ -237,15 +237,14 @@ const CheckoutScreen = () => {
             console.error("❌ Error applying voucher after order:", err);
           }
         }
-          console.log("id đơn hàng.......",
-            result.data.order._id);
-            navigation.navigate(ROUTES.ORDER_SUCCESS, {
-            orderId: result.data.order._id,
-          });
- // Handle ZaloPay payment        
+        
+        console.log("id đơn hàng.......", result.data.order._id);
+        
+        // Handle ZaloPay payment        
         const selectedMethod = paymentMethods.find(pm => pm._id === selectedPaymentMethod);
         console.log("selectedPaymentMethod:", selectedPaymentMethod); // LOG 2
         console.log("selectedMethod:", selectedMethod); // LOG 3
+        
         if (selectedMethod && selectedMethod.code?.toUpperCase() === 'ZALOPAY') {
           setProcessingZaloPay(true);
           try {
@@ -259,50 +258,50 @@ const CheckoutScreen = () => {
 
             const totalAmount = productTotal + taxAmount + shippingAmount - voucherDiscount;
             // Gọi API backend để lấy mã QR ZaloPay
-           const paymentRes = await api.post('/payments/zalopay/payment', {
-            orderId: result.data.order._id,
-            product_total: productTotal,
-            tax: taxAmount,
-            shipping_fee: shippingAmount,
-            voucher_discount: voucherDiscount,
-            amount: totalAmount,
-            cart_id: cartId,
-          });
+            const paymentRes = await api.post('/payments/zalopay/payment', {
+              orderId: result.data.order._id,
+              product_total: productTotal,
+              tax: taxAmount,
+              shipping_fee: shippingAmount,
+              voucher_discount: voucherDiscount,
+              amount: totalAmount,
+              cart_id: cartId,
+            });
 
             const paymentData = paymentRes.data;
             console.log("ZaloPay paymentData:", paymentData); // LOG QR RESPONSE
             const qrValue = paymentData.qr_url || paymentData.order_url || paymentData.paymentUrl || paymentData.payUrl;
             // Chuyển sang màn hình QR, truyền thêm orderId để polling check trạng thái
-            navigation.navigate('ZaloPayQRScreen', {
-              orderId: paymentData.app_trans_id || result.order._id,
+            navigation.navigate(ROUTES.ZALOPAY_QR, {
+              orderId: paymentData.app_trans_id || result.data.order._id,
               responseTime: Date.now(),
               amount: paymentData.total_amount || totalAmount,
               qrCodeUrl: qrValue,
               paymentUrl: paymentData.order_url,
-              backendOrderId: result.order._id, // truyền orderId backend để check trạng thái
+              backendOrderId: result.data.order._id, // truyền orderId backend để check trạng thái
               checkedItems: checkedItems, // truyền danh sách sản phẩm để xóa sau khi thanh toán thành công
             });
             // KHÔNG xóa sản phẩm khỏi giỏ hàng ở đây - chỉ xóa khi thanh toán thành công
           } catch (err) {
-          console.error("❌ Lỗi khi lấy QR ZaloPay:", err.response?.data || err.message);
-          Alert.alert('Lỗi', 'Không lấy được mã QR ZaloPay');
-        }finally {
+            console.error("❌ Lỗi khi lấy QR ZaloPay:", err.response?.data || err.message);
+            Alert.alert('Lỗi', 'Không lấy được mã QR ZaloPay');
+          } finally {
             setProcessingZaloPay(false);
           }
         } else {
-          // Handle COD
+          // Handle COD - chỉ navigate đến success screen cho COD
           for (const item of checkedItems) {
             await removeFromCart(item._id);
           }
           // Alert.alert("Thành công", `Đơn hàng ${result.data.order.order_code} đã được tạo thành công!`);
-      if (result && result.data && result.data.order) {
-          navigation.navigate(ROUTES.ORDER_SUCCESS, {
-            orderCode: result.data.order.order_code,
-            orderId: result.data.order._id,
-          });
-        } else {
-          console.error("❌ Không tìm thấy đơn hàng trong kết quả:", result);
-        }
+          if (result && result.data && result.data.order) {
+            navigation.navigate(ROUTES.ORDER_SUCCESS, {
+              orderCode: result.data.order.order_code,
+              orderId: result.data.order._id,
+            });
+          } else {
+            console.error("❌ Không tìm thấy đơn hàng trong kết quả:", result);
+          }
         }
       }
     } catch (error) {
@@ -542,6 +541,10 @@ const CheckoutScreen = () => {
 
         {/* Summary */}
         <View style={styles.summary}> 
+          <View style={styles.row}>
+            <Text style={styles.label}>Tạm tính</Text>
+            <Text style={styles.value}>{formatMoney(subtotal)}</Text>
+          </View>
           <View style={styles.row}>
             <Text style={styles.label}>Phí vận chuyển</Text>
             <Text style={styles.value}>{formatMoney(shippingFee)}</Text>

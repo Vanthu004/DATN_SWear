@@ -26,6 +26,8 @@ const OrderDetailScreen = () => {
       setLoading(true);
       try {
         const orderData = await getOrderById(orderId);
+        console.log("🔍 Order data:", orderData);
+        console.log("🔍 Order data structure:", JSON.stringify(orderData, null, 2));
         setOrder(orderData);
         const details = await getOrderDetailsByOrderId(orderId);
         setOrderDetails(details);
@@ -106,14 +108,18 @@ const productTotal = orderDetails.reduce((sum, item) => {
           {productTotal?.toLocaleString()} VND
         </Text>
       </View>
-      <View style={styles.infoBox}>
-        <Text style={styles.infoText}>Phí vận chuyển</Text>
-        <Text style={styles.infoValue}>{order.data.shippingmethod_id.fee} VND</Text>
-      </View>
-            <View style={styles.infoBox}>
-        <Text style={styles.infoText}>Giảm </Text>
-        <Text style={styles.infoValue}>{order.data.voucher_id.discount_value} %</Text>
-      </View>
+      {order.data.shippingmethod_id && (
+        <View style={styles.infoBox}>
+          <Text style={styles.infoText}>Phí vận chuyển</Text>
+          <Text style={styles.infoValue}>{order.data.shippingmethod_id.fee || 0} VND</Text>
+        </View>
+      )}
+            {order.data.voucher_id && (
+              <View style={styles.infoBox}>
+                <Text style={styles.infoText}>Giảm </Text>
+                <Text style={styles.infoValue}>{order.data.voucher_id.discount_value || 0} %</Text>
+              </View>
+            )}
       <View style={styles.infoBox}>
         <Text style={styles.infoTextBold}>Thành tiền</Text>
         <Text style={styles.infoValueBold}>
@@ -123,22 +129,28 @@ const productTotal = orderDetails.reduce((sum, item) => {
 
       {/* Thông tin giao hàng */}
       <Text style={styles.sectionTitle}>Thông tin giao hàng</Text>
-      <View style={styles.infoBox}>
-        <Text style={styles.infoText}>Người nhận</Text>
-        <Text style={styles.infoValue}>{order.data.user_id.name}</Text>
-      </View>
+      {order.data.user_id && (
+        <View style={styles.infoBox}>
+          <Text style={styles.infoText}>Người nhận</Text>
+          <Text style={styles.infoValue}>{order.data.user_id.name || "---"}</Text>
+        </View>
+      )}
       <View style={styles.infoBox}>
         <Text style={styles.infoText}>Địa chỉ giao hàng</Text>
         <Text style={styles.infoValue}>{order.data.shipping_address}</Text>
       </View>
-      <View style={styles.infoBox}>
-        <Text style={styles.infoText}>Phương thức Thanh toán</Text>
-        <Text style={styles.infoValue}>{order.data.paymentmethod_id.name}</Text>
-      </View>
-      <View style={styles.infoBox}>
-        <Text style={styles.infoText}>Hình thức vận chuyển</Text>
-        <Text style={styles.infoValue}>{order.data.shippingmethod_id.name}</Text>
-      </View>
+      {order.data.paymentmethod_id && (
+        <View style={styles.infoBox}>
+          <Text style={styles.infoText}>Phương thức Thanh toán</Text>
+          <Text style={styles.infoValue}>{order.data.paymentmethod_id.name || "---"}</Text>
+        </View>
+      )}
+      {order.data.shippingmethod_id && (
+        <View style={styles.infoBox}>
+          <Text style={styles.infoText}>Hình thức vận chuyển</Text>
+          <Text style={styles.infoValue}>{order.data.shippingmethod_id.name || "---"}</Text>
+        </View>
+      )}
       <View style={styles.infoBox}>
         <Text style={styles.infoText}>Trạng thái đơn hàng</Text>
         <Text style={styles.infoValueStatus}>{order.data.status}</Text>

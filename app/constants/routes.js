@@ -49,4 +49,5 @@ export const ROUTES = {
   RATING_REVIEWS: "RatingReviews",
   WRITE_REVIEW: "WriteReview",
   ORDER_DETAIL: "OrderDetail",
+  ZALOPAY_QR: "ZaloPayQRScreen",
 };
