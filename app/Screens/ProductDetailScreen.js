@@ -223,28 +223,6 @@ const handleBuyNow = ({ product, variant, quantity }) => {
         {product.category && (
           <Text style={styles.category}>Danh mục: {product.category.name || product.category}</Text>
         )}
-
-        {/* Product Variant Selector - Only show basic info */}
-        {/* {selectedVariant && (
-          <View style={styles.variantInfo}>
-            <Text style={styles.variantPrice}>
-              {selectedVariant.price?.toLocaleString('vi-VN')} ₫
-            </Text>
-            {selectedVariant.stock !== undefined && (
-              <Text style={[
-                styles.stockInfo,
-                selectedVariant.stock > 0 ? styles.inStock : styles.outOfStock,
-              ]}>
-                {selectedVariant.stock > 0 ? `Còn ${selectedVariant.stock} sản phẩm` : 'Hết hàng'}
-              </Text>
-            )}
-          </View>
-        )} */}
-{/* 
-        {typeof product.stock === 'number' && (
-          <Text style={styles.stock}>Còn lại: {product.stock} sản phẩm</Text>
-        )} */}
-
         {/* Quantity - Removed as it's now in Modal */}
 
         {/* Description */}

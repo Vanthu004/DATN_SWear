@@ -113,13 +113,13 @@ const ProductVariantModal = ({
         <View style={{flexDirection: 'row', padding: 16, gap: 16}}>
           {/* Product Image */}
           <View style={styles.imageContainer}>
-            <Image
-              source={{ 
-                uri: product?.images?.[0]?.url || product?.image_url || product?.main_image 
-              }}
-              style={styles.productImage}
-              resizeMode="cover"
-            />
+        <Image
+            source={{ 
+              uri: selectedVariant?.image_url || product?.images?.[0]?.url || product?.image_url || product?.main_image 
+            }}
+            style={styles.productImage}
+            resizeMode="cover"
+          />
           </View>
 
           {/* Product Info */}
@@ -351,16 +351,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
  
-  stockText: {
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  inStock: {
-    color: '#16a34a',
-  },
-  outOfStock: {
-    color: '#dc2626',
-  },
   footer: {
     padding: 16,
     borderTopWidth: 1,
