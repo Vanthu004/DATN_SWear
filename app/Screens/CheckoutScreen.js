@@ -25,10 +25,11 @@ const CheckoutScreen = () => {
   const { createOrderFromCart, loading } = useOrder();
   const { removeFromCart, cartId } = useCart();
   const { userInfo } = useAuth();
-  const { checkedItems = [], voucher_discount = 0 } = route.params || {};
-    const subtotal = checkedItems.reduce((total, item) => {
-      const price = item.price_at_time || item.product?.price || 0;
-      return total + price * item.quantity;
+  const { checkedItems = [], items = [], voucher_discount = 0 } = route.params || {};
+  const selectedItems = checkedItems.length > 0 ? checkedItems : items;
+  const subtotal = selectedItems.reduce((total, item) => {
+  const price = item.price_at_time || item.product?.price || 0;
+  return total + price * item.quantity;
     }, 0);
   // Image mapping for payment methods
   const imageMap = {
@@ -161,7 +162,7 @@ const CheckoutScreen = () => {
 
   // Handle order placement
   const handlePlaceOrder = async () => {
-    if (checkedItems.length === 0) {
+    if (selectedItems.length === 0) {
       Alert.alert("Error", "No products selected for order");
       return;
     }
@@ -216,7 +217,7 @@ const CheckoutScreen = () => {
         paymentMethodId: selectedPaymentMethodObj?._id,
         shippingMethodId: selectedShippingMethod?._id,
         note,
-        orderDetails: checkedItems.map((item) => ({
+        orderDetails: selectedItems.map((item) => ({
           product_id: item.product?._id || item.product_id,
           quantity: item.quantity,
         })),
@@ -224,7 +225,7 @@ const CheckoutScreen = () => {
       };
 
 
-      const result = await createOrderFromCart(checkedItems, orderData);
+      const result = await createOrderFromCart(selectedItems, orderData);
       if (result) {
         // Apply voucher if selected
         if (selectedVoucher && userInfo?._id) {
@@ -279,7 +280,7 @@ const CheckoutScreen = () => {
               qrCodeUrl: qrValue,
               paymentUrl: paymentData.order_url,
               backendOrderId: result.data.order._id, // truyền orderId backend để check trạng thái
-              checkedItems: checkedItems, // truyền danh sách sản phẩm để xóa sau khi thanh toán thành công
+              selectedItems: selectedItems, // truyền danh sách sản phẩm để xóa sau khi thanh toán thành công
             });
             // KHÔNG xóa sản phẩm khỏi giỏ hàng ở đây - chỉ xóa khi thanh toán thành công
           } catch (err) {
@@ -290,7 +291,7 @@ const CheckoutScreen = () => {
           }
         } else {
           // Handle COD - chỉ navigate đến success screen cho COD
-          for (const item of checkedItems) {
+          for (const item of selectedItems) {
             await removeFromCart(item._id);
           }
           // Alert.alert("Thành công", `Đơn hàng ${result.data.order.order_code} đã được tạo thành công!`);
@@ -329,12 +330,12 @@ const CheckoutScreen = () => {
       {/* Content */}
       <ScrollView style={styles.content}>
         {/* Selected Products */}
-        {checkedItems.length > 0 && (
+        {selectedItems.length > 0 && (
           <View style={{ marginBottom: 16 }}>
             <Text style={{ fontWeight: "bold", fontSize: 16, marginBottom: 8 }}>
-              Sản phẩm đã chọn ({checkedItems.length})
+              Sản phẩm đã chọn ({selectedItems.length})
             </Text>
-            {checkedItems.map((item) => (
+            {selectedItems.map((item) => (
               <TouchableOpacity
                 key={item._id}
                 style={{
@@ -570,7 +571,7 @@ const CheckoutScreen = () => {
         <TouchableOpacity
           style={[styles.orderButton, (loading || processingZaloPay) && styles.orderButtonDisabled]}
           onPress={handlePlaceOrder}
-          disabled={loading || processingZaloPay || checkedItems.length === 0}
+          disabled={loading || processingZaloPay || selectedItems.length === 0}
         >
           {loading || processingZaloPay ? (
             <ActivityIndicator size="small" color="#fff" />
