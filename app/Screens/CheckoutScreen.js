@@ -26,8 +26,16 @@ const CheckoutScreen = () => {
   const { createOrderFromCart, loading } = useOrder();
   const { removeFromCart, cartId } = useCart();
   const { userInfo } = useAuth();
-  const { checkedItems = [], subtotal = 0, voucher_discount = 0 } = route.params || {};
+  const { checkedItems = []} = route.params || {};
+  const calcSubtotalFromItems = () => {
+  if (!checkedItems || checkedItems.length === 0) return 0;
+  return checkedItems.reduce((sum, item) => {
+    const price = item.price_at_time || item.product?.price || 0;
+    return sum + price * item.quantity;
+  }, 0);
+};
 
+const subtotal = calcSubtotalFromItems();
   // Image mapping for payment methods
   const imageMap = {
     COD: "https://i.pinimg.com/564x/66/cb/6b/66cb6b04177ab07a60c17445011161ca.jpg",

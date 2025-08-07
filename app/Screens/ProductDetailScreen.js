@@ -45,7 +45,8 @@ export default function ProductDetailScreen({ route, navigation }) {
   const [selectedVariant, setSelectedVariant] = useState(null);
   const [showVariantModal, setShowVariantModal] = useState(false);
   const [loading, setLoading] = useState(false);
-
+  const [reviews, setReviews] = useState([]);
+  const [avgRating, setAvgRating] = useState(0);
 
   useEffect(() => {
     const fetchProductDetail = async () => {
@@ -53,6 +54,12 @@ export default function ProductDetailScreen({ route, navigation }) {
       try {
         const res = await api.get(`/products/${product._id}/frontend`);
         setFullProduct(res.data);
+
+        // Giả sử product detail có reviews
+        if (res.data.reviews) {
+          setReviews(res.data.reviews);
+          setAvgRating(calculateAvg(res.data.reviews));
+        }
       } catch (error) {
         console.error('❌ Lỗi lấy sản phẩm:', error.message);
       } finally {
@@ -65,11 +72,9 @@ export default function ProductDetailScreen({ route, navigation }) {
     }
   }, [product]);
 
-
-  // Load first variant when product loads
+  // Load first variant khi có sản phẩm đầy đủ
   useEffect(() => {
     if (fullProduct?._id && !selectedVariant) {
-      // Try to get variants from product or fetch them
       if (fullProduct.variants && fullProduct.variants.length > 0) {
         setSelectedVariant(fullProduct.variants[0]);
       }
@@ -125,7 +130,7 @@ export default function ProductDetailScreen({ route, navigation }) {
     try {
       const cartRes = await api.get(`/cart/user/${userInfo._id}`);
 
-      let cart = cartRes.data.data || cartRes.data; // Handle nested data structure
+      let cart = cartRes.data.data || cartRes.data; // Xử lý trường hợp data lồng nhau
 
       if (!cart?._id) {
         const createCartRes = await api.post('/cart', { user_id: userInfo._id });
@@ -153,34 +158,36 @@ export default function ProductDetailScreen({ route, navigation }) {
     }
   };
 
-const handleBuyNow = ({ product, variant, quantity }) => {
-  navigation.navigate('Checkout', {
-    items: [{
-      product,
-      variant,
-      quantity,
-      price: variant.price || product.price,
-    }],
-    isDirectPurchase: true,
-  });
-};
+  const handleBuyNow = ({ product, variant, quantity }) => {
+    navigation.navigate('Checkout', {
+      items: [
+        {
+          product,
+          variant,
+          quantity,
+          price: variant.price || product.price,
+        },
+      ],
+      isDirectPurchase: true,
+    });
+  };
 
   const handleShowVariantModal = () => {
     setShowVariantModal(true);
   };
 
-
   if (!product) {
-  return (
-    <SafeAreaView style={styles.container}>
-      <Text>Không có dữ liệu sản phẩm</Text>
-    </SafeAreaView>
-  );
-}
-  // Lấy mảng url ảnh, ưu tiên lấy từ images nếu có, fallback dùng image_url
+    return (
+      <SafeAreaView style={styles.container}>
+        <Text>Không có dữ liệu sản phẩm</Text>
+      </SafeAreaView>
+    );
+  }
+
+  // Lấy url ảnh ưu tiên lấy từ images, fallback image_url
   const imageUrls =
     fullProduct.images && fullProduct.images.length > 0
-      ? fullProduct.images.map(img => img.url)
+      ? fullProduct.images.map((img) => img.url)
       : [fullProduct.image_url];
 
   return (
@@ -222,30 +229,7 @@ const handleBuyNow = ({ product, variant, quantity }) => {
           <Text style={styles.category}>Danh mục: {product.category.name || product.category}</Text>
         )}
 
-        {/* Product Variant Selector - Only show basic info */}
-        {/* {selectedVariant && (
-          <View style={styles.variantInfo}>
-            <Text style={styles.variantPrice}>
-              {selectedVariant.price?.toLocaleString('vi-VN')} ₫
-            </Text>
-            {selectedVariant.stock !== undefined && (
-              <Text style={[
-                styles.stockInfo,
-                selectedVariant.stock > 0 ? styles.inStock : styles.outOfStock,
-              ]}>
-                {selectedVariant.stock > 0 ? `Còn ${selectedVariant.stock} sản phẩm` : 'Hết hàng'}
-              </Text>
-            )}
-          </View>
-        )} */}
-{/* 
-        {typeof product.stock === 'number' && (
-          <Text style={styles.stock}>Còn lại: {product.stock} sản phẩm</Text>
-        )} */}
-
-
-        {/* Quantity - Removed as it's now in Modal */}
-        {/* Description */}
+        {/* Mô tả */}
         <Text style={styles.label}>Mô tả sản phẩm</Text>
         {product.description && <Text style={styles.description}>{product.description}</Text>}
 
@@ -253,93 +237,105 @@ const handleBuyNow = ({ product, variant, quantity }) => {
         <Text style={styles.label}>Đánh giá</Text>
         <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
           {renderStars(product.rating || 5)}
-        <Text style={{ marginLeft: 8, color: '#888' }}>
-          {`${avgRating || 0} điểm (${reviews?.length || 0} đánh giá)`}
-        </Text>
+          <Text style={{ marginLeft: 8, color: '#888' }}>
+            {`${avgRating || 0} điểm (${reviews?.length || 0} đánh giá)`}
+          </Text>
         </View>
 
-{/* Reviews */}
-{reviews?.length > 0 ? (
-  <>
-    {reviews.map((review, idx) => (
-      <View
-        key={idx}
-        style={{
-          flexDirection: 'row',
-          alignItems: 'flex-start',
-          marginBottom: 16,
-          gap: 10,
-        }}
-      >
-        {/* Avatar */}
-        <Image
-          source={{
-          uri: review.user_id?.avata_url || 'https://cdn-icons-png.flaticon.com/512/149/149071.png'
+        {/* Reviews */}
+        {reviews?.length > 0 &&
+          reviews.map((review, idx) => (
+            <View
+              key={idx}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'flex-start',
+                marginBottom: 16,
+                gap: 10,
+              }}
+            >
+              {/* Avatar */}
+              <Image
+                source={{
+                  uri:
+                    review.user_id?.avata_url ||
+                    'https://cdn-icons-png.flaticon.com/512/149/149071.png',
+                }}
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: 18,
+                  backgroundColor: '#eee',
+                }}
+              />
+              {/* Nội dung */}
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontWeight: 'bold' }}>{review.user_id?.name || 'Người dùng'}</Text>
+                {/* Số sao */}
+                <View style={{ flexDirection: 'row', marginVertical: 4 }}>
+                  {[...Array(review.rating)].map((_, i) => (
+                    <Text key={i} style={{ color: '#facc15' }}>
+                      ★
+                    </Text>
+                  ))}
+                </View>
+                <Text>{review.comment}</Text>
+              </View>
+            </View>
+          ))}
 
-,
-          }}
-          style={{
-            width: 36,
-            height: 36,
-            borderRadius: 18,
-            backgroundColor: '#eee',
-          }}
-        />
-        {/* Nội dung */}
-        <View style={{ flex: 1 }}>
-          <Text style={{ fontWeight: 'bold' }}>{review.user_id?.name || 'Người dùng'}</Text>
-          {/* Số sao */}
-          <View style={{ flexDirection: 'row', marginVertical: 4 }}>
-            {[...Array(review.rating)].map((_, i) => (
-              <Text key={i} style={{ color: '#facc15' }}>★</Text>
-            ))}
-          </View>
-          <Text>{review.comment}</Text>
-        </View>
-
-    {/* 👉 Thêm nút Xem tất cả đánh giá */}
- {/* 👉 Thêm nút Xem tất cả đánh giá */}
-{reviews?.length > 0 && (
-  <TouchableOpacity
-  onPress={() => {
-    navigation.navigate('AllReviews', {
-      productId: product._id,  // chỉ truyền id sản phẩm
-    });
-  }}
->
-  <Text style={{ color: '#3b82f6', fontWeight: 'bold', marginBottom: 12 }}>
-    Xem tất cả đánh giá sản phẩm này
-  </Text>
-</TouchableOpacity>
-
-)}
-
-      {/* Footer */}
-      <View style={styles.footer}>
-        <Text style={styles.footerPrice}>
-          {selectedVariant?.price?.toLocaleString('vi-VN') || product.price?.toLocaleString('vi-VN')} VND
-        </Text>
-        <View style={{ flexDirection: 'row', gap: 8 }}>
+        {/* Nút xem tất cả đánh giá */}
+        {reviews?.length > 0 && (
           <TouchableOpacity
-            style={[styles.addToCartBtn, { backgroundColor: '#3b82f6' }, loadingAddCart && { opacity: 0.6 }]}
-            onPress={() => handleAddToCart({ product: fullProduct, variant: selectedVariant, quantity })}
-            disabled={loadingAddCart}
+            onPress={() => {
+              navigation.navigate('AllReviews', {
+                productId: product._id,
+              });
+            }}
           >
-            <Text style={styles.cartBtnText}>
-              {loadingAddCart ? 'Đang thêm...' : 'Thêm vào Giỏ hàng'}
+            <Text style={{ color: '#3b82f6', fontWeight: 'bold', marginBottom: 12 }}>
+              Xem tất cả đánh giá sản phẩm này
             </Text>
           </TouchableOpacity>
+        )}
 
-          <TouchableOpacity
-            style={[styles.addToCartBtn, { backgroundColor: '#ec4899' }]}
-            onPress={() => handleBuyNow({ product: fullProduct, variant: selectedVariant, quantity })}
-          >
-            <Text style={styles.cartBtnText}>Mua ngay</Text>
-          </TouchableOpacity>
+        {/* Footer với nút thêm giỏ hàng và mua ngay */}
+        <View style={styles.footer}>
+          <Text style={styles.footerPrice}>
+            {selectedVariant?.price?.toLocaleString('vi-VN') ||
+              product.price?.toLocaleString('vi-VN')}{' '}
+            VND
+          </Text>
+          <View style={{ flexDirection: 'row', gap: 8 }}>
+            <TouchableOpacity
+              style={[
+                styles.addToCartBtn,
+                { backgroundColor: '#3b82f6' },
+                loadingAddCart && { opacity: 0.6 },
+              ]}
+              onPress={() =>
+                handleAddToCart({ product: fullProduct, variant: selectedVariant, quantity })
+              }
+              disabled={loadingAddCart}
+            >
+              <Text style={styles.cartBtnText}>
+                {loadingAddCart ? 'Đang thêm...' : 'Thêm vào Giỏ hàng'}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.addToCartBtn, { backgroundColor: '#ec4899' }]}
+              onPress={() =>
+                handleBuyNow({ product: fullProduct, variant: selectedVariant, quantity })
+              }
+            >
+              <Text style={styles.cartBtnText}>Mua ngay</Text>
+            </TouchableOpacity>
+          </View>
         </View>
-      </View>
+      </ScrollView>
 
-      {/* Product Variant Modal */}
+      {/* Modal chọn biến thể */}
       <ProductVariantModal
         visible={showVariantModal}
         onClose={() => setShowVariantModal(false)}
@@ -349,35 +345,8 @@ const handleBuyNow = ({ product, variant, quantity }) => {
         userInfo={userInfo}
       />
 
-      </ScrollView>                {/* Footer */}
-        <View style={styles.footer}>
-          <Text style={styles.footerPrice}>
-            {selectedVariant?.price?.toLocaleString('vi-VN') || product.price?.toLocaleString('vi-VN')} VND
-          </Text>
-          <TouchableOpacity
-            style={[styles.addToCartBtn, { backgroundColor: '#ec4899' }]}
-            onPress={handleShowVariantModal}
-          >
-            <Text style={styles.cartBtnText}>Mua ngay</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.addToCartBtn, { backgroundColor: '#3b82f6' }]}
-            onPress={handleShowVariantModal}
-          >
-            <Text style={styles.cartBtnText}>Thêm vào Giỏ hàng</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Product Variant Modal */}
-        <ProductVariantModal
-          visible={showVariantModal}
-          onClose={() => setShowVariantModal(false)}
-          product={fullProduct}
-          onBuyNow={handleBuyNow}
-          onAddToCart={handleAddToCart}
-          userInfo={userInfo}
-        />
-                  <View style={{height: 70}}></View>
+      {/* Padding tránh bị che khuất */}
+      <View style={{ height: 70 }} />
     </SafeAreaView>
   );
 }
