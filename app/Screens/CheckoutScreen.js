@@ -291,9 +291,12 @@ const CheckoutScreen = () => {
           }
         } else {
           // Handle COD - chỉ navigate đến success screen cho COD
-          for (const item of selectedItems) {
-            await removeFromCart(item._id);
+         for (const item of selectedItems) {
+            if (item._id) {
+              await removeFromCart(item._id); // ✅ Chỉ xoá nếu có _id
+            }
           }
+
           // Alert.alert("Thành công", `Đơn hàng ${result.data.order.order_code} đã được tạo thành công!`);
           if (result && result.data && result.data.order) {
             navigation.navigate(ROUTES.ORDER_SUCCESS, {

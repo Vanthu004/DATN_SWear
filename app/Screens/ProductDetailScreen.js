@@ -162,9 +162,10 @@ const handleBuyNow = ({ product, variant, quantity }) => {
   navigation.navigate('Checkout', {
     items: [{
       product,
+      product_id: product?._id,
       variant,
       quantity,
-      price: (variant?.price || product?.price || 0),
+      price_at_time: variant?.price || product?.price || 0,
     }],
     isDirectPurchase: true,
   });
