@@ -12,9 +12,8 @@ export const useReview = (productId) => {
     if (!productId) return;
     try {
       setLoading(true);
-      const res = await api.get("/reviews", {
-        params: { product_id: productId },
-      });
+    const res = await api.get(`/reviews/product/${productId}`);
+
       setReviews(res.data || []);
     } catch (error) {
       console.error("❌ Lỗi tải đánh giá:", error);

@@ -13,7 +13,8 @@ import {
 } from 'react-native';
 import ProductVariantModal from '../components/ProductVariantModal';
 import { useAuth } from '../context/AuthContext';
-import { api } from '../utils/api';
+import api from '../utils/api';
+
 
 import { useReview } from "../hooks/useReview";
 
@@ -261,67 +262,71 @@ const imageUrls =
               {avgRating ? `${avgRating} điểm (${reviews?.length || 0} đánh giá)` : 'Chưa có đánh giá'}
             </Text>
           </View>
-
-        {/* Reviews */}
-        {reviews?.length > 0 ? (
-          <>
-            {reviews.map((review, idx) => (
-              <View
-                key={idx}
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'flex-start',
-                  marginBottom: 16,
-                
-                }}
-              >
-                {/* Avatar */}
-                <Image
-                  source={{
-                  uri: review.user_id?.avata_url || 'https://cdn-icons-png.flaticon.com/512/149/149071.png',
-                  }}
-                  style={{
-                    width: 36,
-                    height: 36,
-                    borderRadius: 18,
-                    backgroundColor: '#eee',
-                  }}
-                />
-                {/* Nội dung */}
-                <View style={{ flex: 1 }}>
-                  <Text style={{ fontWeight: 'bold' }}>{review.user_id?.name || 'Người dùng'}</Text>
-                  {/* Số sao */}
-                  <View style={{ flexDirection: 'row', marginVertical: 4 }}>
-                    {[...Array(review.rating)].map((_, i) => (
-                      <Text key={i} style={{ color: '#facc15' }}>★</Text>
-                    ))}
-                  </View>
-                  <Text>{review.comment}</Text>
-                </View>
-              </View>
+{/* Reviews */}
+{/* Reviews */}
+{reviews?.length > 0 ? (
+  <>
+    {/* Hiển thị 2 đánh giá mới nhất */}
+    {reviews.slice(0, 2).map((review, idx) => (
+      <View
+        key={idx}
+        style={{
+          flexDirection: 'row',
+          alignItems: 'flex-start',
+          marginBottom: 16,
+        }}
+      >
+        {/* Avatar */}
+        <Image
+          source={{
+            uri:
+              review.user_id?.avata_url ||
+              'https://cdn-icons-png.flaticon.com/512/149/149071.png',
+          }}
+          style={{
+            width: 36,
+            height: 36,
+            borderRadius: 18,
+            backgroundColor: '#eee',
+            marginRight: 8,
+          }}
+        />
+        {/* Nội dung */}
+        <View style={{ flex: 1 }}>
+          <Text style={{ fontWeight: 'bold' }}>
+            {review.user_id?.name || 'Người dùng'}
+          </Text>
+          {/* Số sao */}
+          <View style={{ flexDirection: 'row', marginVertical: 4 }}>
+            {[...Array(review.rating)].map((_, i) => (
+              <Text key={i} style={{ color: '#facc15' }}>
+                ★
+              </Text>
             ))}
 
-    {/* 👉 Thêm nút Xem tất cả đánh giá */}
-          {/* 👉 Thêm nút Xem tất cả đánh giá */}
-          {reviews?.length > 0 && (
-            <TouchableOpacity
-            onPress={() => {
-              navigation.navigate('AllReviews', {
-                productId: product._id,  // chỉ truyền id sản phẩm
-              });
-            }}
-          >
-            <Text style={{ color: '#3b82f6', fontWeight: 'bold', marginBottom: 12 }}>
-              Xem tất cả đánh giá sản phẩm này
-            </Text>
-          </TouchableOpacity>
+    {/* 👉 Nút Xem tất cả đánh giá */}
+    <TouchableOpacity
+      onPress={() => {
+        navigation.navigate('AllReviews', {
+          productId: product._id, // Truyền productId sang AllReviews screen
+        });
+      }}
+    >
+      <Text
+        style={{
+          color: '#3b82f6',
+          fontWeight: 'bold',
+          marginBottom: 12,
+        }}
+      >
+        Xem tất cả đánh giá sản phẩm này
+      </Text>
+    </TouchableOpacity>
+  </>
+) : (
+  <Text style={{ color: '#888', marginTop: 8 }}>Chưa có đánh giá nào.</Text>
+)}
 
-          )}
-
-            </>
-          ) : (
-            <Text style={{ color: '#888', marginTop: 8 }}>Chưa có đánh giá nào.</Text>
-          )}
 
 
 
