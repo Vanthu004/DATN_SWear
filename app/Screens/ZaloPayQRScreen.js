@@ -3,8 +3,9 @@ import { useFocusEffect, useNavigation, useRoute } from "@react-navigation/nativ
 import React, { useEffect } from "react";
 import { Dimensions, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import QRCode from "react-native-qrcode-svg";
+import { ROUTES } from '../constants/routes';
 import { useCart } from '../hooks/useCart';
-import api from '../utils/api';
+import { api } from '../utils/api';
 
 const { width } = Dimensions.get("window");
 const CARD_WIDTH = Math.min(width * 0.92, 380);
@@ -32,7 +33,7 @@ const ZaloPayQRScreen = () => {
       try {
         // Gọi API check ZaloPay status với app_trans_id
         const res = await api.post('/payments/zalopay/check-status', {
-          app_trans_id: orderId // orderId từ ZaloPay response
+          app_trans_id: orderId // orderId từ ZaloPay response (app_trans_id)
         });
         
         console.log('ZaloPay status check response:', res.data);
@@ -47,7 +48,7 @@ const ZaloPayQRScreen = () => {
             console.log('🎉 Thanh toán thành công.....');
             // Chỉ cần refreshCart, không cần gọi removeFromCart từng item nữa
             await refreshCart();
-            navigation.replace('OrderSuccess', {
+            navigation.replace(ROUTES.ORDER_SUCCESS, {
               orderCode: orderId,
               orderId: backendOrderId,
               total: amount,
