@@ -1,7 +1,8 @@
+//
 import { Ionicons } from "@expo/vector-icons";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import React from "react";
+import React, { createRef } from "react";
 import { StyleSheet, TouchableOpacity, View } from "react-native";
 
 // Import các màn hình chính
@@ -13,6 +14,7 @@ import CategoryScreen from "../Screens/CategoryScreen";
 import ChangePasswordScreen from "../Screens/ChangePasswordScreen";
 import CheckoutScreen from "../Screens/CheckoutScreen";
 import EditProfileScreen from "../Screens/EditProfileScreen";
+import HelpScreen from "../Screens/HelpScreen";
 import HomeScreen from "../Screens/HomeScreen";
 import NotificationsScreen from "../Screens/NotificationsScreen";
 import OrderDetailScreen from "../Screens/OrderDetailScreen";
@@ -21,13 +23,32 @@ import OrdersEmptyScreen from "../Screens/OrdersEmptyScreen";
 import OrderStatusScreen from "../Screens/OrderStatusScreen";
 import OrderSuccessScreen from "../Screens/OrderSuccessScreen";
 import PaymentScreen from "../Screens/PaymentScreen";
+import PolicyScreen from "../Screens/PrivacyPolicyScreen";
 import ProductDetailScreen from "../Screens/ProductDetailScreen";
 import ProductScreen from "../Screens/ProductScreen";
 import ProfileScreen from "../Screens/ProfileScreen";
 import SearchSc from '../Screens/SearchSc';
+import TermsScreen from "../Screens/TermsScreen";
 import UserInfoScreen from "../Screens/UserInfoScreen";
 import WishlistScreen from "../Screens/WishlistScreen.js";
 import ZaloPayQRScreen from '../Screens/ZaloPayQRScreen';
+
+// Tạo navigationRef để truy cập navigation từ bất kỳ đâu
+export const navigationRef = createRef();
+
+// Hàm resetNavigation để chuyển hướng về màn hình bất kỳ
+export const resetNavigation = (screenName) => {
+    console.log("resetNavigation called with screen:", screenName);
+       console.log("navigationRef.current:", navigationRef.current);
+  if (navigationRef.current) {
+    navigationRef.current.reset({
+      index: 0,
+      routes: [{ name: "Auth", params: { screen: screenName } }],
+    });
+  } else {
+    console.warn("navigationRef is not initialized");
+  }
+};
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -140,7 +161,7 @@ function OrderStack() {
       <Stack.Screen
         name="OrderHistory"
         component={OrderHistoryScreen}
-        options={{  headerShown: false  }}
+        options={{ headerShown: false }}
       />
       <Stack.Screen
         name="OrderStatus"
@@ -165,6 +186,12 @@ function ProfileStack() {
         component={ProfileScreen}
         options={{ headerShown: false }}
       />
+        <Stack.Screen
+  name="ProductDetail"
+  component={ProductDetailScreen}
+  options={{ headerShown: false }}
+/>
+
       <Stack.Screen
         name="EditProfile"
         component={EditProfileScreen}
@@ -203,7 +230,7 @@ function ProfileStack() {
       <Stack.Screen
         name="OrderHistory"
         component={OrderHistoryScreen}
-        options={{  headerShown: false  }}
+        options={{ headerShown: false }}
       />
       <Stack.Screen
         name="OrderStatus"
@@ -225,6 +252,21 @@ function ProfileStack() {
         component={OrderDetailScreen}
         options={{ headerShown: false }}
       />
+      <Stack.Screen
+        name="Help"
+        component={HelpScreen}
+        options={{ title: "Trợ giúp" }}
+      />
+      <Stack.Screen
+        name="TermsScreen"
+        component={TermsScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="PolicyScreen"
+        component={PolicyScreen}
+        options={{ headerShown: false }}
+      />
     </Stack.Navigator>
   );
 }
@@ -238,10 +280,11 @@ function NotificationsStack() {
         component={NotificationsScreen}
         options={{ headerShown: false }}
       />
-      {/* Nếu có màn hình chi tiết thông báo, thêm ở đây */}
     </Stack.Navigator>
   );
 }
+
+
 
 const CustomTabBar = ({ state, descriptors, navigation }) => (
   <View style={customStyles.tabBar}>
@@ -305,7 +348,6 @@ export default function TabNavigator() {
     </Tab.Navigator>
   );
 }
-
 const customStyles = StyleSheet.create({
   tabBar: {
     flexDirection: "row",
@@ -332,4 +374,6 @@ const customStyles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  
 });
+

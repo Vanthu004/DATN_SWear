@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Alert } from "react-native";
 import { useAuth } from "../context/AuthContext"; // context đã dùng trong useCart
-import api from "../utils/api"; // file API đã có sẵn
+import { api } from "../utils/api"; // file API đã có sẵn
 
 export const useReview = (productId) => {
   const [reviews, setReviews] = useState([]);
@@ -12,9 +12,8 @@ export const useReview = (productId) => {
     if (!productId) return;
     try {
       setLoading(true);
-      const res = await api.get("/reviews", {
-        params: { product_id: productId },
-      });
+    const res = await api.get(`/reviews/product/${productId}`);
+
       setReviews(res.data || []);
     } catch (error) {
       console.error("❌ Lỗi tải đánh giá:", error);

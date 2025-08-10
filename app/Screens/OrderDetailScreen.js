@@ -26,6 +26,8 @@ const OrderDetailScreen = () => {
       setLoading(true);
       try {
         const orderData = await getOrderById(orderId);
+        console.log("🔍 Order data:", orderData);
+        console.log("🔍 Order data structure:", JSON.stringify(orderData, null, 2));
         setOrder(orderData);
         const details = await getOrderDetailsByOrderId(orderId);
         setOrderDetails(details);
@@ -53,7 +55,9 @@ const OrderDetailScreen = () => {
       </View>
     );
   }
-
+const productTotal = orderDetails.reduce((sum, item) => {
+  return sum + item.product_price * item.quantity;
+}, 0);
   return (
     <ScrollView style={styles.container}>
       {/* Header */}
@@ -70,7 +74,7 @@ const OrderDetailScreen = () => {
       {/* Mã đơn hàng */}
       <View style={styles.infoBox}>
         <Text style={styles.infoText}>Mã đơn hàng</Text>
-        <Text style={styles.infoValue}>{order.order_code}</Text>
+        <Text style={styles.infoValue}>{order.data.order_code}</Text>
       </View>
 
       {/* Danh sách sản phẩm */}
@@ -101,60 +105,67 @@ const OrderDetailScreen = () => {
       <View style={styles.infoBox}>
         <Text style={styles.infoText}>Tổng</Text>
         <Text style={styles.infoValue}>
-          {order.total_price?.toLocaleString()} VND
+          {productTotal?.toLocaleString()} VND
         </Text>
       </View>
-      <View style={styles.infoBox}>
-        <Text style={styles.infoText}>Phí vận chuyển</Text>
-        <Text style={styles.infoValue}>20.000 VND</Text>
-      </View>
-      <View style={styles.infoBox}>
-        <Text style={styles.infoText}>VAT</Text>
-        <Text style={styles.infoValue}>0 VND</Text>
-      </View>
+      {order.data.shippingmethod_id && (
+        <View style={styles.infoBox}>
+          <Text style={styles.infoText}>Phí vận chuyển</Text>
+          <Text style={styles.infoValue}>{order.data.shippingmethod_id.fee || 0} VND</Text>
+        </View>
+      )}
+            {order.data.voucher_id && (
+              <View style={styles.infoBox}>
+                <Text style={styles.infoText}>Giảm </Text>
+                <Text style={styles.infoValue}>{order.data.voucher_id.discount_value || 0} %</Text>
+              </View>
+            )}
       <View style={styles.infoBox}>
         <Text style={styles.infoTextBold}>Thành tiền</Text>
         <Text style={styles.infoValueBold}>
-          {order.total_price?.toLocaleString()} VND
+          {order.data.total_price} VND
         </Text>
       </View>
 
       {/* Thông tin giao hàng */}
       <Text style={styles.sectionTitle}>Thông tin giao hàng</Text>
-      <View style={styles.infoBox}>
-        <Text style={styles.infoText}>Người nhận</Text>
-        <Text style={styles.infoValue}>Nguyễn Văn A</Text>
-      </View>
-      <View style={styles.infoBox}>
-        <Text style={styles.infoText}>SĐT</Text>
-        <Text style={styles.infoValue}>098383246</Text>
-      </View>
+      {order.data.user_id && (
+        <View style={styles.infoBox}>
+          <Text style={styles.infoText}>Người nhận</Text>
+          <Text style={styles.infoValue}>{order.data.user_id.name || "---"}</Text>
+        </View>
+      )}
       <View style={styles.infoBox}>
         <Text style={styles.infoText}>Địa chỉ giao hàng</Text>
-        <Text style={styles.infoValue}>{order.shipping_address}</Text>
+        <Text style={styles.infoValue}>{order.data.shipping_address}</Text>
       </View>
-      <View style={styles.infoBox}>
-        <Text style={styles.infoText}>Phương thức Thanh toán</Text>
-        <Text style={styles.infoValue}>**** 9454 BIDV</Text>
-      </View>
-      <View style={styles.infoBox}>
-        <Text style={styles.infoText}>Hình thức vận chuyển</Text>
-        <Text style={styles.infoValue}>Giao hàng tiết kiệm</Text>
-      </View>
+      {order.data.paymentmethod_id && (
+        <View style={styles.infoBox}>
+          <Text style={styles.infoText}>Phương thức Thanh toán</Text>
+          <Text style={styles.infoValue}>{order.data.paymentmethod_id.name || "---"}</Text>
+        </View>
+      )}
+      {order.data.shippingmethod_id && (
+        <View style={styles.infoBox}>
+          <Text style={styles.infoText}>Hình thức vận chuyển</Text>
+          <Text style={styles.infoValue}>{order.data.shippingmethod_id.name || "---"}</Text>
+        </View>
+      )}
       <View style={styles.infoBox}>
         <Text style={styles.infoText}>Trạng thái đơn hàng</Text>
-        <Text style={styles.infoValueStatus}>Đang giao</Text>
+        <Text style={styles.infoValueStatus}>{order.data.status}</Text>
       </View>
 
       {/* Action buttons */}
       <View style={styles.actionRow}>
-        <TouchableOpacity style={styles.cancelBtn}>
-          <Text style={styles.cancelText}>Hủy đơn</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.confirmBtn}>
-          <Text style={styles.confirmText}>Hoàn hàng</Text>
-        </TouchableOpacity>
+<TouchableOpacity
+  style={styles.confirmBtn}
+  onPress={() => navigation.navigate("Profile", { screen: "OrderHistory" })}
+>
+  <Text style={styles.confirmText}>Lịch sử mua hàng</Text>
+</TouchableOpacity>
       </View>
+                  <View style={{height: 50}}></View>
     </ScrollView>
   );
 };

@@ -1,6 +1,4 @@
 import { Ionicons } from "@expo/vector-icons";
-import api from '../utils/api'; // chỉnh lại đường dẫn nếu khác
-
 import React, { useRef } from "react";
 import {
   Animated,
@@ -11,6 +9,8 @@ import {
   View,
 } from "react-native";
 import { useCart } from '../hooks/useCart';
+import { api } from '../utils/api';
+import ProductVariantInfo from './ProductVariantInfo';
 
 export default function ProductCard({
   product,
@@ -43,7 +43,9 @@ export default function ProductCard({
 
   const handleAddToCart = async (e) => {
     e.stopPropagation();
-    await addToCart(product, 1);
+    // TODO: Implement product variant selection logic
+    // For now, we'll pass null as productVariantId
+    await addToCart(product, 1, null);
   };
 
   const imageSource = product.image_url
@@ -52,11 +54,12 @@ export default function ProductCard({
     ? { uri: product.image }
     : require("../../assets/images/box-icon.png");
 
-  const price = product.price || "";
-  const name = product.name || "";
-  const rating = product.rating || 5.0;
-  const ratingCount = product.ratingCount || 1000;
-
+      const price = product.price || "";
+      const name = product.name || "";
+      const rating = product.rating || 5.0;
+      const stock = product.stock_quantity || 0;
+      // console.log("🔍 product.stock_quantity", product.stock_quantity);
+      // console.log("🔍 full product", product);
   return (
     <Animated.View style={[styles.card, fixedHeight && styles.fixedCard, { transform: [{ scale: scaleAnim }] }]}>
       <TouchableOpacity
@@ -97,12 +100,18 @@ export default function ProductCard({
             </TouchableOpacity>
           )}
         </View>
-        <Text style={styles.productPrice}>{price?.toLocaleString('vi-VN') || ''} ₫</Text>
+        <Text style={styles.productPrice}>
+          {product.variants && product.variants.length > 0 
+            ? `${product.variants[0].price?.toLocaleString('vi-VN') || price?.toLocaleString('vi-VN') || ''} ₫`
+            : `${price?.toLocaleString('vi-VN') || ''} ₫`
+          }
+        </Text>
         <Text style={styles.productName} numberOfLines={2} ellipsizeMode="tail">{name}</Text>
+        <ProductVariantInfo product={product} />
         <View style={styles.ratingRow}>
           <Ionicons name="star" size={14} color="#222" style={{ marginRight: 2 }} />
           <Text style={styles.ratingText}>{rating.toFixed(1)}</Text>
-          <Text style={styles.ratingCount}>({ratingCount})</Text>
+          <Text style={styles.ratingCount}>({stock})</Text>
           <View style={{ flex: 1 }} />
           <TouchableOpacity
             style={[styles.cartBtn, isInCart(product._id) && styles.cartBtnActive]}

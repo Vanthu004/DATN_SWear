@@ -1,8 +1,10 @@
+// app/utils/api.js
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
-const API_BASE_URL = "http://192.168.1.7:3000/api"; //
+// Base URL for the API
 
-
+const API_BASE_URL = "http://192.168.1.9:3000/api";
+const WEBSOCKET_URL = "http://192.168.1.9:3000";
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -11,10 +13,9 @@ const api = axios.create({
   },
 });
 
-// Add request interceptor for logging and adding token
+// Interceptors
 api.interceptors.request.use(
   async (config) => {
-    // Thêm token vào header nếu có
     try {
       const token = await AsyncStorage.getItem("userToken");
       if (token) {
@@ -31,6 +32,7 @@ api.interceptors.request.use(
       params: config.params,
       headers: config.headers,
     });
+
     return config;
   },
   (error) => {
@@ -39,7 +41,7 @@ api.interceptors.request.use(
   }
 );
 
-// Add response interceptor for logging
+// Response interceptor for logging and handling errors
 api.interceptors.response.use(
   (response) => {
     console.log("API Response:", {
@@ -49,16 +51,39 @@ api.interceptors.response.use(
     });
     return response;
   },
-  (error) => {
+  async (error) => {
+    const status = error.response?.status;
+    const message = error.response?.data?.message || "Lỗi không xác định";
+
+    if (status === 403 && message.includes("bị khóa")) {
+      try {
+        await AsyncStorage.setItem("banMessage", message);
+        console.log("api.js: Ban detected, stored banMessage, relying on AuthContext for logout");
+      } catch (err) {
+        console.error("Error handling 403:", err);
+      }
+    }
+
+    if (status === 401 && message.toLowerCase().includes("jwt")) {
+      try {
+        await AsyncStorage.setItem("banMessage", message);
+        console.log("api.js: JWT error detected, stored banMessage, relying on AuthContext for logout");
+      } catch (err) {
+        console.error("Error handling 401:", err);
+      }
+    }
+
     console.log("API Response Error:", {
-      status: error.response?.status,
+      status,
       url: error.config?.url,
       data: error.response?.data,
       message: error.message,
     });
+
     return Promise.reject(error);
   }
 );
+
 
 // Upload functions
 export const uploadImage = async (
@@ -101,7 +126,7 @@ export const uploadAvatar = async (imageUri) => {
       name: "avatar.jpg",
     });
 
-    const response = await api.post("/upload", formData, {
+    const response = await api.post("uploads/upload", formData, {
       headers: {
         "Content-Type": "multipart/form-data",
       },
@@ -125,8 +150,8 @@ export const updateProfileWithAvatar = async (profileData, imageUri = null) => {
       const uploadResponse = await uploadAvatar(imageUri);
       console.log("Upload response:", uploadResponse);
 
-      if (uploadResponse.upload && uploadResponse.upload._id) {
-        uploadId = uploadResponse.upload._id;
+      if (uploadResponse && uploadResponse._id) {
+        uploadId = uploadResponse._id;
       } else {
         throw new Error("Upload response does not contain valid upload ID");
       }
@@ -237,9 +262,13 @@ export const getCategoriesById = async (categoryTypeId) => {
 // ===== CART SYSTEM APIs =====
 
 // Cart APIs
-export const createCart = async (userId) => {
+export const createCart = async (userId, note = null) => {
   try {
-    const response = await api.post("/cart", { user_id: userId });
+    const requestBody = { user_id: userId };
+    if (note) {
+      requestBody.note = note;
+    }
+    const response = await api.post("/cart", requestBody);
     return response.data;
   } catch (error) {
     console.error("Create cart error:", error);
@@ -247,9 +276,13 @@ export const createCart = async (userId) => {
   }
 };
 
-export const getAllCarts = async () => {
+export const getAllCarts = async (status = null, page = 1, limit = 10) => {
   try {
-    const response = await api.get("/cart");
+    const params = { page, limit };
+    if (status) {
+      params.status = status;
+    }
+    const response = await api.get("/cart", { params });
     return response.data;
   } catch (error) {
     console.error("Get all carts error:", error);
@@ -273,6 +306,20 @@ export const getCartByUser = async (userId) => {
     return response.data;
   } catch (error) {
     console.error("Get cart by user error:", error);
+    throw error;
+  }
+};
+
+export const updateCartStatus = async (cartId, status, note = null) => {
+  try {
+    const requestBody = { status };
+    if (note) {
+      requestBody.note = note;
+    }
+    const response = await api.put(`/cart/${cartId}`, requestBody);
+    return response.data;
+  } catch (error) {
+    console.error("Update cart status error:", error);
     throw error;
   }
 };
@@ -338,6 +385,16 @@ export const deleteCartItem = async (itemId) => {
   }
 };
 
+export const clearCartItems = async (cartId) => {
+  try {
+    const response = await api.delete(`/cart-items/cart/${cartId}/clear`);
+    return response.data;
+  } catch (error) {
+    console.error("Clear cart items error:", error);
+    throw error;
+  }
+};
+
 // ===== ORDER SYSTEM APIs =====
 
 // Order APIs
@@ -374,7 +431,8 @@ export const getOrderById = async (orderId) => {
 export const getOrdersByUser = async (userId) => {
   try {
     const response = await api.get(`/orders/user/${userId}`);
-    return response.data;
+    // Trả về đúng mảng orders
+    return response.data?.data?.orders || [];
   } catch (error) {
     console.error("Get orders by user error:", error);
     throw error;
@@ -445,10 +503,11 @@ export const getOrderDetailById = async (orderDetailId) => {
 export const getOrderDetailsByOrderId = async (orderId) => {
   try {
     const response = await api.get(`/order-details/order/${orderId}`);
-    return response.data;
+    // Đảm bảo trả về đúng mảng details
+    return response.data?.data?.details || [];
   } catch (error) {
-    console.error("Get order details by order ID error:", error);
-    throw error;
+    console.error("Get order details by orderId error:", error);
+    return [];
   }
 };
 
@@ -461,6 +520,21 @@ export const deleteOrderDetail = async (orderDetailId) => {
     throw error;
   }
 };
+export const cancelOrder = async (orderId, reason) => {
+  try {
+    const response = await api.put(`/orders/${orderId}/cancel`, {
+      reason: reason,
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Cancel order error:", error);
+    throw error;
+  }
+};
+
+
+
+// Address APIs
 export const createAddress = async (addressData) => {
   try {
     const response = await api.post("addresses", addressData);
@@ -499,15 +573,23 @@ export const deleteAddress = async (id) => {
     throw error;
   }
 };
+
+// Voucher APIs
 export const getPublicVouchers = async () => {
   const res = await api.get("/vouchers/");
   return res.data;
 };
 
 export const getUserVouchers = async (userId) => {
-  const res = await api.get(`/vouchers?userId=${userId}`);
+  const res = await api.get(`/vouchers/user/${userId}`);
   return res.data;
 };
+export const applyVoucherApi = async (userId, voucherId) => {
+  const res = await api.put(`/vouchers/apply-voucher/${voucherId}/${userId}`);
+  return res.data;
+};
+
+// Payment and Shipping Methods APIs
 export const getPaymentMethods = async () => {
   const res = await api.get("/payment-methods");
   return res.data;
@@ -517,6 +599,7 @@ export const getShippingMethods = async () => {
   const res = await api.get("/shipping-methods");
   return res.data;
 };
+
 export const requestRefund = async (orderId, reason) => {
   try {
     const userData = await AsyncStorage.getItem("user");
@@ -553,25 +636,6 @@ export const getAllReviews = async () => {
 
 // ===== SHIPPING METHODS APIs =====
 
-// Shipping Methods APIs
-export const getShippingMethods = async () => {
-  try {
-    const response = await api.get('/shipping-methods');
-    return response.data;
-  } catch (error) {
-    console.error('Error fetching shipping methods:', error);
-    // Return default shipping method if API fails
-    return [{
-      _id: "507f1f77bcf86cd799439011",
-      name: "Vận chuyển Thường",
-      code: "STANDARD",
-      description: "Giao hàng trong 3-5 ngày làm việc",
-      price: 15000,
-      is_active: true
-    }];
-  }
-};
-
 export const createShippingMethod = async (shippingData) => {
   try {
     const response = await api.post('/shipping-methods', shippingData);
@@ -601,5 +665,29 @@ export const deleteShippingMethod = async (id) => {
     throw error;
   }
 };
+
+// ===== PRODUCT VARIANT APIs =====
+
+export const getProductVariants = async (productId) => {
+  try {
+    const response = await api.get(`/product-variants/${productId}`);
+    return response.data;
+  } catch (error) {
+    console.error('Get product variants error:', error);
+    throw error;
+  }
+};
+
+export const getProductDetail = async (productId) => {
+  try {
+    const response = await api.get(`/products/${productId}/frontend`);
+    return response.data;
+  } catch (error) {
+    console.error('Get product detail error:', error);
+    throw error;
+  }
+};
+
+export { api, WEBSOCKET_URL };
 
 export default api;

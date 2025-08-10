@@ -1,5 +1,6 @@
 // WriteReviewScreen.js
 import { Ionicons } from "@expo/vector-icons";
+import * as ImagePicker from "expo-image-picker";
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -13,7 +14,7 @@ import {
   View,
 } from "react-native";
 import { useAuth } from "../context/AuthContext";
-import api from "../utils/api";
+import { api } from "../utils/api";
 
 export default function WriteReviewScreen({ navigation, route }) {
   const { userInfo } = useAuth();
@@ -22,7 +23,6 @@ export default function WriteReviewScreen({ navigation, route }) {
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Lấy các sản phẩm đã đánh giá
   useEffect(() => {
     const fetchReviewedProducts = async () => {
       try {
@@ -40,6 +40,7 @@ export default function WriteReviewScreen({ navigation, route }) {
             product_image: item.product_image,
             rating: 0,
             comment: "",
+            image: null,
           }))
         );
       } catch (err) {
@@ -65,41 +66,63 @@ export default function WriteReviewScreen({ navigation, route }) {
     setReviews(updated);
   };
 
-const handleSubmit = async () => {
-  const incomplete = reviews.find(
-    (item) => item.rating === 0 || item.comment.trim() === ""
-  );
+  const handlePickImage = async (index) => {
+    let result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      quality: 0.7,
+    });
 
-  if (incomplete) {
-    Alert.alert("Lỗi", "Vui lòng đánh giá và nhập bình luận cho tất cả sản phẩm.");
-    return;
-  }
+    if (!result.canceled) {
+      const updated = [...reviews];
+      updated[index].image = result.assets[0].uri;
+      setReviews(updated);
+    }
+  };
 
-  try {
-    await Promise.all(
-      reviews.map((item) =>
-        api.post("/reviews", {
-          user_id: userInfo._id,
-          product_id: item.product_id,
-          rating: item.rating,
-          comment: item.comment,
-        })
-      )
+  const handleSubmit = async () => {
+    const incomplete = reviews.find(
+      (item) => item.rating === 0 || item.comment.trim() === ""
     );
-    Alert.alert("Thành công", "Đã gửi đánh giá");
-    navigation.replace("OrderDetail", { orderCode }); // ✅ Quay lại chi tiết đơn
-  } catch (err) {
-    const message = err?.response?.data?.message;
-    //console.error("Lỗi gửi đánh giá:", err);
 
-    if (message === "Bạn đã đánh giá sản phẩm này rồi.") {
-      Alert.alert("Thông báo", message);
-    } else {
+    if (incomplete) {
+      Alert.alert("Lỗi", "Vui lòng đánh giá và nhập bình luận cho tất cả sản phẩm.");
+      return;
+    }
+
+    try {
+      for (const item of reviews) {
+        const formData = new FormData();
+        formData.append("user_id", userInfo._id);
+        formData.append("product_id", item.product_id);
+        formData.append("rating", item.rating);
+        formData.append("comment", item.comment);
+
+        if (item.image) {
+          const fileName = item.image.split("/").pop();
+          const fileType = fileName.split(".").pop();
+          formData.append("image", {
+            uri: item.image,
+            type: `image/${fileType}`,
+            name: fileName,
+          });
+        }
+
+        await api.post("/reviews", formData, {
+          headers: {
+            //Accept: "application/json",
+            Authorization: `Bearer ${userInfo?.token}`,
+          },
+        });
+      }
+
+      Alert.alert("Thành công", "Đã gửi đánh giá");
+      navigation.replace("OrderDetail", { orderCode });
+    } catch (err) {
+      const message = err?.response?.data?.message;
       Alert.alert("Lỗi", message || "Không thể gửi đánh giá");
     }
-  }
-};
-
+  };
 
   const renderStars = (rating, index) => (
     <View style={{ flexDirection: "row", marginVertical: 4 }}>
@@ -144,9 +167,10 @@ const handleSubmit = async () => {
         keyExtractor={(item) => item.product_id}
         renderItem={({ item, index }) => (
           <View style={styles.itemContainer}>
-            <Image source={{ uri: item.product_image }} style={styles.image} />
+            <Image source={{ uri: item.product_image }} style={styles.imageLarge} />
             <Text style={styles.productName}>{item.product_name}</Text>
             {renderStars(item.rating, index)}
+
             <TextInput
               style={styles.input}
               placeholder="Nhập đánh giá..."
@@ -154,6 +178,17 @@ const handleSubmit = async () => {
               value={item.comment}
               onChangeText={(text) => handleCommentChange(index, text)}
             />
+
+            {item.image && (
+              <Image source={{ uri: item.image }} style={styles.reviewImage} />
+            )}
+
+            <TouchableOpacity
+              onPress={() => handlePickImage(index)}
+              style={styles.cameraButton}
+            >
+              <Text style={styles.cameraText}>📷 Chụp ảnh sản phẩm thực tế</Text>
+            </TouchableOpacity>
           </View>
         )}
         ListFooterComponent={
@@ -170,16 +205,16 @@ const styles = StyleSheet.create({
   container: { padding: 16, backgroundColor: "#fff", flex: 1 },
   title: { fontSize: 20, fontWeight: "bold", marginBottom: 16 },
   itemContainer: {
-    marginBottom: 20,
+    marginBottom: 24,
     borderBottomWidth: 1,
     borderColor: "#eee",
-    paddingBottom: 10,
+    paddingBottom: 12,
   },
-  image: {
-    width: 80,
-    height: 80,
-    resizeMode: "contain",
-    borderRadius: 8,
+  imageLarge: {
+    width: "100%",
+    height: 180,
+    resizeMode: "cover",
+    borderRadius: 12,
     marginBottom: 6,
   },
   productName: {
@@ -195,6 +230,24 @@ const styles = StyleSheet.create({
     textAlignVertical: "top",
     height: 80,
     marginTop: 6,
+  },
+  reviewImage: {
+    width: "100%",
+    height: 160,
+    resizeMode: "cover",
+    borderRadius: 10,
+    marginTop: 10,
+  },
+  cameraButton: {
+    backgroundColor: "#eee",
+    padding: 10,
+    borderRadius: 8,
+    marginTop: 10,
+    alignItems: "center",
+  },
+  cameraText: {
+    color: "#333",
+    fontWeight: "600",
   },
   button: {
     backgroundColor: "red",

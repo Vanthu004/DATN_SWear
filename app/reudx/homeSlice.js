@@ -1,5 +1,5 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
-import api, { fetchCategoryTypes as fetchCategoryTypesApi } from '../utils/api';
+import { api, fetchCategoryTypes as fetchCategoryTypesApi } from '../utils/api';
 
 export const fetchCategories = createAsyncThunk('home/fetchCategories', async () => {
   const res = await api.get('/categories');
@@ -9,6 +9,11 @@ export const fetchCategories = createAsyncThunk('home/fetchCategories', async ()
 export const fetchBestSellers = createAsyncThunk('home/fetchBestSellers', async () => {
   const res = await api.get('/products/best-sellers');
   return res.data.data;
+});
+
+export const fetchProductDetail = createAsyncThunk('home/fetchProductDetail', async (productId) => {
+  const res = await api.get(`/products/${productId}/frontend`);
+  return res.data;
 });
 
 export const fetchNewest = createAsyncThunk('home/fetchNewest', async () => {
@@ -44,6 +49,7 @@ const homeSlice = createSlice({
     newest: [],
     popular: [],
     selectedCategoryProducts: [],
+    productDetails: {},
     loading: false,
     error: null,
     searchKeyword: '',
@@ -122,6 +128,10 @@ const homeSlice = createSlice({
       .addCase(fetchCategoryTypes.rejected, (state, action) => {
         state.loading = false;
         state.error = action.error.message;
+      })
+      .addCase(fetchProductDetail.fulfilled, (state, action) => {
+        const product = action.payload;
+        state.productDetails[product._id] = product;
       });
   },
 });
