@@ -255,14 +255,34 @@ const imageUrls =
         {product.description && <Text style={styles.description}>{product.description}</Text>}
 
         {/* Rating */}
+        <View style={{flexDirection:'row',justifyContent:'space-between', alignItems:'center', marginTop:16, marginBottom:8}}>
         <Text style={styles.label}>Đánh giá</Text>
-          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
-            {renderStars(product.rating || 5)}
-            <Text style={{ marginLeft: 8, color: '#888' }}>
-              {avgRating ? `${avgRating} điểm (${reviews?.length || 0} đánh giá)` : 'Chưa có đánh giá'}
+          {/* 👉 Nút Xem tất cả đánh giá */}
+          <TouchableOpacity
+            onPress={() => {
+              navigation.navigate('AllReviews', {
+                productId: product._id, // Truyền productId sang AllReviews screen
+              });
+            }}
+          >
+            <Text
+              style={{
+                color: '#3b82f6',
+                fontWeight: 'bold',
+              }}
+            >
+              Xem tất cả
             </Text>
-          </View>
-{/* Reviews */}
+          </TouchableOpacity>
+        </View>
+
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+          {renderStars(product.rating || 5)}
+        <Text style={{ marginLeft: 8, color: '#888' }}>
+          {`${avgRating || 0} điểm (${reviews?.length || 0} đánh giá)`}
+        </Text>
+        </View>
+
 {/* Reviews */}
 {reviews?.length > 0 ? (
   <>
@@ -303,32 +323,15 @@ const imageUrls =
                 ★
               </Text>
             ))}
-
-    {/* 👉 Nút Xem tất cả đánh giá */}
-    <TouchableOpacity
-      onPress={() => {
-        navigation.navigate('AllReviews', {
-          productId: product._id, // Truyền productId sang AllReviews screen
-        });
-      }}
-    >
-      <Text
-        style={{
-          color: '#3b82f6',
-          fontWeight: 'bold',
-          marginBottom: 12,
-        }}
-      >
-        Xem tất cả đánh giá sản phẩm này
-      </Text>
-    </TouchableOpacity>
+          </View>
+          <Text>{review.comment}</Text>
+        </View>
+      </View>
+    ))}
   </>
 ) : (
   <Text style={{ color: '#888', marginTop: 8 }}>Chưa có đánh giá nào.</Text>
 )}
-
-
-
 
       </ScrollView>                {/* Footer */}
         <View style={styles.footer}>
@@ -411,7 +414,6 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   label: {
-    marginTop: 16,
     fontWeight: '500',
     fontSize: 15,
   },
