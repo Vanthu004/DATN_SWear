@@ -233,6 +233,7 @@ export default function ProductDetailScreen({ route, navigation }) {
         Còn: {fullProduct.stock_quantity ?? 0} sản phẩm
         </Text>
 
+
         {/* Mô tả */}
         <Text style={styles.label}>Mô tả sản phẩm</Text>
         {fullProduct.description && <Text style={styles.description}>{fullProduct.description}</Text>}
@@ -257,6 +258,7 @@ export default function ProductDetailScreen({ route, navigation }) {
           </Text>
         </View>
       </View>
+=
 
         {/* Reviews */}
         {reviews?.length > 0 ? (
@@ -283,6 +285,31 @@ export default function ProductDetailScreen({ route, navigation }) {
                 </View>
               </View>
             ))}
+          </>
+        ) : (
+          <Text style={{ color: '#888', marginTop: 8 }}>Chưa có đánh giá nào.</Text>
+        )}
+      </ScrollView>
+
+      {/* Footer */}
+      <View style={styles.footer}>
+        <Text style={styles.footerPrice}>
+          {(selectedVariant?.price ?? fullProduct?.price)?.toLocaleString('vi-VN')} VND
+        </Text>
+        <TouchableOpacity
+          style={[styles.addToCartBtn, { backgroundColor: '#0ce001ff' }]}
+          onPress={() => handleShowVariantModal('buy')}
+        >
+          <Text style={styles.cartBtnText}>Mua ngay</Text>
+        </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={() => navigation.navigate('AllReviews', { productId: product._id })}
+            >
+              <Text style={{ color: '#3b82f6', fontWeight: 'bold', marginBottom: 12 }}>
+                Xem tất cả đánh giá sản phẩm này
+              </Text>
+            </TouchableOpacity>
           </>
         ) : (
           <Text style={{ color: '#888', marginTop: 8 }}>Chưa có đánh giá nào.</Text>
@@ -346,3 +373,4 @@ const styles = StyleSheet.create({
   marginTop: 4,
 },
 });
+

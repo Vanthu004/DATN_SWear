@@ -300,14 +300,11 @@ const CartScreen = () => {
   return (
     <View style={styles.container}>
       <View style={styles.customHeader}>
-        <TouchableOpacity
-          style={styles.backBtn}
-          onPress={() => navigation.goBack()}
-        >
-          <View style={styles.backIconWrap}>
-            <Ionicons name="arrow-back" size={22} color="#222" />
-          </View>
-        </TouchableOpacity>
+          <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
+            <View style={styles.backIconWrap}>
+              <Ionicons name="arrow-back" size={22} color="#222" />
+            </View>
+          </TouchableOpacity>
         <Text style={styles.headerTitle}>Giỏ hàng ({cartItems.length})</Text>
         {cartItems.length > 0 && (
           <TouchableOpacity
@@ -397,33 +394,31 @@ const styles = StyleSheet.create({
   },
   customHeader: {
     flexDirection: "row",
+    justifyContent: "space-between",
     height: 64,
     paddingTop: 24,
     marginBottom: 8,
     backgroundColor: "#fff",
-    justifyContent: "center",
     alignItems: "center",
   },
-  backBtn: {
-    position: "absolute",
-    top: 24,
-    left: 16,
-    zIndex: 2,
-  },
-  backIconWrap: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: "#F6F6F6",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "#222",
-    textAlign: "center",
-  },
+backIconWrap: {
+  width: 32,
+  height: 32,
+  borderRadius: 16,
+  backgroundColor: "#F6F6F6",
+  justifyContent: "center",
+  alignItems: "center",
+},
+ headerTitle: {
+  position: "absolute",
+  left: 0,
+  right: 0,
+  top: 30,
+  textAlign: "center",
+  fontSize: 20,
+  fontWeight: "bold",
+  color: "#222",
+},
   clearCartButton: {
     paddingHorizontal: 12,
     paddingVertical: 6,

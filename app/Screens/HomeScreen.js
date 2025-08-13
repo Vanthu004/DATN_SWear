@@ -26,7 +26,7 @@ import {
 import { addFavorite, getCategoriesById, getFavoritesByUser, removeFavorite } from "../utils/api";
 
 const { width } = Dimensions.get("window");
-const bannerImg = require("../../assets/sp1.png");
+const bannerImg = require("../../assets/images/LogoSwear.png");
 const defaultAvatar = require("../../assets/images/default-avatar.png");
 const HOTCATEGORY_TYPE_ID = '6864066dc14992d3a8d28826';
 const POPULAR_SPORTS_TYPE_ID = '686406c0c14992d3a8d2882a'

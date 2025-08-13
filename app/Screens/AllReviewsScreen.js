@@ -13,12 +13,16 @@ import {
 import api from '../utils/api';
 import { renderStars } from '../utils/renderStars';
 
+// ... các import không đổi
+
 export default function AllReviewsScreen({ route }) {
   const { productId } = route.params;
   const [reviews, setReviews] = useState([]);
   const [avgRating, setAvgRating] = useState(0);
   const [loading, setLoading] = useState(true);
   const [sortOrder, setSortOrder] = useState('desc');
+  const [selectedTab, setSelectedTab] = useState('all');
+  const [showStarFilter, setShowStarFilter] = useState(false); // 👈 Hiện/ẩn tab sao
 
   useEffect(() => {
     const fetchReviews = async () => {
@@ -43,12 +47,15 @@ export default function AllReviewsScreen({ route }) {
     if (productId) fetchReviews();
   }, [productId]);
 
-  // Sắp xếp theo thời gian
   const sortedReviews = [...reviews].sort((a, b) => {
     const timeA = new Date(a.create_date).getTime();
     const timeB = new Date(b.create_date).getTime();
     return sortOrder === 'asc' ? timeA - timeB : timeB - timeA;
   });
+
+  const filteredReviews = sortedReviews.filter((r) =>
+    selectedTab === 'all' ? true : r.rating === selectedTab
+  );
 
   if (loading) {
     return (
@@ -60,23 +67,57 @@ export default function AllReviewsScreen({ route }) {
 
   return (
     <ScrollView style={styles.container}>
-      <Text style={styles.header}>Đánh giá sản phẩm ({sortedReviews.length})</Text>
+      <Text style={styles.header}>Đánh giá sản phẩm ({filteredReviews.length})</Text>
       <Text style={styles.avgRating}>Trung bình: {avgRating} sao</Text>
 
-      {/* 🔁 Nút sắp xếp thời gian */}
-      <TouchableOpacity
-        style={styles.sortButton}
-        onPress={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
-      >
-        <Text style={styles.sortText}>
-          Sắp xếp: {sortOrder === 'asc' ? 'Cũ nhất' : 'Mới nhất'}
-        </Text>
-      </TouchableOpacity>
+      <View style={styles.buttonRow}>
+        {/* 🔁 Nút sắp xếp thời gian */}
+        <TouchableOpacity
+          style={styles.sortButton}
+          onPress={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+        >
+          <Text style={styles.sortText}>
+            {sortOrder === 'asc' ? 'Cũ nhất' : 'Mới nhất'}
+          </Text>
+        </TouchableOpacity>
+
+        {/* ⭐ Nút lọc theo sao */}
+        <TouchableOpacity
+          style={styles.filterButton}
+          onPress={() => setShowStarFilter(!showStarFilter)}
+        >
+          <Text style={styles.filterText}>Lọc theo sao</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* ⭐ Hiển thị tab nếu bật lọc */}
+      {showStarFilter && (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabContainer}>
+          {['all', 5, 4, 3, 2, 1].map((tab) => (
+            <TouchableOpacity
+              key={tab}
+              onPress={() => setSelectedTab(tab)}
+              style={[
+                styles.tabItem,
+                selectedTab === tab && styles.tabItemActive,
+              ]}
+            >
+              <Text
+                style={[
+                  styles.tabText,
+                  selectedTab === tab && styles.tabTextActive,
+                ]}
+              >
+                {tab === 'all' ? 'Tất cả' : `${tab} ⭐`}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      )}
 
       {/* Danh sách đánh giá */}
-      {sortedReviews.map((review, idx) => (
+      {filteredReviews.map((review, idx) => (
         <View key={review._id || idx} style={styles.reviewItem}>
-          {/* Avatar người dùng */}
           <Image
             source={{
               uri:
@@ -85,13 +126,10 @@ export default function AllReviewsScreen({ route }) {
             }}
             style={styles.avatar}
           />
-
           <View style={styles.content}>
             <Text style={styles.name}>{review.user_id?.name || 'Người dùng'}</Text>
             {renderStars(review.rating)}
             <Text style={styles.comment}>{review.comment}</Text>
-
-            {/* Ngày tạo */}
             <Text style={styles.date}>
               {new Date(review.create_date).toLocaleDateString('vi-VN')}
             </Text>
@@ -107,19 +145,52 @@ const styles = StyleSheet.create({
   container: { padding: 16, backgroundColor: '#fff', flex: 1 },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   header: { fontSize: 20, fontWeight: 'bold', marginBottom: 8 },
-  avgRating: { color: '#666', marginBottom: 8 },
+  avgRating: { color: '#666', marginBottom: 12 },
+
+  buttonRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
   sortButton: {
-    alignSelf: 'flex-end',
     backgroundColor: '#3b82f6',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 8,
+  },
+  sortText: { color: 'white', fontWeight: 'bold' },
+
+  filterButton: {
+    backgroundColor: '#6b7280',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  filterText: { color: 'white', fontWeight: 'bold' },
+
+  // ⭐ Tabs
+  tabContainer: {
+    flexDirection: 'row',
     marginBottom: 16,
   },
-  sortText: {
-    color: 'white',
+  tabItem: {
+    paddingVertical: 6,
+    paddingHorizontal: 14,
+    borderRadius: 20,
+    backgroundColor: '#e5e7eb',
+    marginRight: 8,
+  },
+  tabItemActive: {
+    backgroundColor: '#2563eb',
+  },
+  tabText: {
+    color: '#000',
+  },
+  tabTextActive: {
+    color: '#fff',
     fontWeight: 'bold',
   },
+
   reviewItem: {
     flexDirection: 'row',
     marginBottom: 20,
@@ -129,9 +200,5 @@ const styles = StyleSheet.create({
   content: { flex: 1 },
   name: { fontWeight: 'bold' },
   comment: { color: '#555', marginTop: 4 },
-  date: {
-    marginTop: 4,
-    color: '#888',
-    fontSize: 12,
-  },
+  date: { marginTop: 4, color: '#888', fontSize: 12 },
 });

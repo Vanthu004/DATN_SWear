@@ -3,9 +3,9 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 // Base URL for the API
 
-const API_BASE_URL = "http://192.168.52.108:3000/api";
-const WEBSOCKET_URL = "http://192.168.1.85:3000";
 
+const API_BASE_URL = "http://192.168.1.9:3000/api";
+const WEBSOCKET_URL = "http://192.168.1.9:3000";
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -694,9 +694,6 @@ export const getProductDetail = async (productId) => {
     throw error;
   }
 };
-
-export { api, WEBSOCKET_URL };
-
 // Giảm tồn kho
 export const decreaseProductStock = async (items) => {
   try {
@@ -718,3 +715,6 @@ export const increaseProductStock = async (items) => {
     throw error;
   }
 };
+export { api, WEBSOCKET_URL };
+
+
