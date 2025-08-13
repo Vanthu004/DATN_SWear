@@ -227,6 +227,11 @@ export default function ProductDetailScreen({ route, navigation }) {
         {fullProduct.category && (
           <Text style={styles.category}>Danh mục: {fullProduct.category.name || fullProduct.category}</Text>
         )}
+        
+        {/* Số lượng tồn kho */}
+        <Text style={styles.stock}>
+        Còn: {fullProduct.stock_quantity ?? 0} sản phẩm
+        </Text>
 
         {/* Mô tả */}
         <Text style={styles.label}>Mô tả sản phẩm</Text>
@@ -335,4 +340,9 @@ const styles = StyleSheet.create({
   footerPrice: { fontSize: 18, fontWeight: 'bold', color: '#3b82f6' },
   addToCartBtn: { paddingVertical: 5, paddingHorizontal: 10, borderRadius: 10 },
   cartBtnText: { color: '#fff', fontWeight: 'bold', fontSize: 14 },
+  stock: {
+  fontSize: 14,
+  color: '#555',
+  marginTop: 4,
+},
 });
