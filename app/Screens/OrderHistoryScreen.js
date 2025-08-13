@@ -19,8 +19,7 @@ import {
 import Dialog from "react-native-dialog";
 import { TabBar, TabView } from 'react-native-tab-view';
 import { useAuth } from "../context/AuthContext";
-import { cancelOrder, getOrderDetailsByOrderId, getOrdersByUser } from "../utils/api";
-
+import { cancelOrder, getOrderDetailsByOrderId, getOrdersByUser, increaseProductStock } from "../utils/api";
 const ORDER_TABS = [
   { key: "all", label: "Tất cả" },
   { key: "pending", label: "Chờ xử lý" },
@@ -86,6 +85,18 @@ const [showCancelDialog, setShowCancelDialog] = useState(false);
 
     try {
       await cancelOrder(selectedOrderId, cancelReason.trim());
+          // Lấy thông tin chi tiết sản phẩm trong đơn vừa hủy
+    const orderDetails = await getOrderDetailsByOrderId(selectedOrderId);
+    if (orderDetails && orderDetails.length > 0) {
+      const stockItems = orderDetails.map(item => ({
+        productId: item.product_id || item.product?._id,
+        quantity: item.quantity,
+      }));
+
+      // Hoàn kho sản phẩm
+      await increaseProductStock(stockItems);
+      console.log("✅ Stock increased successfully after order cancellation");
+    }
       Alert.alert("Thành công", "Đơn hàng đã được hủy.");
       setShowCancelDialog(false);
       setCancelReason("");
