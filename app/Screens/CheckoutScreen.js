@@ -18,8 +18,7 @@ import { useAuth } from "../context/AuthContext";
 import { useCart } from "../hooks/useCart";
 import { useOrder } from "../hooks/useOrder";
 
-import { api, applyVoucherApi, getAddressList, getPaymentMethods, getShippingMethods, getUserVouchers } from "../utils/api";
-
+import { api, applyVoucherApi, decreaseProductStock, getAddressList, getPaymentMethods, getShippingMethods, getUserVouchers } from "../utils/api";
 const CheckoutScreen = () => {
   const route = useRoute();
   const navigation = useNavigation();
@@ -229,6 +228,18 @@ const CheckoutScreen = () => {
 
       const result = await createOrderFromCart(selectedItems, orderData);
       if (result) {
+          // --- Trừ kho ngay sau khi order thành công ---
+  try {
+    const stockItems = selectedItems.map(item => ({
+      productId: item.product?._id || item.product_id,
+      quantity: item.quantity,
+    }));
+    await decreaseProductStock(stockItems);
+    console.log("✅ Stock decreased successfully");
+  } catch (err) {
+    console.error("❌ Error decreasing stock:", err);
+    // Nếu muốn rollback order, có thể thêm logic gọi API server để hủy order
+  }
         // Apply voucher if selected
         if (selectedVoucher && userInfo?._id) {
           try {
