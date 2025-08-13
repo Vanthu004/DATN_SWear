@@ -26,6 +26,8 @@ const OrderDetailScreen = () => {
       setLoading(true);
       try {
         const orderData = await getOrderById(orderId);
+        console.log("🔍 Order data:", orderData);
+        console.log("🔍 Order data structure:", JSON.stringify(orderData, null, 2));
         setOrder(orderData);
         const details = await getOrderDetailsByOrderId(orderId);
         setOrderDetails(details);
@@ -152,7 +154,20 @@ const productTotal = orderDetails.reduce((sum, item) => {
       <View style={styles.infoBox}>
         <Text style={styles.infoText}>Hình thức vận chuyển</Text>
         <Text style={styles.infoValue}>{order.data.shippingmethod_id.name}</Text>
+
       </View>
+      {order.data.paymentmethod_id && (
+        <View style={styles.infoBox}>
+          <Text style={styles.infoText}>Phương thức Thanh toán</Text>
+          <Text style={styles.infoValue}>{order.data.paymentmethod_id.name || "---"}</Text>
+        </View>
+      )}
+      {order.data.shippingmethod_id && (
+        <View style={styles.infoBox}>
+          <Text style={styles.infoText}>Hình thức vận chuyển</Text>
+          <Text style={styles.infoValue}>{order.data.shippingmethod_id.name || "---"}</Text>
+        </View>
+      )}
       <View style={styles.infoBox}>
         <Text style={styles.infoText}>Trạng thái đơn hàng</Text>
         <Text style={styles.infoValueStatus}>{order.data.status}</Text>

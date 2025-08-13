@@ -8,20 +8,22 @@ export const useProductVariant = (productId) => {
   const [selectedVariant, setSelectedVariantLocal] = useState(null);
 
   const productVariants = variants[productId] || [];
-
   useEffect(() => {
     if (productId && !variants[productId]) {
       dispatch(fetchProductVariants(productId));
     }
   }, [productId, dispatch]);
-  // useEffect(() => {
-  //   if (productVariants.length > 0 && !selectedVariant) {
-  //     // Set default variant
-  //     const defaultVariant = productVariants[0];
-  //     setSelectedVariantLocal(defaultVariant);
-  //     dispatch(setSelectedVariant({ productId, variant: defaultVariant }));
-  //   }
-  // }, [productVariants, selectedVariant, dispatch, productId]);
+
+
+  useEffect(() => {
+    if (productVariants.length > 0 && !selectedVariant) {
+      // Set default variant
+      const defaultVariant = productVariants[0];
+      setSelectedVariantLocal(defaultVariant);
+      dispatch(setSelectedVariant({ productId, variant: defaultVariant }));
+    }
+  }, [productVariants, selectedVariant, dispatch, productId]);
+
   const selectVariant = (variant) => {
     setSelectedVariantLocal(variant);
     dispatch(setSelectedVariant({ productId, variant }));

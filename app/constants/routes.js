@@ -20,7 +20,7 @@ export const ROUTES = {
   PROFILE_TAB: "ProfileTab",
 
   // Shop routes
-  HOME: "Home",
+  HOME: "HomeScreen",
   PRODUCT_DETAIL: "ProductDetail",
   CART: "Cart",
   CHECKOUT: "Checkout",
@@ -49,4 +49,5 @@ export const ROUTES = {
   RATING_REVIEWS: "RatingReviews",
   WRITE_REVIEW: "WriteReview",
   ORDER_DETAIL: "OrderDetail",
+  ZALOPAY_QR: "ZaloPayQRScreen",
 };

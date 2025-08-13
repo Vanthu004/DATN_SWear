@@ -288,7 +288,7 @@ const CartScreen = () => {
           </Text>
           <TouchableOpacity
             style={styles.shopNowButton}
-            onPress={() => navigation.navigate("Home")}
+            onPress={() => navigation.navigate("HomeScreen")}
           >
             <Text style={styles.shopNowText}>Mua sắm ngay</Text>
           </TouchableOpacity>

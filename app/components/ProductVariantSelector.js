@@ -8,45 +8,58 @@ import {
 } from 'react-native';
 import { useProductVariant } from '../hooks/useProductVariant';
 
-const ProductVariantSelector = ({ productId, onVariantChange }) => {
+const ProductVariantSelector = ({ productId, onVariantChange, setSelectedColor, setSelectedSize }) => {
   const {
     variants: productVariants,
     loading,
     error,
-    getAvailableSizes,
-    getAvailableColors,
-    getVariantBySizeAndColor,
   } = useProductVariant(productId);
 
-  const [selectedSize, setSelectedSize] = useState(null);
-  const [selectedColor, setSelectedColor] = useState(null);
+  const [localSelectedSize, setLocalSelectedSize] = useState(null);
+  const [localSelectedColor, setLocalSelectedColor] = useState(null);
 
   useEffect(() => {
-    // Không chọn mặc định size/color khi mở modal
-    setSelectedSize(null);
-    setSelectedColor(null);
+    setLocalSelectedSize(null);
+    setLocalSelectedColor(null);
   }, [productVariants]);
 
   useEffect(() => {
-    if (selectedSize && selectedColor) {
-      const variant = getVariantBySizeAndColor(selectedSize, selectedColor);
-      if (variant && onVariantChange) {
-        onVariantChange(variant);
-      }
+    if (localSelectedColor && localSelectedSize) {
+      const matchedVariant = productVariants.find(v =>
+        v.attributes.color._id === localSelectedColor._id &&
+        v.attributes.size._id === localSelectedSize._id
+      );
+      onVariantChange(matchedVariant || null);
+    } else if (localSelectedColor && !localSelectedSize) {
+      const matchedByColor = productVariants.find(v =>
+        v.attributes.color._id === localSelectedColor._id
+      );
+      onVariantChange(matchedByColor || null);
     } else {
-      onVariantChange(null); // Bắt buộc phải chọn đủ cả 2
+      onVariantChange(null);
     }
-  }, [selectedSize, selectedColor]);
+  }, [localSelectedColor, localSelectedSize]);
 
-  if (productVariants.length === 0) return null;
+  if (!productVariants || productVariants.length === 0) return null;
 
-  const availableSizes = selectedColor ? productVariants
-    .filter(v => v.color === selectedColor)
-    .map(v => v.size) : getAvailableSizes();
+  const allSizes = Array.from(
+    new Set(productVariants.map(v => JSON.stringify(v.attributes.size)))
+  ).map(s => JSON.parse(s));
 
-  const availableColors = selectedSize ? productVariants
-    .filter(v => v.size === selectedSize)
-    .map(v => v.color) : getAvailableColors();
+  const allColors = Array.from(
+    new Set(productVariants.map(v => JSON.stringify(v.attributes.color)))
+  ).map(c => JSON.parse(c));
+
+  const availableSizes = localSelectedColor
+    ? allSizes.filter(size =>
+        productVariants.some(v =>
+          v.attributes.color._id === localSelectedColor._id &&
+          v.attributes.size._id === size._id
+        )
+      )
+    : allSizes;
+
+  const availableColors = allColors;
 
   return (
     <View style={styles.container}>
@@ -54,22 +67,37 @@ const ProductVariantSelector = ({ productId, onVariantChange }) => {
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Màu sắc</Text>
         <View style={styles.colorGrid}>
-         {getAvailableColors(selectedSize).map((color) =>{
-            const isAvailable = availableColors.includes(color);
-            const isSelected = selectedColor === color;
+          {allColors.map((color) => {
+            const isAvailable = productVariants.some(v =>
+              v.attributes.color._id === color._id
+            );
+            const isSelected = localSelectedColor?._id === color._id;
+
             return (
               <TouchableOpacity
-                key={color}
+                key={color._id}
                 style={[
                   styles.colorBox,
                   isSelected && styles.selectedBox,
                   !isAvailable && styles.disabledOption
                 ]}
-                onPress={() => isAvailable && setSelectedColor(color)}
+                onPress={() => {
+                  setLocalSelectedColor(color);
+                  setSelectedColor && setSelectedColor(color);
+
+                  const stillValidSize = productVariants.some(
+                    v => v.attributes.color._id === color._id &&
+                        v.attributes.size._id === localSelectedSize?._id
+                  );
+                  if (!stillValidSize) {
+                    setLocalSelectedSize(null);
+                    setSelectedSize && setSelectedSize(null);
+                  }
+                }}
                 disabled={!isAvailable}
               >
                 <Text style={[styles.colorText, isSelected && styles.selectedText]}>
-                  {color}
+                  {color.name}
                 </Text>
               </TouchableOpacity>
             );
@@ -81,18 +109,23 @@ const ProductVariantSelector = ({ productId, onVariantChange }) => {
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Kích cỡ</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.optionsContainer}>
-          {getAvailableSizes().map((size) => {
-            const isAvailable = availableSizes.includes(size);
-            const isSelected = selectedSize === size;
+          {allSizes.map((size) => {
+            const isAvailable = availableSizes.some(s => s._id === size._id);
+            const isSelected = localSelectedSize?._id === size._id;
             return (
               <TouchableOpacity
-                key={size}
+                key={size._id}
                 style={[
                   styles.optionButton,
                   isSelected && styles.selectedOption,
                   !isAvailable && styles.disabledOption
                 ]}
-                onPress={() => isAvailable && setSelectedSize(size)}
+                onPress={() => {
+                  if (isAvailable) {
+                    setLocalSelectedSize(size);
+                    setSelectedSize && setSelectedSize(size);
+                  }
+                }}
                 disabled={!isAvailable}
               >
                 <Text style={[
@@ -100,7 +133,7 @@ const ProductVariantSelector = ({ productId, onVariantChange }) => {
                   isSelected && styles.selectedOptionText,
                   !isAvailable && styles.disabledText
                 ]}>
-                  {size}
+                  {size.name}
                 </Text>
               </TouchableOpacity>
             );
@@ -112,21 +145,10 @@ const ProductVariantSelector = ({ productId, onVariantChange }) => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    marginVertical: 10,
-  },
-  section: {
-    marginBottom: 16,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 8,
-    color: '#333',
-  },
-  optionsContainer: {
-    flexDirection: 'row',
-  },
+  container: { marginVertical: 10,marginHorizontal: 16 },
+  section: { marginBottom: 16 },
+  sectionTitle: { fontSize: 16, fontWeight: '600', marginBottom: 8, color: '#333' },
+  optionsContainer: { flexDirection: 'row' },
   optionButton: {
     paddingHorizontal: 16,
     paddingVertical: 8,
@@ -140,25 +162,11 @@ const styles = StyleSheet.create({
     borderColor: '#3b82f6',
     backgroundColor: '#eff6ff',
   },
-  optionText: {
-    fontSize: 14,
-    color: '#666',
-  },
-  selectedOptionText: {
-    color: '#3b82f6',
-    fontWeight: '600',
-  },
-  disabledOption: {
-    opacity: 0.4,
-  },
-  disabledText: {
-    color: '#aaa',
-  },
-  colorGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-  },
+  optionText: { fontSize: 14, color: '#666' },
+  selectedOptionText: { color: '#3b82f6', fontWeight: '600' },
+  disabledOption: { opacity: 0.4 },
+  disabledText: { color: '#aaa' },
+  colorGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   colorBox: {
     paddingVertical: 8,
     paddingHorizontal: 12,
@@ -172,14 +180,8 @@ const styles = StyleSheet.create({
     borderColor: '#ec4899',
     backgroundColor: '#fdf2f8',
   },
-  colorText: {
-    fontSize: 14,
-    color: '#333',
-  },
-  selectedText: {
-    color: '#ec4899',
-    fontWeight: 'bold',
-  },
+  colorText: { fontSize: 14, color: '#333' },
+  selectedText: { color: '#ec4899', fontWeight: 'bold' },
 });
 
 export default ProductVariantSelector;

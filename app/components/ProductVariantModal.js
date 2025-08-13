@@ -21,11 +21,17 @@ const ProductVariantModal = ({
   product, 
   onBuyNow, 
   onAddToCart,
-  userInfo 
+  userInfo,
+  actionType,
+  selectedColor,
+  setSelectedColor,
+  selectedSize,
+  setSelectedSize,
 }) => {
   const [selectedVariant, setSelectedVariant] = useState(null);
   const [quantity, setQuantity] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [selectedColorImageUrl, setSelectedColorImageUrl] = useState(null);
 
   useEffect(() => {
     if (visible) {
@@ -52,6 +58,22 @@ const ProductVariantModal = ({
     });
     onClose();
   };
+
+  const handleVariantChange = (variant) => {
+      setSelectedVariant(variant);
+
+      if (!variant && product?.variants?.length > 0) {
+        const colorVariants = product.variants.filter(
+          v => v.attributes.color._id === selectedColor?._id
+        );
+        if (colorVariants.length > 0) {
+          setSelectedColorImageUrl(colorVariants[0].image_url);
+        }
+      } else if (variant?.image_url) {
+        setSelectedColorImageUrl(variant.image_url);
+      }
+    };
+
 
   const handleAddToCart = async () => {
     if (!userInfo?._id) {
@@ -89,7 +111,9 @@ const ProductVariantModal = ({
       'M': '40kg đến 53kg',
       'L': '54kg đến 63kg',
       'XL': '64kg đến 80kg',
-      '2XL': '75kg đến 95kg',
+      'XXL': '75kg đến 95kg',
+      'S': '75kg đến 95kg',
+
     };
     return weightRanges[size] || '';
   };
@@ -113,13 +137,18 @@ const ProductVariantModal = ({
         <View style={{flexDirection: 'row', padding: 16, gap: 16}}>
           {/* Product Image */}
           <View style={styles.imageContainer}>
-            <Image
-              source={{ 
-                uri: product?.images?.[0]?.url || product?.image_url || product?.main_image 
-              }}
-              style={styles.productImage}
-              resizeMode="cover"
-            />
+        <Image
+           source={{ 
+          uri: selectedColorImageUrl 
+            || selectedVariant?.image_url 
+            || product?.images?.[0]?.url 
+            || product?.image_url 
+            || product?.main_image 
+        }}
+            style={styles.productImage}
+            resizeMode="cover"
+          />
+         
           </View>
 
           {/* Product Info */}
@@ -132,6 +161,22 @@ const ProductVariantModal = ({
                 {currentPrice.toLocaleString('vi-VN')} ₫
               </Text>
             </View>
+
+            <View style={{ marginTop: 8 }}>
+              {(selectedColor?.name || selectedSize?.name) && (
+                <Text style={{ fontSize: 14, color: '#444' }}>
+                  {selectedColor?.name && (
+                    <Text style={{ fontWeight: 'bold' }}>{selectedColor.name}</Text>
+                  )}
+                  {selectedColor?.name && selectedSize?.name && ', '}
+                  {selectedSize?.name && (
+                    <Text style={{ fontWeight: 'bold' }}>{selectedSize.name}</Text>
+                  )}
+                </Text>
+              )}
+            </View>
+
+
           {selectedVariant?.stock !== undefined && (
             <View style={styles.stockInfo}>
               <Text style={styles}>
@@ -147,13 +192,15 @@ const ProductVariantModal = ({
           {/* Variant Selector */}
           <ProductVariantSelector
             productId={product?._id}
-            onVariantChange={setSelectedVariant}
+            onVariantChange={handleVariantChange}
+            setSelectedColor={setSelectedColor}
+            setSelectedSize={setSelectedSize}
           />
 
           {/* Size with Weight Info */}
           {selectedVariant && (
             <View style={styles.sizeSection}>
-              <Text style={styles.sectionTitle}>Kích cỡ</Text>
+              <Text style={styles.sectionTitle}>Gợi ý cân nặng phù hợp với Size</Text>
               <View style={styles.sizeContainer}>
                 <Text style={styles.sizeText}>
 
@@ -186,7 +233,7 @@ const ProductVariantModal = ({
         </ScrollView>
 
         {/* Footer Actions */}
-        <View style={styles.footer}>
+        {/* <View style={styles.footer}>
           <TouchableOpacity
             style={[
               styles.actionButton, 
@@ -212,7 +259,34 @@ const ProductVariantModal = ({
               {loading ? 'Đang thêm...' : 'Thêm vào giỏ hàng'}
             </Text>
           </TouchableOpacity>
-        </View>
+        </View> */}
+
+          <View style={styles.footer}>
+            {/* <Text style={styles.footerPrice}>
+              {selectedVariant?.price?.toLocaleString('vi-VN') || product.price?.toLocaleString('vi-VN')} VND
+            </Text> */}
+
+            {actionType === 'buy' && (
+              <TouchableOpacity
+                style={[styles.actionButton, 
+              styles.buyNowButton,]}
+                onPress={handleBuyNow} // gọi hàm truyền từ props
+              >
+                <Text style={styles.cartBtnText}>Mua ngay</Text>
+              </TouchableOpacity>
+            )}
+
+            {actionType === 'cart' && (
+              <TouchableOpacity
+                style={[styles.actionButton, 
+                styles.buyNowButton,]}
+                onPress={handleAddToCart} // gọi hàm truyền từ props
+              >
+                <Text style={styles.cartBtnText}>Thêm vào Giỏ hàng</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+
       </View>
     </Modal>
   );
@@ -348,16 +422,6 @@ const styles = StyleSheet.create({
     minWidth: 30,
     textAlign: 'center',
   },
-  stockText: {
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  inStock: {
-    color: '#16a34a',
-  },
-  outOfStock: {
-    color: '#dc2626',
-  },
   footer: {
     padding: 16,
     borderTopWidth: 1,
@@ -371,7 +435,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   buyNowButton: {
-    backgroundColor: '#ec4899',
+    backgroundColor: '#3b82f6',
   },
   addToCartButton: {
     backgroundColor: '#3b82f6',
