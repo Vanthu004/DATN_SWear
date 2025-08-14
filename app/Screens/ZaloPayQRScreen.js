@@ -99,62 +99,56 @@ const ZaloPayQRScreen = () => {
   // Polling check trạng thái đơn hàng
   useEffect(() => {
     if (!backendOrderId || isExpired) return;
+    
+    console.log('Bắt đầu check ZaloPay status...');
+    
+    let isActive = true;
     let interval = setInterval(async () => {
+      if (!isActive) return;
+      
       try {
-        // Gọi API check ZaloPay status với app_trans_id
+        console.log('Đang gọi API check ZaloPay status...');
+        
+        // Gọi API check ZaloPay status
         const res = await api.post('/payments/zalopay/check-status', {
-          app_trans_id: orderId // orderId từ ZaloPay response (app_trans_id)
+          app_trans_id: orderId
         });
         
-        console.log('ZaloPay status check response:', res.data);
+        console.log('ZaloPay response:', res.data);
         
         // Kiểm tra trạng thái từ ZaloPay response
         if (res.data && res.data.return_code === 1) {
-          // ZaloPay trả về thành công, kiểm tra trạng thái thanh toán
-          if (res.data.return_message === 'Giao dịch thành công' || 
-              res.data.return_message === 'Success' || 
-              res.data.return_message === 'Thành công') {
+          // ZaloPay trả về thành công - kiểm tra cả "success" và "Giao dịch thành công"
+          if (res.data.return_message === 'success' || 
+              res.data.return_message === 'Giao dịch thành công' ||
+              res.data.return_message === 'Success') {
+            
+            console.log('Thanh toán thành công!');
+            isActive = false;
             clearInterval(interval);
-            console.log('🎉 Thanh toán thành công.....');
             
-            // Xóa các sản phẩm đã thanh toán khỏi giỏ hàng
-            if (checkedItems && Array.isArray(checkedItems) && checkedItems.length > 0) {
-              console.log('🗑️ Xóa các sản phẩm đã thanh toán khỏi giỏ hàng:', checkedItems.length);
-              for (const item of checkedItems) {
-                if (item._id) {
-                  try {
-                    await removeFromCart(item._id);
-                    console.log('✅ Đã xóa sản phẩm khỏi giỏ hàng:', item._id);
-                  } catch (error) {
-                    console.error('❌ Lỗi khi xóa sản phẩm khỏi giỏ hàng:', error);
-                  }
-                }
-              }
-            }
-            
-            // Refresh giỏ hàng để cập nhật UI
+            // Refresh giỏ hàng (server đã xóa cart items rồi)
             await refreshCart();
             
+            // Chuyển màn hình đến OrderSuccess
             navigation.replace(ROUTES.ORDER_SUCCESS, {
               orderCode: orderId,
               orderId: backendOrderId,
               total: amount,
             });
           }
-        } else if (res.data && res.data.return_code === 2) {
-          // Thanh toán đang xử lý, tiếp tục polling
-          console.log('Payment is being processed...');
-        } else {
-          // Có lỗi hoặc trạng thái khác
-          console.log('ZaloPay status:', res.data);
         }
       } catch (err) {
-        console.error('Error checking ZaloPay status:', err.response?.data || err.message);
-        // Có thể log lỗi hoặc bỏ qua, tiếp tục polling
+        console.error('Error checking ZaloPay status:', err.message);
+        console.error('Error details:', err.response?.data);
       }
     }, 3000); // 3s check 1 lần
-    return () => clearInterval(interval);
-  }, [backendOrderId, orderId, refreshCart, isExpired, checkedItems]);
+    
+    return () => {
+      isActive = false;
+      clearInterval(interval);
+    };
+  }, [backendOrderId, orderId, isExpired]); // Bỏ refreshCart và navigation khỏi dependencies
 
   useFocusEffect(
     React.useCallback(() => {
