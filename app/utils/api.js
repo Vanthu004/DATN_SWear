@@ -687,7 +687,25 @@ export const getProductDetail = async (productId) => {
     throw error;
   }
 };
+// Giảm tồn kho
+export const decreaseProductStock = async (items) => {
+  try {
+    const response = await api.post("/products/decrease-stock", { items });
+    return response.data; // { message: "Cập nhật tồn kho thành công" }
+  } catch (error) {
+    console.error("Error decreasing stock:", error);
+    throw error;
+  }
+};
 
+// Hoàn tồn kho
+export const increaseProductStock = async (items) => {
+  try {
+    const response = await api.post("/products/increase-stock", { items });
+    return response.data; // { message: "Cập nhật tồn kho thành công" }
+  } catch (error) {
+    console.error("Error increasing stock:", error);
+    throw error;
+  }
+};
 export { api, WEBSOCKET_URL };
-
-export default api;

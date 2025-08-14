@@ -224,6 +224,10 @@ export default function ProductDetailScreen({ route, navigation }) {
         <Text style={styles.price}>
           {fullProduct.price?.toLocaleString('vi-VN')} VND
         </Text>
+          {/* Số lượng tồn kho */}
+        <Text style={styles.stock}>
+        Còn: {fullProduct.stock_quantity ?? 0} sản phẩm
+        </Text>
         {fullProduct.category && (
           <Text style={styles.category}>Danh mục: {fullProduct.category.name || fullProduct.category}</Text>
         )}
@@ -331,4 +335,9 @@ const styles = StyleSheet.create({
   footerPrice: { fontSize: 18, fontWeight: 'bold', color: '#3b82f6' },
   addToCartBtn: { paddingVertical: 5, paddingHorizontal: 10, borderRadius: 10 },
   cartBtnText: { color: '#fff', fontWeight: 'bold', fontSize: 14 },
+    stock: {
+  fontSize: 14,
+  color: '#555',
+  marginTop: 4,
+},
 });
