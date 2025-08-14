@@ -6,6 +6,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -135,7 +136,6 @@ export default function AllReviewsScreen({ route }) {
           </View>
         </View>
       ))}
-
       <View style={{ height: 50 }} />
     </ScrollView>
   );
