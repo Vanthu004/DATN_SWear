@@ -1,10 +1,11 @@
-// app/utils/api.js
+
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 // Base URL for the API
 
-const API_BASE_URL = "http://192.168.37.5:3000/api";
-const WEBSOCKET_URL = "http://192.168.37.5:3000";
+
+const API_BASE_URL = "http://192.168.1.9:3000/api";
+const WEBSOCKET_URL = "http://192.168.1.9:3000";
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -584,10 +585,6 @@ export const getUserVouchers = async (userId) => {
   const res = await api.get(`/vouchers/user/${userId}`);
   return res.data;
 };
-export const applyVoucherApi = async (userId, voucherId) => {
-  const res = await api.put(`/vouchers/apply-voucher/${voucherId}/${userId}`);
-  return res.data;
-};
 
 // Payment and Shipping Methods APIs
 export const getPaymentMethods = async () => {
@@ -634,6 +631,16 @@ export const getAllReviews = async () => {
 
 
 
+
+export const applyVoucherApi = async (userId, voucherId) => {
+  try {
+    // Gửi PUT request đến route có 2 params trong URL
+    const response = await api.put(`/vouchers/apply-voucher/${voucherId}/${userId}`);
+    return response.data;
+  } catch (error) {
+    console.error("Apply voucher API error:", error);
+  }
+};
 // ===== SHIPPING METHODS APIs =====
 
 export const createShippingMethod = async (shippingData) => {
@@ -687,7 +694,27 @@ export const getProductDetail = async (productId) => {
     throw error;
   }
 };
+// Giảm tồn kho
+export const decreaseProductStock = async (items) => {
+  try {
+    const response = await api.post("/products/decrease-stock", { items });
+    return response.data; // { message: "Cập nhật tồn kho thành công" }
+  } catch (error) {
+    console.error("Error decreasing stock:", error);
+    throw error;
+  }
+};
 
+// Hoàn tồn kho
+export const increaseProductStock = async (items) => {
+  try {
+    const response = await api.post("/products/increase-stock", { items });
+    return response.data; // { message: "Cập nhật tồn kho thành công" }
+  } catch (error) {
+    console.error("Error increasing stock:", error);
+    throw error;
+  }
+};
 export { api, WEBSOCKET_URL };
 
-export default api;
+

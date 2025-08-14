@@ -14,8 +14,8 @@ import {
 import ProductVariantModal from '../components/ProductVariantModal';
 import { useAuth } from '../context/AuthContext';
 import { useReview } from "../hooks/useReview";
-import api from '../utils/api';
 
+import { api } from '../utils/api';
 const renderStars = (rating) => (
   <View style={{ flexDirection: 'row' }}>
     {Array.from({ length: 5 }).map((_, idx) => (
@@ -41,11 +41,15 @@ export default function ProductDetailScreen({ route, navigation }) {
   const [selectedVariant, setSelectedVariant] = useState(null);
   const [showVariantModal, setShowVariantModal] = useState(false);
   const [selectedColor, setSelectedColor] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  const { reviews, avgRating } = useReview(product?._id);
 
   const { reviews, avgRating } = useReview(product?._id);
 
   useEffect(() => {
     const fetchProductDetail = async () => {
+      setLoading(true);
       try {
         setLoading(true);
         const res = await api.get(`/products/${product._id}/frontend`);
@@ -62,7 +66,7 @@ export default function ProductDetailScreen({ route, navigation }) {
     }
   }, [product]);
 
-  // Load first variant when product loads
+  // Load first variant
   useEffect(() => {
     if (fullProduct?._id && !selectedVariant) {
       if (fullProduct.variants && fullProduct.variants.length > 0) {
@@ -135,13 +139,11 @@ export default function ProductDetailScreen({ route, navigation }) {
         product_id: product._id,
         quantity,
       };
-
       if (variant && variant._id) {
         payload.product_variant_id = variant._id;
         payload.size = variant.size;
         payload.color = variant.color;
       }
-
       await api.post('/cart-items', payload);
 
       Alert.alert('Thành công', 'Sản phẩm đã được thêm vào giỏ hàng');
@@ -154,17 +156,25 @@ export default function ProductDetailScreen({ route, navigation }) {
   };
 
   const handleBuyNow = ({ product, variant, quantity }) => {
-    if (!userInfo?._id) {
-      Alert.alert('Vui lòng đăng nhập để mua sản phẩm');
-      return;
-    }
+
+//     if (!userInfo?._id) {
+//       Alert.alert('Vui lòng đăng nhập để mua sản phẩm');
+//       return;
+//     }
+//     navigation.navigate('Checkout', {
+//       items: [{
+//         product,
+//         product_id: product?._id,
+//         variant,
+//         quantity,
+//         price_at_time: variant?.price || product?.price || 0,
+
     navigation.navigate('Checkout', {
       items: [{
         product,
-        product_id: product?._id,
         variant,
         quantity,
-        price_at_time: variant?.price || product?.price || 0,
+        price: (variant?.price || product?.price || 0),
       }],
       isDirectPurchase: true,
     });
@@ -191,11 +201,10 @@ export default function ProductDetailScreen({ route, navigation }) {
     );
   }
 
-  // Lọc ảnh sản phẩm
   const imageUrls =
     fullProduct.images && fullProduct.images.length > 0
-      ? fullProduct.images.map(img => img?.url).filter(Boolean)
-      : [fullProduct.image_url].filter(Boolean);
+      ? fullProduct.images.map(img => img?.url || '')
+      : [fullProduct.image_url || 'https://via.placeholder.com/300'];
 
   return (
     <SafeAreaView style={styles.container}>
@@ -219,6 +228,7 @@ export default function ProductDetailScreen({ route, navigation }) {
 
       <ScrollView contentContainerStyle={{ padding: 16 }} showsVerticalScrollIndicator={false}>
         {/* Ảnh sản phẩm */}
+
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
           {imageUrls.map((uri, idx) => (
             <Image
@@ -230,12 +240,18 @@ export default function ProductDetailScreen({ route, navigation }) {
           ))}
         </ScrollView>
 
-        {/* Tên, giá, danh mục */}
-        <Text style={styles.title}>{product.name}</Text>
-        <Text style={styles.price}>{product.price?.toLocaleString('vi-VN')} VND</Text>
-        {product.category && (
-          <Text style={styles.category}>Danh mục: {product.category.name || product.category}</Text>
+        {/* Tên, giá */}
+        <Text style={styles.title}>{fullProduct.name}</Text>
+        <Text style={styles.price}>
+          {fullProduct.price?.toLocaleString('vi-VN')} VND
+        </Text>
+        {fullProduct.category && (
+          <Text style={styles.category}>Danh mục: {fullProduct.category.name || fullProduct.category}</Text>
         )}
+        {/* Số lượng tồn kho */}
+        <Text style={styles.stock}>
+        Còn: {fullProduct.stock_quantity ?? 0} sản phẩm
+        </Text>
 
         {/* Mô tả */}
         <Text style={styles.label}>Mô tả sản phẩm</Text>
@@ -329,7 +345,7 @@ export default function ProductDetailScreen({ route, navigation }) {
       {/* Footer */}
       <View style={styles.footer}>
         <Text style={styles.footerPrice}>
-          {selectedVariant?.price?.toLocaleString('vi-VN') || product.price?.toLocaleString('vi-VN')} VND
+          {(selectedVariant?.price ?? fullProduct?.price)?.toLocaleString('vi-VN')} VND
         </Text>
         <TouchableOpacity
           style={[styles.addToCartBtn, { backgroundColor: '#0ce001ff' }]}
@@ -357,7 +373,6 @@ export default function ProductDetailScreen({ route, navigation }) {
         selectedColor={selectedColor}
         setSelectedColor={setSelectedColor}
       />
-
       <View style={{ height: 70 }} />
     </SafeAreaView>
   );
@@ -377,4 +392,11 @@ const styles = StyleSheet.create({
   footerPrice: { fontSize: 18, fontWeight: 'bold', color: '#3b82f6' },
   addToCartBtn: { paddingVertical: 5, paddingHorizontal: 10, borderRadius: 10 },
   cartBtnText: { color: '#fff', fontWeight: 'bold', fontSize: 14 },
+
+  stock: {
+  fontSize: 14,
+  color: '#555',
+  marginTop: 4,
+},
 });
+
