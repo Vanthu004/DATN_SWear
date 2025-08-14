@@ -17,14 +17,15 @@ import { ROUTES } from "../constants/routes";
 import { useAuth } from "../context/AuthContext";
 import { useCart } from "../hooks/useCart";
 import { useOrder } from "../hooks/useOrder";
-import { api, applyVoucherApi, getAddressList, getPaymentMethods, getShippingMethods, getUserVouchers } from "../utils/api";
 
+import { api, applyVoucherApi, decreaseProductStock, getAddressList, getPaymentMethods, getShippingMethods, getUserVouchers } from "../utils/api";
 const CheckoutScreen = () => {
   const route = useRoute();
   const navigation = useNavigation();
   const { createOrderFromCart, loading } = useOrder();
   const { removeFromCart, cartId } = useCart();
   const { userInfo } = useAuth();
+
   const { checkedItems = [], items = [], voucher_discount = 0 } = route.params || {};
   const selectedItems = checkedItems.length > 0 ? checkedItems : items;
   const subtotal = selectedItems.reduce((total, item) => {
@@ -227,6 +228,18 @@ const CheckoutScreen = () => {
 
       const result = await createOrderFromCart(selectedItems, orderData);
       if (result) {
+          // --- Trừ kho ngay sau khi order thành công ---
+  try {
+    const stockItems = selectedItems.map(item => ({
+      productId: item.product?._id || item.product_id,
+      quantity: item.quantity,
+    }));
+    await decreaseProductStock(stockItems);
+    console.log("✅ Stock decreased successfully");
+  } catch (err) {
+    console.error("❌ Error decreasing stock:", err);
+    // Nếu muốn rollback order, có thể thêm logic gọi API server để hủy order
+  }
         // Apply voucher if selected
         if (selectedVoucher && userInfo?._id) {
           try {
@@ -404,36 +417,53 @@ const CheckoutScreen = () => {
             <Text>Không có địa chỉ giao hàng</Text>
           )}
         </View>
-
-        {/* Voucher */}
+        {/* Shipping Methods */}
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Voucher áp dụng</Text>
-          {vouchers.length > 0 ? (
+          <Text style={styles.cardTitle}>Phương thức vận chuyển</Text>
+          {shippingMethods.length > 0 ? (
             <Picker
-              selectedValue={selectedVoucherId}
-              onValueChange={(val) => {
-                if (val === "none") {
-                  setSelectedVoucherId(null);
-                  setSelectedVoucher(null);
-                } else {
-                  onVoucherChange(val);
-                }
-              }}
+              selectedValue={selectedShippingMethodId}
+              onValueChange={onShippingChange}
               style={{ marginTop: 5 }}
             >
-              <Picker.Item label="Không sử dụng voucher" value="none" />
-              {vouchers.map((v) => (
-                <Picker.Item
-                  key={v._id}
-                  label={`Mã: ${v.voucher_id} - Giảm ${v.discount_value}% - SL: ${v.usage_limit}`}
-                  value={v._id}
-                />
+              {shippingMethods.map((sm) => (
+                <Picker.Item key={sm._id} label={sm.name} value={sm._id} />
               ))}
             </Picker>
           ) : (
-            <Text style={{ marginTop: 5, color: "#888" }}>Không có voucher áp dụng</Text>
+            <Text>Không có phương thức vận chuyển</Text>
           )}
         </View>
+        {/* Voucher */}
+<View style={styles.card}>
+  <Text style={styles.cardTitle}>Voucher áp dụng</Text>
+  {vouchers.length > 0 ? (
+    <Picker
+      selectedValue={selectedVoucherId}
+      onValueChange={(val) => {
+        if (val === "none") {
+          setSelectedVoucherId(null);
+          setSelectedVoucher(null);
+        } else {
+          onVoucherChange(val);
+        }
+      }}
+      style={{ marginTop: 5 }}
+    >
+      <Picker.Item label="Không sử dụng voucher" value="none" />
+      {vouchers.map((v) => {
+        const isFreeShipping = v.title === "Miễn phí vận chuyển";
+        const label = isFreeShipping
+          ? `${v.title} - SL: ${v.usage_limit}`
+          : `${v.title} - Giảm ${v.discount_value}% - SL: ${v.usage_limit}`;
+        return <Picker.Item key={v._id} label={label} value={v._id} />;
+      })}
+    </Picker>
+  ) : (
+    <Text style={{ marginTop: 5, color: "#888" }}>Không có voucher áp dụng</Text>
+  )}
+</View>
+
 
         {/* Payment Methods */}
         <View style={styles.card}>
@@ -512,24 +542,6 @@ const CheckoutScreen = () => {
           )}
         </View>
 
-        {/* Shipping Methods */}
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Phương thức vận chuyển</Text>
-          {shippingMethods.length > 0 ? (
-            <Picker
-              selectedValue={selectedShippingMethodId}
-              onValueChange={onShippingChange}
-              style={{ marginTop: 5 }}
-            >
-              {shippingMethods.map((sm) => (
-                <Picker.Item key={sm._id} label={sm.name} value={sm._id} />
-              ))}
-            </Picker>
-          ) : (
-            <Text>Không có phương thức vận chuyển</Text>
-          )}
-        </View>
-
         {/* Note */}
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Ghi chú</Text>
@@ -551,8 +563,13 @@ const CheckoutScreen = () => {
           </View>
           <View style={styles.row}>
             <Text style={styles.label}>Phí vận chuyển</Text>
-            <Text style={styles.value}>{formatMoney(shippingFee)}</Text>
+            <Text style={styles.value}>
+  {selectedVoucher?.title === "Miễn phí vận chuyển"
+    ? formatMoney(0)
+    : formatMoney(shippingFee)}
+</Text>
           </View>
+
           {selectedVoucher && (
             <View style={styles.row}>
               <Text style={styles.label}>Voucher giảm</Text>

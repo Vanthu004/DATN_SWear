@@ -14,6 +14,7 @@ export const useProductVariant = (productId) => {
     }
   }, [productId, dispatch]);
 
+
   useEffect(() => {
     if (productVariants.length > 0 && !selectedVariant) {
       // Set default variant

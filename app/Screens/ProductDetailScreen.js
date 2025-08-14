@@ -14,8 +14,8 @@ import {
 import ProductVariantModal from '../components/ProductVariantModal';
 import { useAuth } from '../context/AuthContext';
 import { useReview } from "../hooks/useReview";
-import { api } from '../utils/api';
 
+import { api } from '../utils/api';
 const renderStars = (rating) => (
   <View style={{ flexDirection: 'row' }}>
     {Array.from({ length: 5 }).map((_, idx) => (
@@ -35,8 +35,8 @@ export default function ProductDetailScreen({ route, navigation }) {
 
   const [variantActionType, setVariantActionType] = useState(null);
   const [isFavorite, setIsFavorite] = useState(false);
-  const [quantity, setQuantity] = useState(1);
   const [loadingAddCart, setLoadingAddCart] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [fullProduct, setFullProduct] = useState(product);
   const [selectedVariant, setSelectedVariant] = useState(null);
   const [showVariantModal, setShowVariantModal] = useState(false);
@@ -45,10 +45,13 @@ export default function ProductDetailScreen({ route, navigation }) {
 
   const { reviews, avgRating } = useReview(product?._id);
 
+  const { reviews, avgRating } = useReview(product?._id);
+
   useEffect(() => {
     const fetchProductDetail = async () => {
       setLoading(true);
       try {
+        setLoading(true);
         const res = await api.get(`/products/${product._id}/frontend`);
         setFullProduct(res.data);
       } catch (error) {
@@ -116,6 +119,11 @@ export default function ProductDetailScreen({ route, navigation }) {
   };
 
   const handleAddToCart = async ({ product, variant, quantity }) => {
+    if (!userInfo?._id) {
+      Alert.alert('Vui lòng đăng nhập để thêm vào giỏ hàng');
+      return;
+    }
+
     setLoadingAddCart(true);
     try {
       const cartRes = await api.get(`/cart/user/${userInfo._id}`);
@@ -131,14 +139,13 @@ export default function ProductDetailScreen({ route, navigation }) {
         product_id: product._id,
         quantity,
       };
-
       if (variant && variant._id) {
         payload.product_variant_id = variant._id;
         payload.size = variant.size;
         payload.color = variant.color;
       }
-
       await api.post('/cart-items', payload);
+
       Alert.alert('Thành công', 'Sản phẩm đã được thêm vào giỏ hàng');
     } catch (error) {
       console.error('Lỗi thêm sản phẩm vào giỏ hàng:', error.response?.data || error.message);
@@ -149,6 +156,19 @@ export default function ProductDetailScreen({ route, navigation }) {
   };
 
   const handleBuyNow = ({ product, variant, quantity }) => {
+
+//     if (!userInfo?._id) {
+//       Alert.alert('Vui lòng đăng nhập để mua sản phẩm');
+//       return;
+//     }
+//     navigation.navigate('Checkout', {
+//       items: [{
+//         product,
+//         product_id: product?._id,
+//         variant,
+//         quantity,
+//         price_at_time: variant?.price || product?.price || 0,
+
     navigation.navigate('Checkout', {
       items: [{
         product,
@@ -207,7 +227,8 @@ export default function ProductDetailScreen({ route, navigation }) {
       </View>
 
       <ScrollView contentContainerStyle={{ padding: 16 }} showsVerticalScrollIndicator={false}>
-        {/* Images */}
+        {/* Ảnh sản phẩm */}
+
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
           {imageUrls.map((uri, idx) => (
             <Image
@@ -227,57 +248,98 @@ export default function ProductDetailScreen({ route, navigation }) {
         {fullProduct.category && (
           <Text style={styles.category}>Danh mục: {fullProduct.category.name || fullProduct.category}</Text>
         )}
+        {/* Số lượng tồn kho */}
+        <Text style={styles.stock}>
+        Còn: {fullProduct.stock_quantity ?? 0} sản phẩm
+        </Text>
 
         {/* Mô tả */}
         <Text style={styles.label}>Mô tả sản phẩm</Text>
-        {fullProduct.description && <Text style={styles.description}>{fullProduct.description}</Text>}
+        {product.description && <Text style={styles.description}>{product.description}</Text>}
 
-        {/* Đánh giá */}
-        <Text style={styles.label}>Đánh giá</Text>
-        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
-          {renderStars(avgRating || 0)}
-          <Text style={{ marginLeft: 8, color: '#888' }}>
-            {avgRating ? `${avgRating} điểm (${reviews?.length || 0} đánh giá)` : 'Chưa có đánh giá'}
-          </Text>
+{/* Đánh giá */}
+<Text style={styles.label}>Đánh giá</Text>
+<View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+  {renderStars(Math.round(avgRating))}
+  <Text style={{ marginLeft: 8, color: '#888' }}>
+    {avgRating ? `${avgRating} điểm (${reviews?.length || 0} đánh giá)` : 'Chưa có đánh giá'}
+  </Text>
+</View>
+
+{/* Reviews */}
+{reviews?.length > 0 ? (
+  <>
+    {reviews.slice(0, 2).map((review, idx) => (
+      <View key={idx} style={{ marginBottom: 16 }}>
+        {/* Review chính */}
+        <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
+          <Image
+            source={{
+              uri: review.user_id?.avata_url ||
+                'https://cdn-icons-png.flaticon.com/512/149/149071.png',
+            }}
+            style={{
+              width: 36,
+              height: 36,
+              borderRadius: 18,
+              backgroundColor: '#eee',
+              marginRight: 8,
+            }}
+          />
+          <View style={{ flex: 1 }}>
+            <Text style={{ fontWeight: 'bold' }}>{review.user_id?.name || 'Người dùng'}</Text>
+            <View style={{ flexDirection: 'row', marginVertical: 4 }}>
+              {[...Array(review.rating)].map((_, i) => (
+                <Text key={i} style={{ color: '#facc15' }}>★</Text>
+              ))}
+            </View>
+            <Text>{review.comment || ''}</Text>
+          </View>
         </View>
 
-        {/* Reviews */}
-        {reviews?.length > 0 ? (
-          <>
-            {reviews.map((review, idx) => (
-              <View
-                key={idx}
-                style={{ flexDirection: 'row', alignItems: 'flex-start', marginBottom: 16 }}
-              >
+        {/* Replies */}
+        {review.replies?.length > 0 && (
+          <View style={{ marginLeft: 44, marginTop: 8 }}>
+            {review.replies.map((reply, ridx) => (
+              <View key={ridx} style={{ flexDirection: 'row', alignItems: 'flex-start', marginBottom: 6 }}>
                 <Image
                   source={{
-                    uri: review.user_id?.avatar_url || 'https://cdn-icons-png.flaticon.com/512/149/149071.png',
+                    uri: reply.user_id?.avata_url ||
+                      'https://cdn-icons-png.flaticon.com/512/149/149071.png',
                   }}
-                  style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: '#eee' }}
+                  style={{
+                    width: 28,
+                    height: 28,
+                    borderRadius: 14,
+                    backgroundColor: '#eee',
+                    marginRight: 6,
+                  }}
                 />
                 <View style={{ flex: 1 }}>
-                  <Text style={{ fontWeight: 'bold' }}>{review.user_id?.name || 'Người dùng'}</Text>
-                  <View style={{ flexDirection: 'row', marginVertical: 4 }}>
-                    {[...Array(review.rating)].map((_, i) => (
-                      <Text key={i} style={{ color: '#facc15' }}>★</Text>
-                    ))}
-                  </View>
-                  <Text>{review.comment}</Text>
+                  <Text style={{ fontWeight: 'bold', fontSize: 13 }}>
+                    {reply.user_id?.name || 'Người dùng'}
+                  </Text>
+                  <Text style={{ fontSize: 13 }}>{reply.comment}</Text>
                 </View>
               </View>
             ))}
-
-            <TouchableOpacity
-              onPress={() => navigation.navigate('AllReviews', { productId: product._id })}
-            >
-              <Text style={{ color: '#3b82f6', fontWeight: 'bold', marginBottom: 12 }}>
-                Xem tất cả đánh giá sản phẩm này
-              </Text>
-            </TouchableOpacity>
-          </>
-        ) : (
-          <Text style={{ color: '#888', marginTop: 8 }}>Chưa có đánh giá nào.</Text>
+          </View>
         )}
+      </View>
+    ))}
+
+    <TouchableOpacity
+      onPress={() => navigation.navigate('AllReviews', { productId: product._id })}
+    >
+      <Text style={{ color: '#3b82f6', fontWeight: 'bold', marginBottom: 12 }}>
+        Xem tất cả đánh giá sản phẩm này
+      </Text>
+    </TouchableOpacity>
+  </>
+) : (
+  <Text style={{ color: '#888', marginTop: 8 }}>Chưa có đánh giá nào.</Text>
+)}
+
       </ScrollView>
 
       {/* Footer */}
@@ -291,7 +353,6 @@ export default function ProductDetailScreen({ route, navigation }) {
         >
           <Text style={styles.cartBtnText}>Mua ngay</Text>
         </TouchableOpacity>
-
         <TouchableOpacity
           style={[styles.addToCartBtn, { backgroundColor: '#3b82f6' }]}
           onPress={() => handleShowVariantModal('cart')}
@@ -331,4 +392,11 @@ const styles = StyleSheet.create({
   footerPrice: { fontSize: 18, fontWeight: 'bold', color: '#3b82f6' },
   addToCartBtn: { paddingVertical: 5, paddingHorizontal: 10, borderRadius: 10 },
   cartBtnText: { color: '#fff', fontWeight: 'bold', fontSize: 14 },
+
+  stock: {
+  fontSize: 14,
+  color: '#555',
+  marginTop: 4,
+},
 });
+
