@@ -449,7 +449,19 @@ const ShoseMoutainCategoryList = ({ categories }) => (
             <Text style={{ color: '#888', marginLeft: 16 }}>Đang tải...</Text>
           ) : null}
         />
-              <View style={{height: 50}}></View>
+        <View style={styles.sectionRow}>
+          <Text style={styles.sectionTitle}>Các dịch vụ khác của cửa hàng</Text>
+
+        </View>
+         <View style={{marginHorizontal: 16, marginBottom: 16,marginTop: 16}}>
+          <Text style={{fontSize:20, color:'#3b82f6', fontWeight:'500'}}>Store Swear | Cửa Hàng Thể Thao Chính Hãng Đến Từ Việt Nam</Text>
+          <Text style={{fontSize:15}}>Swear là cửa hàng chuyên cung cấp các sản phẩm thể thao chất lượng cao, từ quần áo, giày dép đến phụ kiện tập luyện. Với phong cách hiện đại, trẻ trung và đa dạng mẫu mã, Swear mang đến cho bạn trải nghiệm mua sắm tiện lợi cùng những sản phẩm bền đẹp, giúp bạn tự tin thể hiện phong cách và nâng cao hiệu suất tập luyện.</Text>
+          <Text style={{fontSize:20, fontWeight:'500', marginTop:10}}>Cửa hàng mua sắm đồ thể thao Swear</Text>
+          <Text style={{fontSize:15}}>Địa chỉ cửa hàng: Số 1, Đường Độc Lập, phường Quán Thánh, quận Ba Đình</Text>
+          <Text style={{fontSize:15}}>Điện thoại: 0123456789</Text>
+          <Text style={{fontSize:15}}>Giấy chứng nhận ĐKDN:0324982234 | Ngày cấp: 20/11/2004 | Nơi cấp: Thành phố Hà Hội</Text>
+        </View>
+              <View style={{height: 100}}></View>
       </Animated.ScrollView>
 
     </SafeAreaView>
