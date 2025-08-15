@@ -14,7 +14,8 @@
       "adaptiveIcon": {
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "package": "com.vanthu.DATN_SWear"
     },
     "web": {
       "bundler": "metro"
@@ -25,7 +26,15 @@
         {
           "backgroundColor": "#ffffff"
         }
-      ]
-    ]
+      ],
+      "expo-web-browser",
+      "react-native-edge-to-edge"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "a2cea276-0297-4d80-b5bd-d4f21792a83a"
+      }
+    },
+    "owner": "vanthu"
   }
 }
