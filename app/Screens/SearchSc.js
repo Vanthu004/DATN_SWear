@@ -1,14 +1,14 @@
 import { Ionicons } from "@expo/vector-icons";
 import React, { useCallback, useEffect, useState } from "react";
 import {
-    ActivityIndicator,
-    FlatList,
-    SafeAreaView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View
+  ActivityIndicator,
+  FlatList,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
 } from "react-native";
 import { useDispatch, useSelector } from "react-redux";
 import PopularKeywords from "../components/PopularKeywords";
@@ -20,8 +20,8 @@ import { useAuth } from "../context/AuthContext";
 import { useCart } from "../hooks/useCart";
 import { useSearchHistory } from "../hooks/useSearchHistory";
 import {
-    clearSearchResults,
-    searchProducts
+  clearSearchResults,
+  searchProducts
 } from "../reudx/homeSlice";
 import { getProductSuggestions } from "../utils/api";
 
