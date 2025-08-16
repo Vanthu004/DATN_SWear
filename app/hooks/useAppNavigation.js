@@ -30,6 +30,9 @@ export function useAppNavigation() {
     goToAddBankCard: () => navigation.navigate("AddBankCard"),
     goToChangePassword: () => navigation.navigate("ChangePassword"),
     goToHelp: () => navigation.navigate("Help"),
+    goToSupport: () => navigation.navigate("Support"),
+    goToChat: (room) => navigation.navigate("ChatScreen", { room }),
+    goToChatList: () => navigation.navigate("ChatListScreen"),
     goToTerms: () => navigation.navigate("Terms"),
     goToPrivacyPolicy: () => navigation.navigate("PrivacyPolicy"),
     
