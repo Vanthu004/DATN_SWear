@@ -37,7 +37,6 @@ import UserInfoScreen from "../Screens/UserInfoScreen";
 import WishlistScreen from "../Screens/WishlistScreen.js";
 import ZaloPayQRScreen from '../Screens/ZaloPayQRScreen';
 
-
 // Tạo navigationRef để truy cập navigation từ bất kỳ đâu
 export const navigationRef = createRef();
 

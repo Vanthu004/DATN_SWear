@@ -15,30 +15,30 @@ const ProductVariantSelector = ({ productId, onVariantChange, setSelectedColor, 
     error,
   } = useProductVariant(productId);
 
-  const [localSelectedSize, setLocalSelectedSize] = useState(null);
-  const [localSelectedColor, setLocalSelectedColor] = useState(null);
+  const [internalSelectedSize, setInternalSelectedSize] = useState(null);
+  const [internalSelectedColor, setInternalSelectedColor] = useState(null);
 
   useEffect(() => {
-    setLocalSelectedSize(null);
-    setLocalSelectedColor(null);
+    setInternalSelectedSize(null);
+    setInternalSelectedColor(null);
   }, [productVariants]);
 
   useEffect(() => {
-    if (localSelectedColor && localSelectedSize) {
+    if (internalSelectedColor && internalSelectedSize) {
       const matchedVariant = productVariants.find(v =>
-        v.attributes.color._id === localSelectedColor._id &&
-        v.attributes.size._id === localSelectedSize._id
+        v.attributes.color._id === internalSelectedColor._id &&
+        v.attributes.size._id === internalSelectedSize._id
       );
       onVariantChange(matchedVariant || null);
-    } else if (localSelectedColor && !localSelectedSize) {
+    } else if (internalSelectedColor && !internalSelectedSize) {
       const matchedByColor = productVariants.find(v =>
-        v.attributes.color._id === localSelectedColor._id
+        v.attributes.color._id === internalSelectedColor._id
       );
       onVariantChange(matchedByColor || null);
     } else {
       onVariantChange(null);
     }
-  }, [localSelectedColor, localSelectedSize]);
+  }, [internalSelectedColor, internalSelectedSize]);
 
   if (!productVariants || productVariants.length === 0) return null;
 
@@ -50,16 +50,14 @@ const ProductVariantSelector = ({ productId, onVariantChange, setSelectedColor, 
     new Set(productVariants.map(v => JSON.stringify(v.attributes.color)))
   ).map(c => JSON.parse(c));
 
-  const availableSizes = localSelectedColor
+  const availableSizes = internalSelectedColor
     ? allSizes.filter(size =>
         productVariants.some(v =>
-          v.attributes.color._id === localSelectedColor._id &&
+          v.attributes.color._id === internalSelectedColor._id &&
           v.attributes.size._id === size._id
         )
       )
     : allSizes;
-
-  const availableColors = allColors;
 
   return (
     <View style={styles.container}>
@@ -71,7 +69,7 @@ const ProductVariantSelector = ({ productId, onVariantChange, setSelectedColor, 
             const isAvailable = productVariants.some(v =>
               v.attributes.color._id === color._id
             );
-            const isSelected = localSelectedColor?._id === color._id;
+            const isSelected = internalSelectedColor?._id === color._id;
 
             return (
               <TouchableOpacity
@@ -82,21 +80,24 @@ const ProductVariantSelector = ({ productId, onVariantChange, setSelectedColor, 
                   !isAvailable && styles.disabledOption
                 ]}
                 onPress={() => {
-                  setLocalSelectedColor(color);
+                  setInternalSelectedColor(color);
                   setSelectedColor && setSelectedColor(color);
 
                   const stillValidSize = productVariants.some(
                     v => v.attributes.color._id === color._id &&
-                        v.attributes.size._id === localSelectedSize?._id
+                         v.attributes.size._id === internalSelectedSize?._id
                   );
                   if (!stillValidSize) {
-                    setLocalSelectedSize(null);
+                    setInternalSelectedSize(null);
                     setSelectedSize && setSelectedSize(null);
                   }
                 }}
                 disabled={!isAvailable}
               >
-                <Text style={[styles.colorText, isSelected && styles.selectedText]}>
+                <Text style={[
+                  styles.colorText,
+                  isSelected && styles.selectedText
+                ]}>
                   {color.name}
                 </Text>
               </TouchableOpacity>
@@ -111,7 +112,8 @@ const ProductVariantSelector = ({ productId, onVariantChange, setSelectedColor, 
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.optionsContainer}>
           {allSizes.map((size) => {
             const isAvailable = availableSizes.some(s => s._id === size._id);
-            const isSelected = localSelectedSize?._id === size._id;
+            const isSelected = internalSelectedSize?._id === size._id;
+
             return (
               <TouchableOpacity
                 key={size._id}
@@ -122,7 +124,7 @@ const ProductVariantSelector = ({ productId, onVariantChange, setSelectedColor, 
                 ]}
                 onPress={() => {
                   if (isAvailable) {
-                    setLocalSelectedSize(size);
+                    setInternalSelectedSize(size);
                     setSelectedSize && setSelectedSize(size);
                   }
                 }}
@@ -143,6 +145,7 @@ const ProductVariantSelector = ({ productId, onVariantChange, setSelectedColor, 
     </View>
   );
 };
+
 
 const styles = StyleSheet.create({
   container: { marginVertical: 10,marginHorizontal: 16 },
@@ -177,11 +180,11 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   selectedBox: {
-    borderColor: '#ec4899',
+    borderColor: '#3b82f6',
     backgroundColor: '#fdf2f8',
   },
   colorText: { fontSize: 14, color: '#333' },
-  selectedText: { color: '#ec4899', fontWeight: 'bold' },
+  selectedText: { color: '#3b82f6', fontWeight: 'bold' },
 });
 
 export default ProductVariantSelector;
