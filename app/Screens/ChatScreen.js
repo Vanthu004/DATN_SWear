@@ -346,7 +346,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#f8f9fa',
   },
   headerContainer: {
-    paddingTop: 50,
+    paddingTop: 10,
   },
   header: {
     flexDirection: 'row',
@@ -491,7 +491,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderTopWidth: 1,
     borderTopColor: '#e0e0e0',
-    paddingBottom: 50,
+    paddingBottom: 30,
   },
 });
 
