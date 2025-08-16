@@ -44,7 +44,7 @@ const SmartSearchSuggestions = ({
       regex.test(part) ? (
         <Text key={index} style={styles.highlightedText}>{part}</Text>
       ) : (
-        <Text key={index} style={styles.suggestionKeyword}>{part}</Text>
+        <Text key={index}>{part}</Text>
       )
     );
   };
@@ -110,7 +110,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
-    zIndex: 1001,
+    zIndex: 1000,
     maxHeight: 400,
   },
   header: {

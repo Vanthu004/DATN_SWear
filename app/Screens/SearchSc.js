@@ -300,50 +300,24 @@ export default function SearchSc({ route, navigation }) {
         </TouchableOpacity>
       </View>
 
-      {/* Suggestions Overlay */}
-      {(showSuggestions || showSmartSuggestions) && (
-        <TouchableOpacity 
-          style={styles.suggestionsOverlay}
-          activeOpacity={1}
-          onPress={() => {
-            setShowSuggestions(false);
-            setShowSmartSuggestions(false);
-          }}
-        >
-          {/* Product Suggestions */}
-          {showSuggestions && (
-            <TouchableOpacity 
-              activeOpacity={1}
-              onPress={(e) => e.stopPropagation()}
-            >
-              <ProductSuggestions
-                suggestions={suggestions}
-                loading={suggestionsLoading}
-                visible={showSuggestions}
-                onSelectSuggestion={handleSelectSuggestion}
-                onClose={handleCloseSuggestions}
-              />
-            </TouchableOpacity>
-          )}
+      {/* Product Suggestions */}
+      <ProductSuggestions
+        suggestions={suggestions}
+        loading={suggestionsLoading}
+        visible={showSuggestions}
+        onSelectSuggestion={handleSelectSuggestion}
+        onClose={handleCloseSuggestions}
+      />
 
-          {/* Smart Search Suggestions */}
-          {showSmartSuggestions && (
-            <TouchableOpacity 
-              activeOpacity={1}
-              onPress={(e) => e.stopPropagation()}
-            >
-              <SmartSearchSuggestions
-                suggestions={searchSuggestions}
-                loading={searchHistoryLoading}
-                visible={showSmartSuggestions}
-                currentKeyword={input}
-                onSelectSuggestion={handleSelectSmartSuggestion}
-                onClose={() => setShowSmartSuggestions(false)}
-              />
-            </TouchableOpacity>
-          )}
-        </TouchableOpacity>
-      )}
+      {/* Smart Search Suggestions */}
+      <SmartSearchSuggestions
+        suggestions={searchSuggestions}
+        loading={searchHistoryLoading}
+        visible={showSmartSuggestions}
+        currentKeyword={input}
+        onSelectSuggestion={handleSelectSmartSuggestion}
+        onClose={() => setShowSmartSuggestions(false)}
+      />
 
       {/* Search History and Popular Keywords */}
       {showSearchHistory && !input.trim() && (
@@ -515,14 +489,5 @@ const styles = StyleSheet.create({
   searchHistoryContainer: {
     flex: 1,
     paddingTop: 8,
-  },
-  suggestionsOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.3)',
-    zIndex: 1000,
   },
 });
