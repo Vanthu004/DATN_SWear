@@ -1,22 +1,24 @@
 import { Ionicons } from "@expo/vector-icons";
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
-  ActivityIndicator,
-  FlatList,
-  SafeAreaView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View
+    ActivityIndicator,
+    FlatList,
+    SafeAreaView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View
 } from "react-native";
 import { useDispatch, useSelector } from "react-redux";
 import ProductCard from "../components/ProductCard";
+import ProductSuggestions from "../components/ProductSuggestions";
 import { useCart } from "../hooks/useCart";
 import {
-  clearSearchResults,
-  searchProducts
+    clearSearchResults,
+    searchProducts
 } from "../reudx/homeSlice";
+import { getProductSuggestions } from "../utils/api";
 
 export default function SearchSc({ route, navigation }) {
   const dispatch = useDispatch();
@@ -29,6 +31,11 @@ export default function SearchSc({ route, navigation }) {
   const [sortedProducts, setSortedProducts] = useState([]);
   const [sortType, setSortType] = useState('none');
   const [priceFilter, setPriceFilter] = useState(null); // 'under100' | 'between100_500' | 'above500'
+  
+  // Product suggestions state
+  const [suggestions, setSuggestions] = useState([]);
+  const [suggestionsLoading, setSuggestionsLoading] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false);
 
   const { searchResults, searchLoading, searchError } = useSelector((state) => state.home);
 
@@ -63,10 +70,57 @@ export default function SearchSc({ route, navigation }) {
     setSortedProducts(filtered);
   }, [priceFilter, searchResults]);
 
+  // Debounced search suggestions
+  const debouncedSearchSuggestions = useCallback(
+    async (keyword) => {
+      if (keyword.trim().length < 2) {
+        setSuggestions([]);
+        setShowSuggestions(false);
+        return;
+      }
+
+      setSuggestionsLoading(true);
+      try {
+        const response = await getProductSuggestions(keyword.trim(), 8);
+        if (response.success) {
+          setSuggestions(response.suggestions || []);
+          setShowSuggestions(true);
+        }
+      } catch (error) {
+        console.error('Error fetching suggestions:', error);
+        setSuggestions([]);
+      } finally {
+        setSuggestionsLoading(false);
+      }
+    },
+    []
+  );
+
   const handleSearch = () => {
     if (input.trim()) {
+      setShowSuggestions(false);
       dispatch(searchProducts(input.trim()));
     }
+  };
+
+  const handleInputChange = (text) => {
+    setInput(text);
+    if (text.trim().length >= 2) {
+      debouncedSearchSuggestions(text);
+    } else {
+      setSuggestions([]);
+      setShowSuggestions(false);
+    }
+  };
+
+  const handleSelectSuggestion = (suggestion) => {
+    setInput(suggestion.name);
+    setShowSuggestions(false);
+    dispatch(searchProducts(suggestion.name));
+  };
+
+  const handleCloseSuggestions = () => {
+    setShowSuggestions(false);
   };
 
   const handleSort = () => {
@@ -105,11 +159,16 @@ export default function SearchSc({ route, navigation }) {
             style={styles.input}
             placeholder="Tìm kiếm sản phẩm..."
             value={input}
-            onChangeText={setInput}
+            onChangeText={handleInputChange}
             onSubmitEditing={handleSearch}
             returnKeyType="search"
           />
-          <TouchableOpacity onPress={() => { setInput(''); dispatch(clearSearchResults()); }} style={styles.iconBtn}>
+          <TouchableOpacity onPress={() => { 
+            setInput(''); 
+            setSuggestions([]);
+            setShowSuggestions(false);
+            dispatch(clearSearchResults()); 
+          }} style={styles.iconBtn}>
             <Ionicons name="close" size={26} color="#000" />
           </TouchableOpacity>
         </View>
@@ -122,6 +181,15 @@ export default function SearchSc({ route, navigation }) {
           )}
         </TouchableOpacity>
       </View>
+
+      {/* Product Suggestions */}
+      <ProductSuggestions
+        suggestions={suggestions}
+        loading={suggestionsLoading}
+        visible={showSuggestions}
+        onSelectSuggestion={handleSelectSuggestion}
+        onClose={handleCloseSuggestions}
+      />
 
       <View style={styles.topBar}>
         <Text style={styles.resultCount}>

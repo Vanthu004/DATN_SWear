@@ -4,8 +4,8 @@ import axios from "axios";
 // Base URL for the API
 
 
-const API_BASE_URL = "http://192.168.1.9:3000/api";
-const WEBSOCKET_URL = "http://192.168.1.9:3000";
+const API_BASE_URL = "http://192.168.0.207:3000/api";
+const WEBSOCKET_URL = "http://192.168.0.207:3000";
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -628,10 +628,6 @@ export const getAllReviews = async () => {
   }
 };
 
-
-
-
-
 export const applyVoucherApi = async (userId, voucherId) => {
   try {
     // Gửi PUT request đến route có 2 params trong URL
@@ -715,5 +711,94 @@ export const increaseProductStock = async (items) => {
     throw error;
   }
 };
+
+// ===== PRODUCT SUGGESTION APIs =====
+
+// Gợi ý sản phẩm (Autocomplete)
+export const getProductSuggestions = async (keyword, limit = 8) => {
+  try {
+    const response = await api.get("/products/suggest", {
+      params: { keyword, limit }
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Get product suggestions error:", error);
+    throw error;
+  }
+};
+
+// Sản phẩm liên quan
+export const getRelatedProducts = async (productId, limit = 6) => {
+  try {
+    const response = await api.get("/products/related", {
+      params: { productId, limit }
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Get related products error:", error);
+    throw error;
+  }
+};
+
+// Sản phẩm phổ biến (Trending)
+export const getTrendingProducts = async (limit = 10, timeRange = 'all') => {
+  try {
+    const response = await api.get("/products/trending", {
+      params: { limit, timeRange }
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Get trending products error:", error);
+    throw error;
+  }
+};
+
+// Gợi ý cá nhân hóa
+export const getPersonalizedProducts = async (userId, limit = 8) => {
+  try {
+    const response = await api.get("/products/personalized", {
+      params: { userId, limit }
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Get personalized products error:", error);
+    throw error;
+  }
+};
+
+// Tìm kiếm nâng cao với gợi ý
+export const searchProductsEnhanced = async (params) => {
+  try {
+    const {
+      keyword,
+      page = 1,
+      limit = 10,
+      category,
+      priceMin,
+      priceMax,
+      sortBy = 'relevance'
+    } = params;
+
+    const searchParams = {
+      keyword,
+      page,
+      limit,
+      sortBy
+    };
+
+    if (category) searchParams.category = category;
+    if (priceMin) searchParams.priceMin = priceMin;
+    if (priceMax) searchParams.priceMax = priceMax;
+
+    const response = await api.get("/products/search/enhanced", {
+      params: searchParams
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Search products enhanced error:", error);
+    throw error;
+  }
+};
+
 export { api, WEBSOCKET_URL };
 

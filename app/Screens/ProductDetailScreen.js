@@ -1,21 +1,22 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useState } from 'react';
 import {
-  Alert,
-  Dimensions,
-  Image,
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    Alert,
+    Dimensions,
+    Image,
+    SafeAreaView,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 import ProductVariantModal from '../components/ProductVariantModal';
+import RelatedProducts from '../components/RelatedProducts';
 import { useAuth } from '../context/AuthContext';
 import { useReview } from "../hooks/useReview";
 
-import { api } from '../utils/api';
+import { api, getRelatedProducts } from '../utils/api';
 const renderStars = (rating) => (
   <View style={{ flexDirection: 'row' }}>
     {Array.from({ length: 5 }).map((_, idx) => (
@@ -41,6 +42,10 @@ export default function ProductDetailScreen({ route, navigation }) {
   const [showVariantModal, setShowVariantModal] = useState(false);
   const [selectedColor, setSelectedColor] = useState(null);
   const [loading, setLoading] = useState(false);
+  
+  // Related products state
+  const [relatedProducts, setRelatedProducts] = useState([]);
+  const [relatedLoading, setRelatedLoading] = useState(false);
 
   const { reviews, avgRating } = useReview(product?._id);
 
@@ -62,6 +67,27 @@ export default function ProductDetailScreen({ route, navigation }) {
       fetchProductDetail();
     }
   }, [product]);
+
+  // Fetch related products
+  useEffect(() => {
+    const fetchRelatedProducts = async () => {
+      if (!product?._id) return;
+      
+      setRelatedLoading(true);
+      try {
+        const response = await getRelatedProducts(product._id, 6);
+        if (response.success) {
+          setRelatedProducts(response.relatedProducts || []);
+        }
+      } catch (error) {
+        console.error('Error fetching related products:', error);
+      } finally {
+        setRelatedLoading(false);
+      }
+    };
+
+    fetchRelatedProducts();
+  }, [product?._id]);
 
   // Load first variant
   useEffect(() => {
@@ -347,6 +373,15 @@ export default function ProductDetailScreen({ route, navigation }) {
 )}
 
       </ScrollView>
+
+      {/* Related Products */}
+      <RelatedProducts
+        products={relatedProducts}
+        loading={relatedLoading}
+        title="Sản phẩm liên quan"
+        navigation={navigation}
+        onViewAll={() => navigation.navigate('SearchSc', { keyword: 'related' })}
+      />
 
       {/* Footer */}
       <View style={styles.footer}>
