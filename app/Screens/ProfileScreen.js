@@ -51,9 +51,9 @@ const ProfileScreen = ({ navigation }) => {
     },
     {
       id: 3,
-      title: "Thanh toán",
+      title: "Tin nhắn hỗ trợ",
       icon: "card-outline",
-      onPress: () => navigation.navigate("Payment"),
+      onPress: () => navigation.navigate("SupportScreen"),
     },
     { 
       id: 4, 
