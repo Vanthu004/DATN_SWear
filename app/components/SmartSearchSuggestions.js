@@ -3,47 +3,77 @@ import React from 'react';
 import {
     ActivityIndicator,
     FlatList,
-    Image,
     StyleSheet,
     Text,
     TouchableOpacity,
     View
 } from 'react-native';
 
-const ProductSuggestions = ({ 
+const SmartSearchSuggestions = ({ 
   suggestions, 
   loading, 
   visible, 
+  currentKeyword,
   onSelectSuggestion, 
   onClose 
 }) => {
   if (!visible || !suggestions?.length) return null;
 
-  const renderSuggestionItem = ({ item }) => (
+  const getSourceIcon = (source) => {
+    switch (source) {
+      case 'history': return '🕒';
+      case 'popular': return '🔥';
+      default: return '💡';
+    }
+  };
+
+  const getSourceText = (source) => {
+    switch (source) {
+      case 'history': return 'Tìm kiếm gần đây';
+      case 'popular': return 'Từ khóa phổ biến';
+      default: return 'Gợi ý';
+    }
+  };
+
+  const highlightKeyword = (keyword, searchTerm) => {
+    if (!searchTerm) return keyword;
+    const regex = new RegExp(`(${searchTerm})`, 'gi');
+    const parts = keyword.split(regex);
+    
+    return parts.map((part, index) => 
+      regex.test(part) ? (
+        <Text key={index} style={styles.highlightedText}>{part}</Text>
+      ) : (
+        <Text key={index} style={styles.suggestionKeyword}>{part}</Text>
+      )
+    );
+  };
+
+  const renderSuggestionItem = ({ item, index }) => (
     <TouchableOpacity
       style={styles.suggestionItem}
-      onPress={() => onSelectSuggestion(item)}
+      onPress={() => onSelectSuggestion(item.keyword)}
     >
-      <Image
-        source={{ uri: item.image_url }}
-        style={styles.suggestionImage}
-        defaultSource={require('../../assets/images/default-avatar.png')}
-      />
-      <View style={styles.suggestionInfo}>
-        <Text style={styles.suggestionName} numberOfLines={2}>
-          {item.name}
-        </Text>
-        <Text style={styles.suggestionPrice}>{item.price}</Text>
-        <Text style={styles.suggestionCategory}>{item.category}</Text>
+      <View style={styles.suggestionIcon}>
+        <Text style={styles.iconText}>{getSourceIcon(item.source)}</Text>
       </View>
-      <Ionicons name="chevron-forward" size={20} color="#999" />
+      <View style={styles.suggestionContent}>
+        <Text style={styles.suggestionKeyword}>
+          {highlightKeyword(item.keyword, currentKeyword)}
+        </Text>
+        <Text style={styles.suggestionMeta}>
+          {getSourceText(item.source)}
+          {item.total_searches && ` • ${item.total_searches} lượt tìm`}
+        </Text>
+      </View>
+      <Ionicons name="chevron-forward" size={16} color="#999" />
     </TouchableOpacity>
   );
 
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Gợi ý sản phẩm</Text>
+        <Text style={styles.headerTitle}>💡 Gợi ý tìm kiếm</Text>
         <TouchableOpacity onPress={onClose} style={styles.closeButton}>
           <Ionicons name="close" size={20} color="#666" />
         </TouchableOpacity>
@@ -52,12 +82,12 @@ const ProductSuggestions = ({
       {loading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="small" color="#2979FF" />
-          <Text style={styles.loadingText}>Đang tìm kiếm...</Text>
+          <Text style={styles.loadingText}>Đang tìm gợi ý...</Text>
         </View>
       ) : (
         <FlatList
           data={suggestions}
-          keyExtractor={(item, index) => item.id || item.product_id || index.toString()}
+          keyExtractor={(item, index) => item.keyword || index.toString()}
           renderItem={renderSuggestionItem}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.suggestionsList}
@@ -122,32 +152,32 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#f8f8f8',
   },
-  suggestionImage: {
-    width: 50,
-    height: 50,
-    borderRadius: 8,
+  suggestionIcon: {
     marginRight: 12,
+    width: 24,
+    alignItems: 'center',
   },
-  suggestionInfo: {
+  iconText: {
+    fontSize: 16,
+  },
+  suggestionContent: {
     flex: 1,
     marginRight: 8,
   },
-  suggestionName: {
+  suggestionKeyword: {
     fontSize: 14,
     fontWeight: '500',
     color: '#333',
     marginBottom: 4,
   },
-  suggestionPrice: {
-    fontSize: 13,
-    fontWeight: '600',
+  highlightedText: {
+    fontWeight: 'bold',
     color: '#2979FF',
-    marginBottom: 2,
   },
-  suggestionCategory: {
+  suggestionMeta: {
     fontSize: 12,
     color: '#666',
   },
 });
 
-export default ProductSuggestions;
+export default SmartSearchSuggestions;

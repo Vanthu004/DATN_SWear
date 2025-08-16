@@ -372,16 +372,17 @@ export default function ProductDetailScreen({ route, navigation }) {
   <Text style={{ color: '#888', marginTop: 8 }}>Chưa có đánh giá nào.</Text>
 )}
 
-      </ScrollView>
+        {/* Related Products */}
+        <RelatedProducts
+          products={relatedProducts}
+          loading={relatedLoading}
+          title="Sản phẩm liên quan"
+          navigation={navigation}
+          onViewAll={() => navigation.navigate('SearchSc', { keyword: 'related' })}
+        />
 
-      {/* Related Products */}
-      <RelatedProducts
-        products={relatedProducts}
-        loading={relatedLoading}
-        title="Sản phẩm liên quan"
-        navigation={navigation}
-        onViewAll={() => navigation.navigate('SearchSc', { keyword: 'related' })}
-      />
+        <View style={{ height: 100 }} />
+      </ScrollView>
 
       {/* Footer */}
       <View style={styles.footer}>
@@ -420,7 +421,7 @@ export default function ProductDetailScreen({ route, navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff', marginTop: 60 },
+  container: { flex: 1, backgroundColor: '#fff', marginTop: 60, paddingBottom: 80 },
   headerRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingTop: 12, marginBottom: 4 },
   headerBtn: { padding: 8, borderRadius: 20, backgroundColor: '#f6f6f6' },
   image: { height: 250, borderRadius: 12, marginRight: 12, backgroundColor: '#f6f6f6' },
@@ -429,7 +430,20 @@ const styles = StyleSheet.create({
   category: { color: '#888', fontSize: 14, marginBottom: 8 },
   label: { marginTop: 16, fontWeight: '500', fontSize: 15 },
   description: { marginTop: 16, color: '#6b7280', lineHeight: 20, fontSize: 15 },
-  footer: { padding: 16, borderTopWidth: 1, borderColor: '#e5e7eb', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#fff' },
+  footer: { 
+    padding: 16, 
+    borderTopWidth: 1, 
+    borderColor: '#e5e7eb', 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    justifyContent: 'space-between', 
+    backgroundColor: '#fff',
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    zIndex: 100,
+  },
   footerPrice: { fontSize: 18, fontWeight: 'bold', color: '#3b82f6' },
   addToCartBtn: { paddingVertical: 5, paddingHorizontal: 10, borderRadius: 10 },
   cartBtnText: { color: '#fff', fontWeight: 'bold', fontSize: 14 },
