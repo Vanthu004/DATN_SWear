@@ -126,12 +126,12 @@ const CheckoutScreen = () => {
     fetchData();
   }, []);
 
-  // Handle voucher change
-  const onVoucherChange = (voucherId) => {
-    setSelectedVoucherId(voucherId);
-    const voucher = vouchers.find((v) => v._id === voucherId);
-    setSelectedVoucher(voucher);
-  };
+// Khi Picker thay đổi
+const onVoucherChange = (voucherId) => {
+  setSelectedVoucherId(voucherId);
+  const voucher = vouchers.find((v) => v._id === voucherId) || null;
+  setSelectedVoucher(voucher);
+};
 
   // Handle payment method change
   const onPaymentChange = (paymentMethodId) => {
@@ -148,12 +148,25 @@ const CheckoutScreen = () => {
   // Calculate total before voucher
   const totalBeforeVoucher = subtotal + shippingFee ;
 
-  // Calculate total after voucher
- const calculateTotalAfterVoucher = () => {
-  if (!selectedVoucher || !selectedVoucher.discount_value) return subtotal + shippingFee;
-  const discountPercent = selectedVoucher.discount_value;
-  const discountAmount = (subtotal + shippingFee) * (discountPercent / 100);
-  return subtotal + shippingFee - discountAmount;
+// Tính tổng sau voucher
+const calculateTotalAfterVoucher = () => {
+  let finalSubtotal = subtotal;
+  let finalShipping = shippingFee;
+
+  if (!selectedVoucher) return finalSubtotal + finalShipping;
+
+  // Miễn phí vận chuyển
+  if (selectedVoucher.title === "Miễn phí vận chuyển") {
+    finalShipping = 0;
+  }
+
+  // Giảm giá sản phẩm
+  let discountAmount = 0;
+  if (selectedVoucher.title === "Giảm giá sản phẩm" && selectedVoucher.discount_value) {
+    discountAmount = (finalSubtotal * selectedVoucher.discount_value) / 100;
+  }
+
+  return finalSubtotal + finalShipping - discountAmount;
 };
 
   // Format money
@@ -240,17 +253,15 @@ const CheckoutScreen = () => {
     console.error("❌ Error decreasing stock:", err);
     // Nếu muốn rollback order, có thể thêm logic gọi API server để hủy order
   }
-        // Apply voucher if selected
-        if (selectedVoucher && userInfo?._id) {
-          try {
-            if (userInfo && selectedVoucher) {
-              await applyVoucherApi(userInfo._id, selectedVoucher.voucher_id);
-            }
-            console.log("✅ Voucher applied successfully after order");
-          } catch (err) {
-            console.error("❌ Error applying voucher after order:", err);
-          }
-        }
+if (selectedVoucher && userInfo?._id) {
+  try {
+    // Chỉ gọi 1 lần duy nhất
+    await applyVoucherApi(userInfo._id, selectedVoucher.voucher_id);
+    console.log("✅ Voucher applied successfully after order");
+  } catch (err) {
+    console.error("❌ Error applying voucher after order:", err);
+  }
+}
         
         console.log("id đơn hàng.......", result.data.order._id);
         
@@ -439,7 +450,7 @@ const CheckoutScreen = () => {
   <Text style={styles.cardTitle}>Voucher áp dụng</Text>
   {vouchers.length > 0 ? (
     <Picker
-      selectedValue={selectedVoucherId}
+      selectedValue={selectedVoucherId || "none"}
       onValueChange={(val) => {
         if (val === "none") {
           setSelectedVoucherId(null);
@@ -556,31 +567,32 @@ const CheckoutScreen = () => {
         </View>
 
         {/* Summary */}
-        <View style={styles.summary}> 
-          <View style={styles.row}>
-            <Text style={styles.label}>Tạm tính</Text>
-            <Text style={styles.value}>{formatMoney(subtotal)}</Text>
-          </View>
-          <View style={styles.row}>
-            <Text style={styles.label}>Phí vận chuyển</Text>
-            <Text style={styles.value}>
-  {selectedVoucher?.title === "Miễn phí vận chuyển"
-    ? formatMoney(0)
-    : formatMoney(shippingFee)}
-</Text>
-          </View>
+<View style={styles.summary}>
+  <View style={styles.row}>
+    <Text style={styles.label}>Tạm tính</Text>
+    <Text style={styles.value}>{formatMoney(subtotal)}</Text>
+  </View>
 
-          {selectedVoucher && (
-            <View style={styles.row}>
-              <Text style={styles.label}>Voucher giảm</Text>
-              <Text style={styles.value}>-{selectedVoucher.discount_value || 0}%</Text>
-            </View>
-          )}
-          <View style={styles.row}>
-            <Text style={styles.totalLabel}>Tổng</Text>
-            <Text style={styles.total}>{formatMoney(calculateTotalAfterVoucher())}</Text>
-          </View>
-        </View>
+  <View style={styles.row}>
+    <Text style={styles.label}>Phí vận chuyển</Text>
+    <Text style={styles.value}>
+      {selectedVoucher?.title === "Miễn phí vận chuyển" ? formatMoney(0) : formatMoney(shippingFee)}
+    </Text>
+  </View>
+
+  {selectedVoucher?.title === "Giảm giá sản phẩm" && (
+    <View style={styles.row}>
+      <Text style={styles.label}>Voucher giảm</Text>
+      <Text style={styles.value}>-{selectedVoucher.discount_value}%</Text>
+    </View>
+  )}
+
+  <View style={styles.row}>
+    <Text style={styles.totalLabel}>Tổng</Text>
+    <Text style={styles.total}>{formatMoney(calculateTotalAfterVoucher())}</Text>
+  </View>
+</View>
+
       </ScrollView>
 
       {/* Footer */}
