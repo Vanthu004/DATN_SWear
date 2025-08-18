@@ -253,10 +253,10 @@ const calculateTotalAfterVoucher = () => {
     console.error("❌ Error decreasing stock:", err);
     // Nếu muốn rollback order, có thể thêm logic gọi API server để hủy order
   }
-if (selectedVoucher && userInfo?._id) {
+if (selectedVoucher) {
   try {
     // Chỉ gọi 1 lần duy nhất
-    await applyVoucherApi(userInfo._id, selectedVoucher.voucher_id);
+    await applyVoucherApi(selectedVoucher.voucher_id);
     console.log("✅ Voucher applied successfully after order");
   } catch (err) {
     console.error("❌ Error applying voucher after order:", err);

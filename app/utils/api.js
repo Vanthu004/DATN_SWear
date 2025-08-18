@@ -630,14 +630,9 @@ export const getAllReviews = async () => {
 
 
 
-export const applyVoucherApi = async (userId, voucherId) => {
-  try {
-    // Gửi PUT request đến route có 2 params trong URL
-    const response = await api.put(`/vouchers/apply-voucher/${voucherId}/${userId}`);
-    return response.data;
-  } catch (error) {
-    console.error("Apply voucher API error:", error);
-  }
+export const applyVoucherApi = async (voucherId) => {
+  const res = await api.post(`/vouchers/apply-voucher/${voucherId}`);
+  return res.data;
 };
 // ===== SHIPPING METHODS APIs =====
 
