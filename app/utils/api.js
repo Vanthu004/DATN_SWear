@@ -2,6 +2,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 // Base URL for the API
+
 const API_BASE_URL = "http://192.168.1.9:3000/api";
 const WEBSOCKET_URL = "http://192.168.1.9:3000";
 
@@ -626,10 +627,6 @@ export const getAllReviews = async () => {
   }
 };
 
-
-
-
-
 export const applyVoucherApi = async (userId, voucherId) => {
   try {
     // Gửi PUT request đến route có 2 params trong URL
@@ -713,5 +710,198 @@ export const increaseProductStock = async (items) => {
     throw error;
   }
 };
+
+// ===== PRODUCT SUGGESTION APIs =====
+
+// Gợi ý sản phẩm (Autocomplete)
+export const getProductSuggestions = async (keyword, limit = 8) => {
+  try {
+    const response = await api.get("/products/suggest", {
+      params: { keyword, limit }
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Get product suggestions error:", error);
+    throw error;
+  }
+};
+
+// Sản phẩm liên quan
+export const getRelatedProducts = async (productId, limit = 6) => {
+  try {
+    const response = await api.get("/products/related", {
+      params: { productId, limit }
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Get related products error:", error);
+    throw error;
+  }
+};
+
+// Sản phẩm phổ biến (Trending)
+export const getTrendingProducts = async (limit = 10, timeRange = 'all') => {
+  try {
+    const response = await api.get("/products/trending", {
+      params: { limit, timeRange }
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Get trending products error:", error);
+    throw error;
+  }
+};
+
+// Gợi ý cá nhân hóa
+export const getPersonalizedProducts = async (userId, limit = 8) => {
+  try {
+    const response = await api.get("/products/personalized", {
+      params: { userId, limit }
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Get personalized products error:", error);
+    throw error;
+  }
+};
+
+// Tìm kiếm nâng cao với gợi ý
+export const searchProductsEnhanced = async (params) => {
+  try {
+    const {
+      keyword,
+      page = 1,
+      limit = 10,
+      category,
+      priceMin,
+      priceMax,
+      sortBy = 'relevance'
+    } = params;
+
+    const searchParams = {
+      keyword,
+      page,
+      limit,
+      sortBy
+    };
+
+    if (category) searchParams.category = category;
+    if (priceMin) searchParams.priceMin = priceMin;
+    if (priceMax) searchParams.priceMax = priceMax;
+
+    const response = await api.get("/products/search/enhanced", {
+      params: searchParams
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Search products enhanced error:", error);
+    throw error;
+  }
+};
+
+// ===== SEARCH HISTORY APIs =====
+
+// Lấy từ khóa tìm kiếm phổ biến
+export const getPopularKeywords = async (limit = 10, timeRange = 'all') => {
+  try {
+    const response = await api.get("/search-history/popular", {
+      params: { limit, timeRange }
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Get popular keywords error:", error);
+    throw error;
+  }
+};
+
+// Lấy từ khóa phổ biến thời gian thực
+export const getRealtimePopularKeywords = async (limit = 10, hours = 24) => {
+  try {
+    const response = await api.get("/search-history/realtime-popular", {
+      params: { limit, hours }
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Get realtime popular keywords error:", error);
+    throw error;
+  }
+};
+
+// Lấy lịch sử tìm kiếm của user
+export const getSearchHistory = async (limit = 10) => {
+  try {
+    const response = await api.get("/search-history/history", {
+      params: { limit }
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Get search history error:", error);
+    throw error;
+  }
+};
+
+// Lấy lịch sử tìm kiếm gần đây
+export const getRecentSearchHistory = async (limit = 5) => {
+  try {
+    const response = await api.get("/search-history/recent", {
+      params: { limit }
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Get recent search history error:", error);
+    throw error;
+  }
+};
+
+// Lấy gợi ý tìm kiếm thông minh
+export const getSearchSuggestions = async (keyword, limit = 5) => {
+  try {
+    const response = await api.get("/search-history/suggestions", {
+      params: { keyword, limit }
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Get search suggestions error:", error);
+    throw error;
+  }
+};
+
+// Thêm lịch sử tìm kiếm
+export const addSearchHistory = async (searchData) => {
+  try {
+    const response = await api.post("/search-history/add", searchData);
+    return response.data;
+  } catch (error) {
+    console.error("Add search history error:", error);
+    throw error;
+  }
+};
+
+// Xóa lịch sử tìm kiếm
+export const deleteSearchHistory = async (keyword = null) => {
+  try {
+    const response = await api.delete("/search-history/delete", {
+      data: keyword ? { keyword } : {}
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Delete search history error:", error);
+    throw error;
+  }
+};
+
+// Lấy thống kê tìm kiếm
+export const getSearchStats = async (timeRange = 'all') => {
+  try {
+    const response = await api.get("/search-history/stats", {
+      params: { timeRange }
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Get search stats error:", error);
+    throw error;
+  }
+};
+
 export { api, WEBSOCKET_URL };
 
