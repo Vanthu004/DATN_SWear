@@ -44,11 +44,16 @@ export default function HomeScreen() {
   const { cartCount, refreshCart } = useCart();
 
   const scrollY = useRef(new Animated.Value(0)).current;
-  const translateY = scrollY.interpolate({
-  inputRange: [0, 50],
-  outputRange: [0, -40], // Dịch lên để nằm cùng hàng Header
-  extrapolate: "clamp",
-});
+  const searchBarOpacity = scrollY.interpolate({
+    inputRange: [0, 50],
+    outputRange: [1, 0], // Giảm opacity khi cuộn
+    extrapolate: "clamp",
+  });
+  const searchBarScale = scrollY.interpolate({
+    inputRange: [0, 50],
+    outputRange: [1, 0.8], // Giảm scale khi cuộn
+    extrapolate: "clamp",
+  });
   const userId = userInfo?._id;
   const [bannersCategories, setbannersCategories] = useState([]);
   const [favoriteIds, setFavoriteIds] = useState([]);
@@ -56,6 +61,9 @@ export default function HomeScreen() {
   const [popularSportsCategories, setPopularSportsCategories] = useState([]);
   const [dailyEssentialsCategories, setDailyEssentialsCategories] = useState([]);
   const [shoseMoutainCategories, setShoseMoutainCategories] = useState([]);
+  const [showAllCategories, setShowAllCategories] = useState(false); // Thêm state mới
+  const [categoriesPerRow, setCategoriesPerRow] = useState(4); // Số danh mục trên một hàng
+  const [maxCategoriesToShow, setMaxCategoriesToShow] = useState(20); // Số danh mục tối đa hiển thị
   useEffect(() => {
     dispatch(fetchCategories());
     dispatch(fetchBestSellers());
@@ -92,6 +100,9 @@ export default function HomeScreen() {
         fetchFavorites();
       }
        refreshCart(); // ✅ Gọi đúng tên function
+       
+       // Debug cart data
+       console.log('🔍 Debug: refreshCart called, userId:', userId);
     }, [userId])
   );
 
@@ -131,7 +142,10 @@ export default function HomeScreen() {
   }, []);
 
   // Hiển thị số lượng danh mục đầu tiên
-  const displayedCategories = categories.slice(0, 18);
+  const displayedCategories = showAllCategories ? categories.slice(0, maxCategoriesToShow) : categories.slice(0, 10);
+  
+  // Tính toán width cho mỗi item trong grid
+  const gridItemWidth = (width - 32 - (categoriesPerRow - 1) * 8) / categoriesPerRow; // 32 là paddingHorizontal, 8 là margin giữa các item
 // hiển thị danh mục hot
   const HotCategoryList = ({ categories }) => (
     <View style={{ marginTop: 15, marginBottom: 24 }}>
@@ -294,77 +308,126 @@ const ShoseMoutainCategoryList = ({ categories }) => (
         </View>
 
         {/* Search Bar */}
-       <Animated.View
-        style={[
-          styles.searchBarContainer,
-          {
-            transform: [{ translateY }],
-          },
-        ]}
-      >
-        <TouchableOpacity
-          style={styles.searchBar}
-          onPress={() => navigation.navigate("SearchSc")}
+        <Animated.View
+          style={[
+            styles.searchBarContainer,
+            {
+              opacity: searchBarOpacity,
+              transform: [{ scale: searchBarScale }],
+            },
+          ]}
         >
-          <Ionicons name="search" size={20} color="#666" />
-          <Text style={{ marginLeft: 8, color: "#666" }}>
-            Tìm kiếm sản phẩm...
-          </Text>
-        </TouchableOpacity>
-      </Animated.View>
-
-       <View style={styles.bannerWrap}>
-        {bannersCategories && bannersCategories.length > 0 ? (
-          <Swiper
-            loop
-            autoplay={true} 
-            showsPagination={false}
-            dotStyle={{ backgroundColor: '#ccc', width: 8, height: 8 }}
-            activeDotStyle={{ backgroundColor: '#000', width: 10, height: 10 }}
-            style={{ height: 160 }}
+          <TouchableOpacity
+            style={styles.searchBar}
+            onPress={() => navigation.navigate("SearchSc")}
           >
-             {bannersCategories.map((item) => (
-              <View key={item._id}>
-                <TouchableOpacity onPress={() => navigation.navigate('CategoryScreen', { category: item })} activeOpacity={0.8}>
-                  <Image
-                    source={item.image_url ? { uri: item.image_url } : bannerImg}
-                    style={styles.bannerImg}
-                  />
-                </TouchableOpacity>
-              </View>
-  ))}
-          </Swiper>
-        ) : (
-          <Image source={bannerImg} style={styles.bannerImg} />
-        )}
-      </View>
+            <Ionicons name="search" size={20} color="#666" />
+            <Text style={{ marginLeft: 8, color: "#666" }}>
+              Tìm kiếm sản phẩm...
+            </Text>
+          </TouchableOpacity>
+        </Animated.View>
+
+        <View style={styles.bannerWrap}>
+          {bannersCategories && bannersCategories.length > 0 ? (
+            <Swiper
+              loop
+              autoplay={true} 
+              showsPagination={false}
+              dotStyle={{ backgroundColor: '#ccc', width: 8, height: 8 }}
+              activeDotStyle={{ backgroundColor: '#000', width: 10, height: 10 }}
+              style={{ height: 160 }}
+            >
+               {bannersCategories.map((item) => (
+                <View key={item._id}>
+                  <TouchableOpacity onPress={() => navigation.navigate('CategoryScreen', { category: item })} activeOpacity={0.8}>
+                    <Image
+                      source={item.image_url ? { uri: item.image_url } : bannerImg}
+                      style={styles.bannerImg}
+                    />
+                  </TouchableOpacity>
+                </View>
+    ))}
+            </Swiper>
+          ) : (
+            <Image source={bannerImg} style={styles.bannerImg} />
+          )}
+        </View>
 
         {/* Categories */}
         <View style={styles.categoryRow}>
-          <Text style={styles.sectionTitle}>Danh mục</Text>
-          <TouchableOpacity onPress={() => navigation.navigate("CategoryScreen")}> 
-            <Text style={styles.seeAll}>Xem tất cả</Text>
-          </TouchableOpacity>
-        </View>
-        <FlatList
-          data={displayedCategories}
-          keyExtractor={(item) => String(item._id || item.id)}
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ paddingHorizontal: 8, marginBottom: 8 }}
-          renderItem={({ item }) => (
-            <TouchableOpacity
-              style={styles.categoryItem}
-              onPress={() => navigation.navigate("CategoryScreen", { category: item })}
-            >
-              <Image
-                source={item.image_url ? { uri: item.image_url } : require("../../assets/images/box-icon.png")}
-                style={styles.categoryIcon}
-              />
-              <Text style={styles.categoryName} numberOfLines={1}>{item.name}</Text>
+          <View style={styles.categoryTitleRow}>
+            <Text style={styles.sectionTitle}>Danh mục</Text>
+            <TouchableOpacity onPress={() => setShowAllCategories(!showAllCategories)}>
+              <Text style={styles.seeAll}>{showAllCategories ? 'Ẩn bớt' : 'Xem tất cả'}</Text>
             </TouchableOpacity>
+          </View>
+          {showAllCategories && (
+            <View style={styles.categoryControls}>
+              <View style={styles.controlsRow}>
+                <Text style={styles.controlLabel}>Hiển thị:</Text>
+                <TouchableOpacity 
+                  style={[styles.controlBtn, maxCategoriesToShow === 20 && styles.controlBtnActive]}
+                  onPress={() => setMaxCategoriesToShow(20)}
+                >
+                  <Text style={[styles.controlBtnText, maxCategoriesToShow === 20 && styles.controlBtnTextActive]}>20</Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={[styles.controlBtn, maxCategoriesToShow === 40 && styles.controlBtnActive]}
+                  onPress={() => setMaxCategoriesToShow(40)}
+                >
+                  <Text style={[styles.controlBtnText, maxCategoriesToShow === 40 && styles.controlBtnTextActive]}>40</Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={[styles.controlBtn, maxCategoriesToShow === categories.length && styles.controlBtnActive]}
+                  onPress={() => setMaxCategoriesToShow(categories.length)}
+                >
+                  <Text style={[styles.controlBtnText, maxCategoriesToShow === categories.length && styles.controlBtnTextActive]}>Tất cả</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
           )}
-        />
+        </View>
+        
+        {showAllCategories ? (
+          // Hiển thị tất cả danh mục theo dạng lưới
+          <View style={styles.categoriesGrid}>
+            {categories.map((item) => (
+              <TouchableOpacity
+                key={item._id || item.id}
+                style={styles.categoryGridItem}
+                onPress={() => navigation.navigate("CategoryScreen", { category: item })}
+              >
+                <Image
+                  source={item.image_url ? { uri: item.image_url } : require("../../assets/images/box-icon.png")}
+                  style={styles.categoryGridIcon}
+                />
+                <Text style={styles.categoryGridName} numberOfLines={2}>{item.name}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        ) : (
+          // Hiển thị danh mục theo hàng ngang như cũ
+          <FlatList
+            data={displayedCategories}
+            keyExtractor={(item) => String(item._id || item.id)}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{ paddingHorizontal: 8, marginBottom: 8 }}
+            renderItem={({ item }) => (
+              <TouchableOpacity
+                style={styles.categoryItem}
+                onPress={() => navigation.navigate("CategoryScreen", { category: item })}
+              >
+                <Image
+                  source={item.image_url ? { uri: item.image_url } : require("../../assets/images/box-icon.png")}
+                  style={styles.categoryIcon}
+                />
+                <Text style={styles.categoryName} numberOfLines={1}>{item.name}</Text>
+              </TouchableOpacity>
+            )}
+          />
+        )}
 
         <View style={styles.sectionRow}>
           <Text style={styles.sectionTitle}>Sản phẩm bán chạy nhất </Text>
@@ -422,7 +485,7 @@ const ShoseMoutainCategoryList = ({ categories }) => (
         <PopularCategoryList categories={popularSportsCategories} />
         {/* danh mục daily essentials */}
         
-        < ShoseMoutainCategoryList categories={shoseMoutainCategories} />
+        <ShoseMoutainCategoryList categories={shoseMoutainCategories} />
 
 
         {/* sản phẩm mới nhất */}
@@ -513,7 +576,18 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    marginBottom: 12,
+    height: 40,
+  },
+  searchBarContainer: {
+    backgroundColor: '#fff',
+    paddingTop: 8,
+    paddingBottom: 8,
+    marginBottom: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 4,
   },
   bannerWrap: {
     marginHorizontal: 1,
@@ -528,12 +602,16 @@ const styles = StyleSheet.create({
   resizeMode: "contain",
 },
   categoryRow: {
+    flexDirection: "column",
+    marginHorizontal: 16,
+    marginBottom: 10,
+    marginTop: 8,
+  },
+  categoryTitleRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginHorizontal: 16,
-    marginBottom: 10,
-
+    marginBottom: 8,
   },
   sectionTitle: {
     fontSize: 20,
@@ -569,7 +647,81 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     marginHorizontal: 16,
-    marginTop: 8,
+    marginTop: 16,
     marginBottom: 4,
+  },
+  categoriesGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    marginBottom: 8,
+    marginTop: 8,
+  },
+  categoryGridItem: {
+    width: '23%', // 4 cột với khoảng cách nhỏ
+    marginVertical: 8,
+    alignItems: 'center',
+    backgroundColor: '#f8f8f8',
+    borderRadius: 12,
+    padding: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  categoryGridIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    marginBottom: 6,
+    backgroundColor: '#f3f3f3',
+  },
+  categoryGridName: {
+    fontSize: 11,
+    textAlign: 'center',
+    color: '#333',
+    fontWeight: '500',
+    lineHeight: 14,
+  },
+  categoryControls: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    marginBottom: 8,
+  },
+  controlsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  controlLabel: {
+    fontSize: 12,
+    color: '#666',
+    marginRight: 8,
+    fontWeight: '500',
+  },
+  controlBtn: {
+    backgroundColor: '#f0f0f0',
+    borderRadius: 12,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    marginHorizontal: 2,
+    minWidth: 30,
+    alignItems: 'center',
+  },
+  controlBtnActive: {
+    backgroundColor: '#2979FF',
+    borderWidth: 1,
+    borderColor: '#2979FF',
+  },
+  controlBtnText: {
+    fontSize: 11,
+    color: '#666',
+    fontWeight: '500',
+  },
+  controlBtnTextActive: {
+    color: '#fff',
+    fontWeight: '600',
   },
 });

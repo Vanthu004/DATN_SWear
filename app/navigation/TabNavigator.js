@@ -296,9 +296,27 @@ const CustomTabBar = ({ state, descriptors, navigation }) => (
       else if (route.name === "Notifications") iconName = "notifications-outline";
       else if (route.name === "Wishlist") iconName = "heart-outline";
       else if (route.name === "Profile") iconName = "person-outline";
+      
       const onPress = () => {
-        if (!isFocused) navigation.navigate(route.name);
+        if (isFocused) {
+          // Nếu tab đang được focus, quay về màn hình đầu tiên của stack đó
+          const targetScreen = route.name === "Home" ? "HomeScreen" : 
+                             route.name === "Notifications" ? "NotificationsScreen" :
+                             route.name === "Wishlist" ? "WishlistScreen" :
+                             "ProfileScreen";
+          
+          // Sử dụng navigate với merge: true để quay về màn hình đầu tiên của stack
+          navigation.navigate(route.name, {
+            screen: targetScreen,
+            merge: true,
+            params: {}
+          });
+        } else {
+          // Nếu tab chưa được focus, chuyển sang tab đó
+          navigation.navigate(route.name);
+        }
       };
+      
       return (
         <TouchableOpacity
           key={route.key}

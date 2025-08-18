@@ -1,15 +1,15 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useState } from 'react';
 import {
-  Alert,
-  Dimensions,
-  Image,
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    Alert,
+    Dimensions,
+    Image,
+    SafeAreaView,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 import ProductVariantModal from '../components/ProductVariantModal';
 import { useAuth } from '../context/AuthContext';
@@ -44,6 +44,7 @@ export default function ProductDetailScreen({ route, navigation }) {
   const [isFavorite, setIsFavorite] = useState(false);
   const [quantity, setQuantity] = useState(1);
   const [loadingAddCart, setLoadingAddCart] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [fullProduct, setFullProduct] = useState(product);
   const [selectedVariant, setSelectedVariant] = useState(null);
   const [showVariantModal, setShowVariantModal] = useState(false);
@@ -53,10 +54,20 @@ export default function ProductDetailScreen({ route, navigation }) {
     useEffect(() => {
     const fetchProductDetail = async () => {
       try {
+        // Kiểm tra product._id có hợp lệ không
+        if (!product?._id || typeof product._id !== 'string' || product._id.length !== 24) {
+          console.error('❌ Product ID không hợp lệ:', product?._id);
+          console.log('❌ Product object:', product);
+          return;
+        }
+        
+        console.log('🔍 Fetching product detail for ID:', product._id);
         const res = await api.get(`/products/${product._id}/frontend`);
+        console.log('✅ API response:', res.data);
         setFullProduct(res.data);
       } catch (error) {
         console.error('❌ Lỗi lấy sản phẩm:', error.message);
+        console.error('❌ Error details:', error);
       } finally {
         setLoading(false);
       }
@@ -64,6 +75,8 @@ export default function ProductDetailScreen({ route, navigation }) {
 
     if (product?._id) {
       fetchProductDetail();
+    } else {
+      console.log('⚠️ Không có product._id, product object:', product);
     }
   }, [product]);
 
@@ -194,21 +207,28 @@ const handleShowVariantModal = (type) => {
   }
 };
 
-  if (!product) {
-  return (
-    <SafeAreaView style={styles.container}>
-      <Text>Không có dữ liệu sản phẩm</Text>
-    </SafeAreaView>
-  );
-}
+  if (!product && !fullProduct) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <Text>Không có dữ liệu sản phẩm</Text>
+      </SafeAreaView>
+    );
+  }
   // Lấy mảng url ảnh, ưu tiên lấy từ images nếu có, fallback dùng image_url
-const imageUrls =
-  fullProduct.images && fullProduct.images.length > 0
-    ? fullProduct.images.map(img => img?.url || '')
-    : [fullProduct.image_url || ''];
+  const imageUrls = (() => {
+    if (fullProduct.images && fullProduct.images.length > 0) {
+      return fullProduct.images.map(img => img?.url || '').filter(url => url);
+    }
+    const fallbackUrl = fullProduct.image_url || product.image_url;
+    return fallbackUrl ? [fallbackUrl] : [];
+  })();
 
-  console.log("🔍 images:", product.images);
-  console.log("🔍 image_url:", product.image_url);
+  console.log("🔍 fullProduct.images:", fullProduct.images);
+  console.log("🔍 fullProduct.image_url:", fullProduct.image_url);
+  console.log("🔍 product.image_url:", product.image_url);
+  console.log("🔍 final imageUrls:", imageUrls);
+  console.log("🔍 fullProduct:", JSON.stringify(fullProduct, null, 2));
+  console.log("🔍 product:", JSON.stringify(product, null, 2));
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
@@ -231,32 +251,44 @@ const imageUrls =
 
       <ScrollView contentContainerStyle={{ padding: 16 }} showsVerticalScrollIndicator={false}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
-          {imageUrls.map((uri, idx) => (
+          {imageUrls.length > 0 ? (
+            imageUrls.map((uri, idx) => (
+              <Image
+                key={idx}
+                source={{ uri }}
+                style={[styles.image, { width: Dimensions.get('window').width - 32, height: 220 }]}
+                resizeMode="cover"
+              />
+            ))
+          ) : (
             <Image
-              key={idx}
-              source={{ uri }}
+              source={require('../../assets/images/box-icon.png')}
               style={[styles.image, { width: Dimensions.get('window').width - 32, height: 220 }]}
-              resizeMode="cover"
+              resizeMode="contain"
             />
-          ))}
+          )}
         </ScrollView>
 
         {/* Tên, giá, danh mục */}
-        <Text style={styles.title}>{product.name}</Text>
-        <Text style={styles.price}>{product.price?.toLocaleString('vi-VN')} VND</Text>
-        {product.category && (
-          <Text style={styles.category}>Danh mục: {product.category.name || product.category}</Text>
+        <Text style={styles.title}>{fullProduct.name || product.name}</Text>
+        <Text style={styles.price}>{(fullProduct.price || product.price)?.toLocaleString('vi-VN')} VND</Text>
+        {(fullProduct.category || product.category) && (
+          <Text style={styles.category}>Danh mục: {(fullProduct.category?.name || fullProduct.category) || (product.category?.name || product.category)}</Text>
         )}
         {/* Quantity - Removed as it's now in Modal */}
 
         {/* Description */}
         <Text style={styles.label}>Mô tả sản phẩm</Text>
-        {product.description && <Text style={styles.description}>{product.description}</Text>}
+        {(fullProduct.description || product.description) ? (
+          <Text style={styles.description}>{fullProduct.description || product.description}</Text>
+        ) : (
+          <Text style={styles.description}>Chưa có mô tả cho sản phẩm này.</Text>
+        )}
 
         {/* Rating */}
         <Text style={styles.label}>Đánh giá</Text>
           <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
-            {renderStars(product.rating || 5)}
+            {renderStars(fullProduct.rating || product.rating || 5)}
             <Text style={{ marginLeft: 8, color: '#888' }}>
               {avgRating ? `${avgRating} điểm (${reviews?.length || 0} đánh giá)` : 'Chưa có đánh giá'}
             </Text>
@@ -292,7 +324,7 @@ const imageUrls =
                   <Text style={{ fontWeight: 'bold' }}>{review.user_id?.name || 'Người dùng'}</Text>
                   {/* Số sao */}
                   <View style={{ flexDirection: 'row', marginVertical: 4 }}>
-                    {[...Array(review.rating)].map((_, i) => (
+                    {Array.from({ length: Math.max(0, Math.min(5, review.rating || 0)) }).map((_, i) => (
                       <Text key={i} style={{ color: '#facc15' }}>★</Text>
                     ))}
                   </View>
@@ -307,7 +339,7 @@ const imageUrls =
             <TouchableOpacity
             onPress={() => {
               navigation.navigate('AllReviews', {
-                productId: product._id,  // chỉ truyền id sản phẩm
+                productId: fullProduct._id || product._id,  // ưu tiên fullProduct._id
               });
             }}
           >
@@ -328,7 +360,7 @@ const imageUrls =
       </ScrollView>                {/* Footer */}
         <View style={styles.footer}>
           <Text style={styles.footerPrice}>
-            {selectedVariant?.price?.toLocaleString('vi-VN') || product.price?.toLocaleString('vi-VN')} VND
+            {selectedVariant?.price?.toLocaleString('vi-VN') || (fullProduct.price || product.price)?.toLocaleString('vi-VN')} VND
           </Text>
            <TouchableOpacity
               style={[styles.addToCartBtn, { backgroundColor: '#0ce001ff' }]}

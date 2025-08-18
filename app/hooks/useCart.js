@@ -2,13 +2,13 @@ import { useEffect, useState } from "react";
 import { Alert } from "react-native";
 import { useAuth } from "../context/AuthContext";
 import {
-  addCartItem,
-  clearCartItems,
-  createCart,
-  deleteCartItem,
-  getCartByUser,
-  getCartItemsByCart,
-  updateCartItemQuantity
+    addCartItem,
+    clearCartItems,
+    createCart,
+    deleteCartItem,
+    getCartByUser,
+    getCartItemsByCart,
+    updateCartItemQuantity
 } from "../utils/api";
 
 export const useCart = () => {
@@ -85,15 +85,32 @@ export const useCart = () => {
         return;
       }
 
-      const processedItems = items.map((item) => ({
-        ...item,
-        product: {
-          _id: item.product_id,
-          name: item.product_name,
-          price: item.price_at_time,
-          image_url: item.product_image,
-        },
-      }));
+      const processedItems = items.map((item) => {
+        // Kiểm tra nếu item.product_id là object (đã populate)
+        if (item.product_id && typeof item.product_id === 'object' && item.product_id._id) {
+          return {
+            ...item,
+            product: {
+              ...item.product_id, // Sử dụng toàn bộ thông tin sản phẩm đã populate
+              _id: item.product_id._id,
+              name: item.product_id.name || item.product_name,
+              price: item.price_at_time || item.product_id.price,
+              image_url: item.product_image || item.product_id.image_url,
+            },
+          };
+        } else {
+          // Fallback cho trường hợp chưa populate
+          return {
+            ...item,
+            product: {
+              _id: item.product_id,
+              name: item.product_name,
+              price: item.price_at_time,
+              image_url: item.product_image,
+            },
+          };
+        }
+      });
 
       setCartItems(processedItems);
     } catch (err) {
