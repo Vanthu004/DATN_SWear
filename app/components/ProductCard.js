@@ -1,12 +1,12 @@
 import { Ionicons } from "@expo/vector-icons";
 import React, { useRef } from "react";
 import {
-    Animated,
-    Image,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Animated,
+  Image,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { useCart } from '../hooks/useCart';
 import { api } from '../utils/api';
@@ -43,6 +43,10 @@ export default function ProductCard({
 
   const handleAddToCart = async (e) => {
     e.stopPropagation();
+    // Kiểm tra nếu sản phẩm hết hàng thì không cho thêm vào giỏ
+    if (isOutOfStock()) {
+      return;
+    }
     // TODO: Implement product variant selection logic
     // For now, we'll pass null as productVariantId
     await addToCart(product, 1, null);
@@ -57,7 +61,69 @@ export default function ProductCard({
       const price = product.price || "";
       const name = product.name || "";
       const rating = product.rating || 5.0;
-      const stock = product.stock_quantity || 0;
+      
+      // Kiểm tra stock từ nhiều nguồn khác nhau
+      const getStockQuantity = () => {
+        // Thử các field khác nhau cho stock
+        const possibleStockFields = [
+          product.stock_quantity,
+          product.stock,
+          product.quantity,
+          product.available_quantity,
+          product.inventory
+        ];
+        
+        for (const stock of possibleStockFields) {
+          if (stock !== undefined && stock !== null && stock > 0) {
+            return stock;
+          }
+        }
+        
+        return 0;
+      };
+      
+      const stock = getStockQuantity();
+      
+      // Kiểm tra sản phẩm có hết hàng không
+      const isOutOfStock = () => {
+        // Kiểm tra stock từ nhiều nguồn khác nhau
+        const mainStock = getStockQuantity();
+        if (mainStock > 0) return false;
+        
+        // Kiểm tra variants nếu có
+        if (product.variants && product.variants.length > 0) {
+          const totalStock = product.variants.reduce((sum, variant) => {
+            const variantStock = variant.stock_quantity || variant.stock || variant.quantity || 0;
+            return sum + variantStock;
+          }, 0);
+          return totalStock <= 0;
+        }
+        
+        return mainStock <= 0;
+      };
+
+      const outOfStock = isOutOfStock();
+      
+      // Debug: Log thông tin stock để kiểm tra
+      console.log(`🔍 Product: ${product.name || 'Unknown'}`);
+      console.log(`🔍 Stock quantity: ${product.stock_quantity}`);
+      console.log(`🔍 Stock: ${product.stock}`);
+      console.log(`🔍 Quantity: ${product.quantity}`);
+      console.log(`🔍 Available quantity: ${product.available_quantity}`);
+      console.log(`🔍 Inventory: ${product.inventory}`);
+      console.log(`🔍 Final stock: ${stock}`);
+      console.log(`🔍 Has variants: ${!!product.variants}`);
+      console.log(`🔍 Variants count: ${product.variants?.length || 0}`);
+      if (product.variants && product.variants.length > 0) {
+        console.log(`🔍 Variants stock:`, product.variants.map(v => ({
+          id: v._id,
+          stock: v.stock_quantity || v.stock || v.quantity || 0
+        })));
+      }
+      console.log(`🔍 Is out of stock: ${outOfStock}`);
+      console.log(`🔍 Product object:`, JSON.stringify(product, null, 2));
+      console.log('---');
+      
       // console.log("🔍 product.stock_quantity", product.stock_quantity);
       // console.log("🔍 full product", product);
   return (
@@ -92,6 +158,14 @@ export default function ProductCard({
       >
         <View style={styles.imageWrap}>
           <Image source={imageSource} style={styles.productImage} />
+          
+          {/* Nhãn "Hết hàng" */}
+          {outOfStock && (
+            <View style={styles.outOfStockLabel}>
+              <Text style={styles.outOfStockText}>Hết hàng</Text>
+            </View>
+          )}
+          
           {showFavoriteIcon && (
             <TouchableOpacity
               style={styles.heartIcon}
@@ -122,10 +196,21 @@ export default function ProductCard({
           <Text style={styles.ratingCount}>({stock})</Text>
           <View style={{ flex: 1 }} />
           <TouchableOpacity
-            style={[styles.cartBtn, isInCart(product._id) && styles.cartBtnActive]}
+            style={[
+              styles.cartBtn, 
+              isInCart(product._id) && styles.cartBtnActive,
+              outOfStock && styles.cartBtnDisabled
+            ]}
             onPress={handleAddToCart}
+            disabled={outOfStock}
           >
-            <Image source={require("../../assets/images/moreCart.png")} style={{ width: 20, height: 20 }} />
+            <Image 
+              source={require("../../assets/images/moreCart.png")} 
+              style={[
+                { width: 20, height: 20 },
+                outOfStock && styles.disabledIcon
+              ]} 
+            />
           </TouchableOpacity>
         </View>
       </TouchableOpacity>
@@ -156,6 +241,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     overflow: "hidden",
+    position: "relative",
   },
   productImage: {
     width: "100%",
@@ -199,6 +285,13 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     padding: 8,
   },
+  cartBtnActive: {
+    backgroundColor: "#e0eaff",
+  },
+  cartBtnDisabled: {
+    backgroundColor: "#f0f0f0",
+    opacity: 0.6,
+  },
   heartIcon: {
     position: 'absolute',
     top: 8,
@@ -207,5 +300,23 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     padding: 4,
     zIndex: 2,
+  },
+  outOfStockLabel: {
+    position: 'absolute',
+    top: 8,
+    left: 8,
+    backgroundColor: 'rgba(220, 38, 38, 0.9)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+    zIndex: 3,
+  },
+  outOfStockText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  disabledIcon: {
+    opacity: 0.4,
   },
 });

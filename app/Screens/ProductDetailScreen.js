@@ -185,27 +185,72 @@ const handleBuyNow = ({ product, variant, quantity }) => {
 };
 
 
-const handleShowVariantModal = (type) => {
-  if (!fullProduct.variants || fullProduct.variants.length === 0) {
-    // Không có biến thể → thêm trực tiếp
-    if (type === 'buy') {
-      handleBuyNow({
-        product: fullProduct,
-        variant: null,
-        quantity: 1,
-      });
-    } else {
-      handleAddToCart({
-        product: fullProduct,
-        variant: null,
-        quantity: 1,
-      });
+  // Kiểm tra sản phẩm có hết hàng không
+  const isOutOfStock = () => {
+    // Kiểm tra stock từ nhiều nguồn khác nhau
+    const getStockQuantity = (productData) => {
+      const possibleStockFields = [
+        productData?.stock_quantity,
+        productData?.stock,
+        productData?.quantity,
+        productData?.available_quantity,
+        productData?.inventory
+      ];
+      
+      for (const stock of possibleStockFields) {
+        if (stock !== undefined && stock !== null && stock > 0) {
+          return stock;
+        }
+      }
+      
+      return 0;
+    };
+    
+    const mainStock = getStockQuantity(fullProduct) || getStockQuantity(product) || 0;
+    if (mainStock > 0) return false;
+    
+    // Kiểm tra variants nếu có
+    if (fullProduct?.variants && fullProduct.variants.length > 0) {
+      const totalStock = fullProduct.variants.reduce((sum, variant) => {
+        const variantStock = variant.stock_quantity || variant.stock || variant.quantity || 0;
+        return sum + variantStock;
+      }, 0);
+      return totalStock <= 0;
     }
-  } else {
-    setVariantActionType(type); // 'buy' or 'cart'
-    setShowVariantModal(true); // mở modal
-  }
-};
+    
+    return mainStock <= 0;
+  };
+
+  const outOfStock = isOutOfStock();
+
+
+const handleShowVariantModal = (type) => {
+    // Nếu sản phẩm hết hàng thì không cho mua
+    if (outOfStock) {
+      Alert.alert("Thông báo", "Sản phẩm này đã hết hàng!");
+      return;
+    }
+
+    if (!fullProduct.variants || fullProduct.variants.length === 0) {
+      // Không có biến thể → thêm trực tiếp
+      if (type === 'buy') {
+        handleBuyNow({
+          product: fullProduct,
+          variant: null,
+          quantity: 1,
+        });
+      } else {
+        handleAddToCart({
+          product: fullProduct,
+          variant: null,
+          quantity: 1,
+        });
+      }
+    } else {
+      setVariantActionType(type); // 'buy' or 'cart'
+      setShowVariantModal(true); // mở modal
+    }
+  };
 
   if (!product && !fullProduct) {
     return (
@@ -253,19 +298,34 @@ const handleShowVariantModal = (type) => {
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
           {imageUrls.length > 0 ? (
             imageUrls.map((uri, idx) => (
-              <Image
-                key={idx}
-                source={{ uri }}
-                style={[styles.image, { width: Dimensions.get('window').width - 32, height: 220 }]}
-                resizeMode="cover"
-              />
+              <View key={idx} style={{ position: 'relative' }}>
+                <Image
+                  source={{ uri }}
+                  style={[styles.image, { width: Dimensions.get('window').width - 32, height: 220 }]}
+                  resizeMode="cover"
+                />
+                {/* Nhãn "Hết hàng" trên ảnh */}
+                {outOfStock && (
+                  <View style={styles.outOfStockLabel}>
+                    <Text style={styles.outOfStockText}>Hết hàng</Text>
+                  </View>
+                )}
+              </View>
             ))
           ) : (
-            <Image
-              source={require('../../assets/images/box-icon.png')}
-              style={[styles.image, { width: Dimensions.get('window').width - 32, height: 220 }]}
-              resizeMode="contain"
-            />
+            <View style={{ position: 'relative' }}>
+              <Image
+                source={require('../../assets/images/box-icon.png')}
+                style={[styles.image, { width: Dimensions.get('window').width - 32, height: 220 }]}
+                resizeMode="contain"
+              />
+              {/* Nhãn "Hết hàng" trên ảnh */}
+              {outOfStock && (
+                <View style={styles.outOfStockLabel}>
+                  <Text style={styles.outOfStockText}>Hết hàng</Text>
+                </View>
+              )}
+            </View>
           )}
         </ScrollView>
 
@@ -275,6 +335,15 @@ const handleShowVariantModal = (type) => {
         {(fullProduct.category || product.category) && (
           <Text style={styles.category}>Danh mục: {(fullProduct.category?.name || fullProduct.category) || (product.category?.name || product.category)}</Text>
         )}
+        
+        {/* Thông báo hết hàng */}
+        {outOfStock && (
+          <View style={styles.outOfStockBanner}>
+            <Ionicons name="alert-circle" size={20} color="#dc2626" />
+            <Text style={styles.outOfStockBannerText}>Sản phẩm này hiện đã hết hàng</Text>
+          </View>
+        )}
+
         {/* Quantity - Removed as it's now in Modal */}
 
         {/* Description */}
@@ -355,26 +424,39 @@ const handleShowVariantModal = (type) => {
             <Text style={{ color: '#888', marginTop: 8 }}>Chưa có đánh giá nào.</Text>
           )}
 
-
-
       </ScrollView>                {/* Footer */}
         <View style={styles.footer}>
           <Text style={styles.footerPrice}>
             {selectedVariant?.price?.toLocaleString('vi-VN') || (fullProduct.price || product.price)?.toLocaleString('vi-VN')} VND
           </Text>
-           <TouchableOpacity
+          
+          {/* Nút "Mua ngay" - ẩn khi hết hàng */}
+          {!outOfStock && (
+            <TouchableOpacity
               style={[styles.addToCartBtn, { backgroundColor: '#0ce001ff' }]}
               onPress={() => handleShowVariantModal('buy')}
             >
               <Text style={styles.cartBtnText}>Mua ngay</Text>
             </TouchableOpacity>
+          )}
 
+          {/* Nút "Thêm vào Giỏ hàng" - ẩn khi hết hàng */}
+          {!outOfStock && (
             <TouchableOpacity
               style={[styles.addToCartBtn, { backgroundColor: '#3b82f6' }]}
               onPress={() => handleShowVariantModal('cart')}
             >
               <Text style={styles.cartBtnText}>Thêm vào Giỏ hàng</Text>
             </TouchableOpacity>
+          )}
+
+          {/* Thông báo hết hàng trong footer */}
+          {outOfStock && (
+            <View style={styles.outOfStockFooter}>
+              <Ionicons name="alert-circle" size={20} color="#dc2626" />
+              <Text style={styles.outOfStockFooterText}>Hết hàng</Text>
+            </View>
+          )}
         </View>
         
     
@@ -519,5 +601,51 @@ const styles = StyleSheet.create({
   },
   outOfStock: {
     color: '#dc2626',
+  },
+  outOfStockLabel: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 5,
+  },
+  outOfStockText: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: '#dc2626',
+  },
+  outOfStockBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#ffebee',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    marginTop: 12,
+    marginBottom: 12,
+  },
+  outOfStockBannerText: {
+    marginLeft: 8,
+    fontSize: 14,
+    color: '#dc2626',
+    fontWeight: 'bold',
+  },
+  outOfStockFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#ffebee',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    marginTop: 12,
+    marginBottom: 12,
+  },
+  outOfStockFooterText: {
+    marginLeft: 8,
+    fontSize: 14,
+    color: '#dc2626',
+    fontWeight: 'bold',
   },
 });
