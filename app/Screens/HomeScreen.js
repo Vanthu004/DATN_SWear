@@ -15,6 +15,8 @@ import {
 import Swiper from 'react-native-swiper';
 import { useDispatch, useSelector } from "react-redux";
 import ProductCard from "../components/ProductCard";
+import RelatedProducts from "../components/RelatedProducts";
+import TrendingProducts from "../components/TrendingProducts";
 import { useAuth } from "../context/AuthContext";
 import { useCart } from "../hooks/useCart";
 import {
@@ -23,7 +25,14 @@ import {
   fetchNewest,
   fetchPopular
 } from "../reudx/homeSlice";
-import { addFavorite, getCategoriesById, getFavoritesByUser, removeFavorite } from "../utils/api";
+import {
+  addFavorite,
+  getCategoriesById,
+  getFavoritesByUser,
+  getPersonalizedProducts,
+  getTrendingProducts,
+  removeFavorite
+} from "../utils/api";
 
 const { width } = Dimensions.get("window");
 const bannerImg = require("../../assets/images/LogoSwear.png");
@@ -56,6 +65,13 @@ export default function HomeScreen() {
   const [popularSportsCategories, setPopularSportsCategories] = useState([]);
   const [dailyEssentialsCategories, setDailyEssentialsCategories] = useState([]);
   const [shoseMoutainCategories, setShoseMoutainCategories] = useState([]);
+  
+  // Trending and personalized products state
+  const [trendingProducts, setTrendingProducts] = useState([]);
+  const [personalizedProducts, setPersonalizedProducts] = useState([]);
+  const [trendingLoading, setTrendingLoading] = useState(false);
+  const [personalizedLoading, setPersonalizedLoading] = useState(false);
+
   useEffect(() => {
     dispatch(fetchCategories());
     dispatch(fetchBestSellers());
@@ -94,6 +110,41 @@ export default function HomeScreen() {
        refreshCart(); // ✅ Gọi đúng tên function
     }, [userId])
   );
+
+  // Fetch trending and personalized products
+  useEffect(() => {
+    const fetchTrendingProducts = async () => {
+      setTrendingLoading(true);
+      try {
+        const response = await getTrendingProducts(8, 'week');
+        if (response.success) {
+          setTrendingProducts(response.trendingProducts || []);
+        }
+      } catch (error) {
+        console.error('Error fetching trending products:', error);
+      } finally {
+        setTrendingLoading(false);
+      }
+    };
+
+    const fetchPersonalizedProducts = async () => {
+      if (!userId) return;
+      setPersonalizedLoading(true);
+      try {
+        const response = await getPersonalizedProducts(userId, 6);
+        if (response.success) {
+          setPersonalizedProducts(response.personalizedProducts || []);
+        }
+      } catch (error) {
+        console.error('Error fetching personalized products:', error);
+      } finally {
+        setPersonalizedLoading(false);
+      }
+    };
+
+    fetchTrendingProducts();
+    fetchPersonalizedProducts();
+  }, [userId]);
 
   // Xử lý toggle yêu thích
   const handleToggleFavorite = async (product) => {
@@ -449,6 +500,27 @@ const ShoseMoutainCategoryList = ({ categories }) => (
             <Text style={{ color: '#888', marginLeft: 16 }}>Đang tải...</Text>
           ) : null}
         />
+
+        {/* Trending Products */}
+        <TrendingProducts
+          products={trendingProducts}
+          loading={trendingLoading}
+          title="Sản phẩm phổ biến tuần này"
+          timeRange="week"
+          navigation={navigation}
+          onViewAll={() => navigation.navigate('SearchSc', { keyword: 'trending' })}
+        />
+
+        {/* Personalized Products */}
+        {userId && (
+          <RelatedProducts
+            products={personalizedProducts}
+            loading={personalizedLoading}
+            title="Gợi ý dành cho bạn"
+            navigation={navigation}
+            onViewAll={() => navigation.navigate('SearchSc', { keyword: 'personalized' })}
+          />
+        )}
         <View style={styles.sectionRow}>
           <Text style={styles.sectionTitle}>Các dịch vụ khác của cửa hàng</Text>
 
