@@ -36,7 +36,10 @@ export const ROUTES = {
   PAYMENT: "Payment",
   ADD_BANK_CARD: "AddBankCard",
   CHANGE_PASSWORD: "ChangePassword",
+  SUPPORT: "Support",
   HELP: "Help",
+  CHAT_SCREEN: "ChatScreen",
+  CHAT_LIST: "ChatListScreen",
   TERMS: "Terms",
   PRIVACY_POLICY: "PrivacyPolicy",
 

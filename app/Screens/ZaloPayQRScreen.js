@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useNavigation, useRoute } from "@react-navigation/native";
-import React, { useEffect } from "react";
-import { Dimensions, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import React, { useEffect, useState } from "react";
+import { Alert, Dimensions, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import QRCode from "react-native-qrcode-svg";
 import { ROUTES } from '../constants/routes';
 import { useCart } from '../hooks/useCart';
@@ -13,7 +13,12 @@ const CARD_WIDTH = Math.min(width * 0.92, 380);
 const ZaloPayQRScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
-  const { refreshCart } = useCart();
+  const { refreshCart, removeFromCart } = useCart();
+  
+  // State để quản lý countdown và trạng thái QR
+  const [timeLeft, setTimeLeft] = useState(null);
+  const [isExpired, setIsExpired] = useState(false);
+  const [expiryTime, setExpiryTime] = useState(null);
 
   // Mapping ZaloPay response sang layout
   const {
@@ -26,48 +31,124 @@ const ZaloPayQRScreen = () => {
     checkedItems, // danh sách sản phẩm để xóa sau khi thanh toán thành công
   } = route.params || {};
 
+  // Tính toán thời gian hết hạn và khởi tạo countdown
+  useEffect(() => {
+    if (responseTime) {
+      const expiry = new Date(Number(responseTime) + 15 * 60 * 1000); // 15 phút
+      setExpiryTime(expiry);
+      
+      // Tính thời gian còn lại ban đầu
+      const now = new Date();
+      const initialTimeLeft = Math.max(0, expiry.getTime() - now.getTime());
+      setTimeLeft(initialTimeLeft);
+      
+      // Kiểm tra xem đã hết hạn chưa
+      if (initialTimeLeft <= 0) {
+        setIsExpired(true);
+      }
+    }
+  }, [responseTime]);
+
+  // Countdown timer chạy mỗi giây
+  useEffect(() => {
+    if (!expiryTime || isExpired) return;
+
+    const timer = setInterval(() => {
+      const now = new Date();
+      const remaining = Math.max(0, expiryTime.getTime() - now.getTime());
+      
+      if (remaining <= 0) {
+        setIsExpired(true);
+        setTimeLeft(0);
+        clearInterval(timer);
+        
+        // Hiển thị thông báo hết hạn
+        Alert.alert(
+          "QR Code đã hết hạn",
+          "QR Code đã hết hiệu lực. Vui lòng đặt lại đơn hàng.",
+          [
+            {
+              text: "Đặt lại đơn hàng",
+              onPress: () => navigation.navigate(ROUTES.HOME)
+            },
+            {
+              text: "Đóng",
+              style: "cancel"
+            }
+          ]
+        );
+      } else {
+        setTimeLeft(remaining);
+      }
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [expiryTime, isExpired, navigation]);
+
+  // Format thời gian còn lại thành mm:ss
+  const formatTimeLeft = (milliseconds) => {
+    if (!milliseconds) return "00:00";
+    
+    const totalSeconds = Math.floor(milliseconds / 1000);
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    
+    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  };
+
   // Polling check trạng thái đơn hàng
   useEffect(() => {
-    if (!backendOrderId) return;
+    if (!backendOrderId || isExpired) return;
+    
+    console.log('Bắt đầu check ZaloPay status...');
+    
+    let isActive = true;
     let interval = setInterval(async () => {
+      if (!isActive) return;
+      
       try {
-        // Gọi API check ZaloPay status với app_trans_id
+        console.log('Đang gọi API check ZaloPay status...');
+        
+        // Gọi API check ZaloPay status
         const res = await api.post('/payments/zalopay/check-status', {
-          app_trans_id: orderId // orderId từ ZaloPay response (app_trans_id)
+          app_trans_id: orderId
         });
         
-        console.log('ZaloPay status check response:', res.data);
+        console.log('ZaloPay response:', res.data);
         
         // Kiểm tra trạng thái từ ZaloPay response
         if (res.data && res.data.return_code === 1) {
-          // ZaloPay trả về thành công, kiểm tra trạng thái thanh toán
-          if (res.data.return_message === 'Giao dịch thành công' || 
-              res.data.return_message === 'Success' || 
-              res.data.return_message === 'Thành công') {
+          // ZaloPay trả về thành công - kiểm tra cả "success" và "Giao dịch thành công"
+          if (res.data.return_message === 'success' || 
+              res.data.return_message === 'Giao dịch thành công' ||
+              res.data.return_message === 'Success') {
+            
+            console.log('Thanh toán thành công!');
+            isActive = false;
             clearInterval(interval);
-            console.log('🎉 Thanh toán thành công.....');
-            // Chỉ cần refreshCart, không cần gọi removeFromCart từng item nữa
+            
+            // Refresh giỏ hàng (server đã xóa cart items rồi)
             await refreshCart();
+            
+            // Chuyển màn hình đến OrderSuccess
             navigation.replace(ROUTES.ORDER_SUCCESS, {
               orderCode: orderId,
               orderId: backendOrderId,
               total: amount,
             });
           }
-        } else if (res.data && res.data.return_code === 2) {
-          // Thanh toán đang xử lý, tiếp tục polling
-          console.log('Payment is being processed...');
-        } else {
-          // Có lỗi hoặc trạng thái khác
-          console.log('ZaloPay status:', res.data);
         }
       } catch (err) {
-        console.error('Error checking ZaloPay status:', err.response?.data || err.message);
-        // Có thể log lỗi hoặc bỏ qua, tiếp tục polling
+        console.error('Error checking ZaloPay status:', err.message);
+        console.error('Error details:', err.response?.data);
       }
     }, 3000); // 3s check 1 lần
-    return () => clearInterval(interval);
-  }, [backendOrderId, orderId, refreshCart]);
+    
+    return () => {
+      isActive = false;
+      clearInterval(interval);
+    };
+  }, [backendOrderId, orderId, isExpired]); // Bỏ refreshCart và navigation khỏi dependencies
 
   useFocusEffect(
     React.useCallback(() => {
@@ -82,7 +163,7 @@ const ZaloPayQRScreen = () => {
         <Text style={styles.infoLabelSmall}>{label1}</Text>
         <Text style={styles.infoValueSmall}>{value1 || "---"}</Text>
       </View>
-      <View style={styles.infoCol}>
+      <View style={styles.infoCol}> 
         <Text style={styles.infoLabelSmall}>{label2}</Text>
         <Text style={styles.infoValueSmall}>{value2 || "---"}</Text>
       </View>
@@ -119,14 +200,15 @@ const ZaloPayQRScreen = () => {
           </View>
           <View style={[styles.infoCol,{alignItems:"flex-end"}]}> 
             <Text style={styles.infoLabelSmall}>QR hết hiệu lực</Text>
-            <Text style={styles.infoValueSmall}>
-              {responseTime ? new Date(Number(responseTime) + 15 * 60 * 1000).toLocaleTimeString("vi-VN", {
-                hour: '2-digit',
-                minute: '2-digit'
-              }) : "---"}
+            <Text style={[
+              styles.infoValueSmall, 
+              isExpired && styles.expiredText
+            ]}>
+              {isExpired ? "Hết hạn" : formatTimeLeft(timeLeft)}
             </Text>
           </View>
         </View>
+        
         {/* Tổng tiền*/}
         <View style={styles.infoRowMoney}>
             <Text style={styles.infoLabelSmall}>Tổng tiền: </Text>
@@ -139,22 +221,35 @@ const ZaloPayQRScreen = () => {
 
         {/* QR Code lớn, căn giữa */}
         <View style={styles.qrContainer}>
-          {qrValue ? (
+          {!isExpired && qrValue ? (
             <QRCode value={qrValue} size={220} />
           ) : (
-            <Text style={styles.errorText}>Không có mã QR</Text>
+            <View style={styles.expiredContainer}>
+              <Ionicons name="time-outline" size={80} color="#e63946" />
+              <Text style={styles.expiredTitle}>QR Code đã hết hạn</Text>
+              <Text style={styles.expiredSubtitle}>Vui lòng đặt lại đơn hàng</Text>
+            </View>
           )}
         </View>
 
         {/* Note nhỏ màu cam nhạt */}
         <Text style={styles.note}>
-          <Text style={{ color: "#e76f51", fontWeight: "bold" }}>Note:</Text> Vui lòng quét mã QR để thanh toán đơn hàng qua ZaloPay.
+          <Text style={{ color: "#e76f51", fontWeight: "bold" }}>Note:</Text> 
+          {isExpired 
+            ? " QR Code đã hết hiệu lực. Vui lòng đặt lại đơn hàng."
+            : " Vui lòng quét mã QR để thanh toán đơn hàng qua ZaloPay."
+          }
         </Text>
 
         {/* Nút Cancel - căn giữa */}
         <View style={styles.buttonContainer}>
-          <TouchableOpacity style={styles.cancelBtn} onPress={() => navigation.goBack()}>
-            <Text style={styles.cancelText}>Cancel</Text>
+          <TouchableOpacity 
+            style={[styles.cancelBtn, isExpired && styles.expiredButton]} 
+            onPress={() => navigation.goBack()}
+          >
+            <Text style={[styles.cancelText, isExpired && styles.expiredButtonText]}>
+              {isExpired ? "Về trang chủ" : "Cancel"}
+            </Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -239,6 +334,38 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 2,
     borderColor: "#eee",
+    minHeight: 250,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  expiredContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 20,
+  },
+  expiredTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#e63946",
+    marginTop: 12,
+    textAlign: "center",
+  },
+  expiredSubtitle: {
+    fontSize: 14,
+    color: "#666",
+    marginTop: 8,
+    textAlign: "center",
+  },
+  expiredText: {
+    color: "#e63946",
+    fontWeight: "700",
+  },
+  expiredButton: {
+    backgroundColor: "#e63946",
+    borderColor: "#e63946",
+  },
+  expiredButtonText: {
+    color: "#fff",
   },
   note: {
     marginTop: 16,
@@ -294,12 +421,6 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: "700",
     marginLeft: 4,
-  },
-
-  buttonContainer: {
-    width: "100%",
-    alignItems: "center",
-    marginTop: 18,
   },
 });
 export default ZaloPayQRScreen;
