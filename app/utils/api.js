@@ -2,9 +2,9 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 // Base URL for the API
-
 const API_BASE_URL = "http://192.168.1.9:3000/api";
 const WEBSOCKET_URL = "http://192.168.1.9:3000";
+
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -357,7 +357,7 @@ export const addCartItem = async (cartItemData) => {
 
 export const getCartItemsByCart = async (cartId) => {
   try {
-    const response = await api.get(`/cart-items/cart/${cartId}`);
+    const response = await api.get(`/cart-items/cart/${cartId}?populate=product_id`);
     return response.data;
   } catch (error) {
     console.error("Get cart items by cart error:", error);

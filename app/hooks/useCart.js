@@ -2,13 +2,13 @@ import { useEffect, useState } from "react";
 import { Alert } from "react-native";
 import { useAuth } from "../context/AuthContext";
 import {
-  addCartItem,
-  clearCartItems,
-  createCart,
-  deleteCartItem,
-  getCartByUser,
-  getCartItemsByCart,
-  updateCartItemQuantity
+    addCartItem,
+    clearCartItems,
+    createCart,
+    deleteCartItem,
+    getCartByUser,
+    getCartItemsByCart,
+    updateCartItemQuantity
 } from "../utils/api";
 
 export const useCart = () => {
@@ -85,15 +85,32 @@ export const useCart = () => {
         return;
       }
 
-      const processedItems = items.map((item) => ({
-        ...item,
-        product: {
-          _id: item.product_id,
-          name: item.product_name,
-          price: item.price_at_time,
-          image_url: item.product_image,
-        },
-      }));
+      const processedItems = items.map((item) => {
+        // Kiểm tra nếu item.product_id là object (đã populate)
+        if (item.product_id && typeof item.product_id === 'object' && item.product_id._id) {
+          return {
+            ...item,
+            product: {
+              ...item.product_id, // Sử dụng toàn bộ thông tin sản phẩm đã populate
+              _id: item.product_id._id,
+              name: item.product_id.name || item.product_name,
+              price: item.price_at_time || item.product_id.price,
+              image_url: item.product_image || item.product_id.image_url,
+            },
+          };
+        } else {
+          // Fallback cho trường hợp chưa populate
+          return {
+            ...item,
+            product: {
+              _id: item.product_id,
+              name: item.product_name,
+              price: item.price_at_time,
+              image_url: item.product_image,
+            },
+          };
+        }
+      });
 
       setCartItems(processedItems);
     } catch (err) {
@@ -114,6 +131,47 @@ export const useCart = () => {
   ) => {
     if (!USER_ID) {
       Alert.alert("Lỗi", "Vui lòng đăng nhập để thêm sản phẩm vào giỏ hàng");
+      return false;
+    }
+
+    // Kiểm tra sản phẩm có hết hàng không
+    const isOutOfStock = () => {
+      // Kiểm tra stock từ nhiều nguồn khác nhau
+      const getStockQuantity = (productData) => {
+        const possibleStockFields = [
+          productData?.stock_quantity,
+          productData?.stock,
+          productData?.quantity,
+          productData?.available_quantity,
+          productData?.inventory
+        ];
+        
+        for (const stock of possibleStockFields) {
+          if (stock !== undefined && stock !== null && stock > 0) {
+            return stock;
+          }
+        }
+        
+        return 0;
+      };
+      
+      const mainStock = getStockQuantity(product) || 0;
+      if (mainStock > 0) return false;
+      
+      // Kiểm tra variants nếu có
+      if (product?.variants && product.variants.length > 0) {
+        const totalStock = product.variants.reduce((sum, variant) => {
+          const variantStock = variant.stock_quantity || variant.stock || variant.quantity || 0;
+          return sum + variantStock;
+        }, 0);
+        return totalStock <= 0;
+      }
+      
+      return mainStock <= 0;
+    };
+
+    if (isOutOfStock()) {
+      Alert.alert("Thông báo", "Sản phẩm này đã hết hàng!");
       return false;
     }
 
