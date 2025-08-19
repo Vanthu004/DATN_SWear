@@ -2,16 +2,16 @@ import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import React, { useCallback, useState } from "react";
 import {
-  ActivityIndicator,
-  Alert,
-  FlatList,
-  Image,
-  Modal,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Alert,
+    FlatList,
+    Image,
+    Modal,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import { useCart } from "../hooks/useCart";
 
@@ -268,7 +268,7 @@ const CartScreen = () => {
         <View style={styles.customHeader}>
           <TouchableOpacity
             style={styles.backBtn}
-            onPress={() => navigation.goBack()}
+            onPress={() => navigation.navigate('Home')}
           >
             <View style={styles.backIconWrap}>
               <Ionicons name="arrow-back" size={22} color="#222" />
@@ -300,7 +300,7 @@ const CartScreen = () => {
   return (
     <View style={styles.container}>
       <View style={styles.customHeader}>
-          <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
+          <TouchableOpacity style={styles.backBtn} onPress={() => navigation.navigate('Home')}>
             <View style={styles.backIconWrap}>
               <Ionicons name="arrow-back" size={22} color="#222" />
             </View>
@@ -327,7 +327,15 @@ const CartScreen = () => {
             onRemove={() => handleRemoveItem(item._id)}
             onUpdate={(newQty) => handleUpdateQuantity(item._id, newQty)}
             onPress={() =>
-              navigation.navigate("ProductDetail", { product: item.product })
+              navigation.navigate("ProductDetail", { 
+                product: {
+                  ...item.product,
+                  _id: item.product._id || item.product_id,
+                  name: item.product.name || item.product_name,
+                  price: item.price_at_time || item.product.price,
+                  image_url: item.product.image_url || item.product_image,
+                }
+              })
             }
           />
         )}

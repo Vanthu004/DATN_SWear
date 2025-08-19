@@ -53,7 +53,9 @@ const CheckoutScreen = () => {
   const [loadingPaymentMethods, setLoadingPaymentMethods] = useState(true);
   const [processingZaloPay, setProcessingZaloPay] = useState(false);
   const [orderMessage, setOrderMessage] = useState("");
-
+// State riêng cho từng loại
+const [selectedFreeShippingVoucher, setSelectedFreeShippingVoucher] = useState(null);
+const [selectedDiscountVoucher, setSelectedDiscountVoucher] = useState(null);
   // Fetch data on mount
   useEffect(() => {
     const fetchData = async () => {
@@ -149,26 +151,24 @@ const onVoucherChange = (voucherId) => {
   const totalBeforeVoucher = subtotal + shippingFee ;
 
 // Tính tổng sau voucher
-const calculateTotalAfterVoucher = () => {
+const calculateTotalAfterVoucher = (freeShippingVoucher, discountVoucher) => {
   let finalSubtotal = subtotal;
   let finalShipping = shippingFee;
 
-  if (!selectedVoucher) return finalSubtotal + finalShipping;
+  if (freeShippingVoucher) finalShipping = 0;
 
-  // Miễn phí vận chuyển
-  if (selectedVoucher.title === "Miễn phí vận chuyển") {
-    finalShipping = 0;
-  }
-
-  // Giảm giá sản phẩm
   let discountAmount = 0;
-  if (selectedVoucher.title === "Giảm giá sản phẩm" && selectedVoucher.discount_value) {
-    discountAmount = (finalSubtotal * selectedVoucher.discount_value) / 100;
+  if (discountVoucher?.discount_value) {
+    discountAmount = (finalSubtotal * discountVoucher.discount_value) / 100;
   }
 
   return finalSubtotal + finalShipping - discountAmount;
 };
-
+//Format daymonth
+const formatExpiryDayMonth = (dateString) => {
+  const date = new Date(dateString);
+  return date.toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit" });
+};
   // Format money
   const formatMoney = (amount) => {
     return amount.toLocaleString("vi-VN", { style: "currency", currency: "VND" });
@@ -226,7 +226,7 @@ const calculateTotalAfterVoucher = () => {
       };
 
         const orderData = {
-        total: calculateTotalAfterVoucher(),
+        total: calculateTotalAfterVoucher(selectedFreeShippingVoucher, selectedDiscountVoucher),
         shippingAddress: formatAddress(selectedAddressObj),
         paymentMethodId: selectedPaymentMethodObj?._id,
         shippingMethodId: selectedShippingMethod?._id,
@@ -235,8 +235,9 @@ const calculateTotalAfterVoucher = () => {
           product_id: item.product?._id || item.product_id,
           quantity: item.quantity,
         })),
-        ...(selectedVoucher ? { voucherId: selectedVoucher._id } : {})
-      };
+  ...(selectedFreeShippingVoucher ? { freeShippingVoucherId: selectedFreeShippingVoucher._id } : {}),
+  ...(selectedDiscountVoucher ? { discountVoucherId: selectedDiscountVoucher._id } : {}),
+};
 
 
       const result = await createOrderFromCart(selectedItems, orderData);
@@ -253,16 +254,23 @@ const calculateTotalAfterVoucher = () => {
     console.error("❌ Error decreasing stock:", err);
     // Nếu muốn rollback order, có thể thêm logic gọi API server để hủy order
   }
-if (selectedVoucher) {
+        if (selectedFreeShippingVoucher) {
   try {
-    // Chỉ gọi 1 lần duy nhất
-    await applyVoucherApi(selectedVoucher.voucher_id);
-    console.log("✅ Voucher applied successfully after order");
+    await applyVoucherApi(selectedFreeShippingVoucher.voucher_id);
+    console.log("✅ Free shipping voucher applied");
   } catch (err) {
-    console.error("❌ Error applying voucher after order:", err);
+    console.error("❌ Error applying free shipping voucher:", err);
   }
 }
-        
+
+if (selectedDiscountVoucher) {
+  try {
+    await applyVoucherApi(selectedDiscountVoucher.voucher_id);
+    console.log("✅ Discount voucher applied");
+  } catch (err) {
+    console.error("❌ Error applying discount voucher:", err);
+  }
+}
         console.log("id đơn hàng.......", result.data.order._id);
         
         // Handle ZaloPay payment        
@@ -445,33 +453,64 @@ if (selectedVoucher) {
             <Text>Không có phương thức vận chuyển</Text>
           )}
         </View>
-        {/* Voucher */}
+{/* Voucher Section */}
 <View style={styles.card}>
   <Text style={styles.cardTitle}>Voucher áp dụng</Text>
-  {vouchers.length > 0 ? (
+
+  {/* Free Shipping */}
+  <Text style={styles.sectionTitle}>Miễn phí vận chuyển</Text>
+  {vouchers.filter(v => v.title === "Miễn phí vận chuyển").length > 0 ? (
     <Picker
-      selectedValue={selectedVoucherId || "none"}
+      selectedValue={selectedFreeShippingVoucher?._id || "none"}
       onValueChange={(val) => {
-        if (val === "none") {
-          setSelectedVoucherId(null);
-          setSelectedVoucher(null);
-        } else {
-          onVoucherChange(val);
-        }
+        if (val === "none") setSelectedFreeShippingVoucher(null);
+        else setSelectedFreeShippingVoucher(vouchers.find(v => v._id === val));
       }}
       style={{ marginTop: 5 }}
     >
       <Picker.Item label="Không sử dụng voucher" value="none" />
-      {vouchers.map((v) => {
-        const isFreeShipping = v.title === "Miễn phí vận chuyển";
-        const label = isFreeShipping
-          ? `${v.title} - SL: ${v.usage_limit}`
-          : `${v.title} - Giảm ${v.discount_value}% - SL: ${v.usage_limit}`;
-        return <Picker.Item key={v._id} label={label} value={v._id} />;
-      })}
+      {vouchers
+        .filter(v => v.title === "Miễn phí vận chuyển")
+        .map(v => (
+          <Picker.Item
+            key={v._id}
+            label={`${v.voucher_id}  SL: ${v.usage_limit}  HSD: ${formatExpiryDayMonth(v.expiry_date)}`}
+            value={v._id}
+          />
+        ))}
     </Picker>
   ) : (
-    <Text style={{ marginTop: 5, color: "#888" }}>Không có voucher áp dụng</Text>
+    <Text style={{ marginTop: 5, color: "#888" }}>Không có voucher miễn phí vận chuyển</Text>
+  )}
+
+  {/* Discount / Other vouchers */}
+  <Text style={styles.sectionTitle}>Giảm giá sản phẩm</Text>
+  {vouchers.filter(v => v.title !== "Miễn phí vận chuyển").length > 0 ? (
+    <Picker
+      selectedValue={selectedDiscountVoucher?._id || "none"}
+      onValueChange={(val) => {
+        if (val === "none") setSelectedDiscountVoucher(null);
+        else setSelectedDiscountVoucher(vouchers.find(v => v._id === val));
+      }}
+      style={{ marginTop: 5 }}
+    >
+      <Picker.Item label="Không sử dụng voucher" value="none" />
+      {vouchers
+        .filter(v => v.title !== "Miễn phí vận chuyển")
+        .map(v => (
+          <Picker.Item
+            key={v._id}
+            label={
+              v.discount_value
+                ? `${v.voucher_id} -${v.discount_value}% SL: ${v.usage_limit} HSD: ${formatExpiryDayMonth(v.expiry_date)}`
+                : `${v.voucher_id} SL: ${v.usage_limit} HSD: ${formatExpiryDayMonth(v.expiry_date)}`
+            }
+            value={v._id}
+          />
+        ))}
+    </Picker>
+  ) : (
+    <Text style={{ marginTop: 5, color: "#888" }}>Không có voucher giảm giá</Text>
   )}
 </View>
 
@@ -576,22 +615,23 @@ if (selectedVoucher) {
   <View style={styles.row}>
     <Text style={styles.label}>Phí vận chuyển</Text>
     <Text style={styles.value}>
-      {selectedVoucher?.title === "Miễn phí vận chuyển" ? formatMoney(0) : formatMoney(shippingFee)}
+      {selectedFreeShippingVoucher ? formatMoney(0) : formatMoney(shippingFee)}
     </Text>
   </View>
 
-  {selectedVoucher?.title === "Giảm giá sản phẩm" && (
+  {selectedDiscountVoucher && (
     <View style={styles.row}>
       <Text style={styles.label}>Voucher giảm</Text>
-      <Text style={styles.value}>-{selectedVoucher.discount_value}%</Text>
+      <Text style={styles.value}>-{selectedDiscountVoucher.discount_value}%</Text>
     </View>
   )}
 
   <View style={styles.row}>
     <Text style={styles.totalLabel}>Tổng</Text>
-    <Text style={styles.total}>{formatMoney(calculateTotalAfterVoucher())}</Text>
+    <Text style={styles.total}>{formatMoney(calculateTotalAfterVoucher(selectedFreeShippingVoucher, selectedDiscountVoucher))}</Text>
   </View>
 </View>
+
 
       </ScrollView>
 
@@ -768,6 +808,27 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     elevation: 2,
   },
+    card: {
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    padding: 15,
+    marginVertical: 10,
+    shadowColor: "#000",
+    shadowOpacity: 0.05,
+    shadowRadius: 5,
+    elevation: 3,
+  },
+  cardTitle: { fontSize: 16, fontWeight: "600", marginBottom: 10 },
+  sectionTitle: { fontSize: 14, fontWeight: "500", marginTop: 10, marginBottom: 5 },
+  voucherItem: {
+    backgroundColor: "#f5f5f5",
+    padding: 10,
+    borderRadius: 8,
+    marginBottom: 5,
+  },
+  selectedVoucher: { backgroundColor: "#d0ebff" },
+  voucherText: { fontSize: 14, fontWeight: "500" },
+  voucherSubText: { fontSize: 12, color: "#666", marginTop: 2 },
 });
 
 export default CheckoutScreen;
