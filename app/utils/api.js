@@ -2,8 +2,8 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 // Base URL for the API
-const API_BASE_URL = "http://192.168.1.9:3000/api";
-const WEBSOCKET_URL = "http://192.168.1.9:3000";
+const API_BASE_URL = "http://192.168.52.108:3000/api";
+const WEBSOCKET_URL = "http://192.168.52.108:3000";
 
 
 const api = axios.create({
@@ -627,14 +627,15 @@ export const getAllReviews = async () => {
   }
 };
 
-export const applyVoucherApi = async (userId, voucherId) => {
-  try {
-    // Gửi PUT request đến route có 2 params trong URL
-    const response = await api.put(`/vouchers/apply-voucher/${voucherId}/${userId}`);
-    return response.data;
-  } catch (error) {
-    console.error("Apply voucher API error:", error);
-  }
+
+
+
+
+
+export const applyVoucherApi = async (voucherId) => {
+  const res = await api.post(`/vouchers/apply-voucher/${voucherId}`);
+  return res.data;
+
 };
 // ===== SHIPPING METHODS APIs =====
 
