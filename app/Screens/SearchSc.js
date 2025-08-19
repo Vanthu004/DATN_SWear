@@ -279,7 +279,7 @@ export default function SearchSc({ route, navigation }) {
             onSubmitEditing={handleSearch}
             returnKeyType="search"
           />
-                  <TouchableOpacity onPress={() => { 
+       <TouchableOpacity onPress={() => { 
           setInput(''); 
           setSuggestions([]);
           setShowSuggestions(false);

@@ -2,8 +2,8 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 // Base URL for the API
-const API_BASE_URL = "http://192.168.52.108:3000/api";
-const WEBSOCKET_URL = "http://192.168.52.108:3000";
+const API_BASE_URL = "http://192.168.1.9:3000/api";
+const WEBSOCKET_URL = "http://192.168.1.9:3000";
 
 
 const api = axios.create({
@@ -25,13 +25,13 @@ api.interceptors.request.use(
       console.log("Error getting token for request:", error);
     }
 
-    console.log("API Request:", {
-      method: config.method?.toUpperCase(),
-      url: config.url,
-      data: config.data,
-      params: config.params,
-      headers: config.headers,
-    });
+    // console.log("API Request:", {
+    //   method: config.method?.toUpperCase(),
+    //   url: config.url,
+    //   data: config.data,
+    //   params: config.params,
+    //   headers: config.headers,
+    // });
 
     return config;
   },
@@ -44,11 +44,11 @@ api.interceptors.request.use(
 // Response interceptor for logging and handling errors
 api.interceptors.response.use(
   (response) => {
-    console.log("API Response:", {
-      status: response.status,
-      url: response.config.url,
-      data: response.data,
-    });
+    // console.log("API Response:", {
+    //   status: response.status,
+    //   url: response.config.url,
+    //   data: response.data,
+    // });
     return response;
   },
   async (error) => {

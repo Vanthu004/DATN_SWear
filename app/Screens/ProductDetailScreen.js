@@ -268,12 +268,12 @@ const handleShowVariantModal = (type) => {
     return fallbackUrl ? [fallbackUrl] : [];
   })();
 
-  console.log("🔍 fullProduct.images:", fullProduct.images);
-  console.log("🔍 fullProduct.image_url:", fullProduct.image_url);
-  console.log("🔍 product.image_url:", product.image_url);
-  console.log("🔍 final imageUrls:", imageUrls);
-  console.log("🔍 fullProduct:", JSON.stringify(fullProduct, null, 2));
-  console.log("🔍 product:", JSON.stringify(product, null, 2));
+  // console.log("🔍 fullProduct.images:", fullProduct.images);
+  // console.log("🔍 fullProduct.image_url:", fullProduct.image_url);
+  // console.log("🔍 product.image_url:", product.image_url);
+  // console.log("🔍 final imageUrls:", imageUrls);
+  // console.log("🔍 fullProduct:", JSON.stringify(fullProduct, null, 2));
+  // console.log("🔍 product:", JSON.stringify(product, null, 2));
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
