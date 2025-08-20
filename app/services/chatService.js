@@ -10,9 +10,11 @@ const chatAPIClient = axios.create({
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
+    'Cache-Control': 'no-cache, no-store, must-revalidate',
+    'Pragma': 'no-cache',
+    'Expires': '0',
   },
 });
-
 // Request interceptor to add auth token
 chatAPIClient.interceptors.request.use(
   async (config) => {
@@ -36,15 +38,12 @@ chatAPIClient.interceptors.request.use(
 chatAPIClient.interceptors.response.use(
   (response) => response,
   (error) => {
-    console.error('Chat API Error:', error.response?.data || error.message);
-
-    // Handle authentication errors
     if (error.response?.status === 401) {
-      // Token expired or invalid
+      console.error('Chat API Error:', error.response?.data || error.message);
       AsyncStorage.removeItem('userToken');
-      // You might want to redirect to login screen here
+    } else if (error.response?.status >= 500) {
+      console.error('Chat API Error:', error.response?.data || error.message);
     }
-
     return Promise.reject(error);
   }
 );
@@ -52,8 +51,19 @@ chatAPIClient.interceptors.response.use(
 export const chatAPI = {
   // Chat Rooms
   createChatRoom: async (roomData) => {
-    const response = await chatAPIClient.post('/chat/rooms', roomData);
-    return response.data;
+    try {
+      console.log('Sending create room payload:', roomData);
+      const response = await chatAPIClient.post('/chat/rooms', roomData);
+      console.log('API response:', response.data);
+      if (!response.data) {
+        throw new Error('No data in API response');
+      }
+      return response.data;
+    } catch (error) {
+      const errorMessage = error.response?.data?.message || error.message || 'Lỗi API không xác định';
+      console.error('API createChatRoom error:', errorMessage);
+      throw error;
+    }
   },
 
   getMyChatRooms: async (params = {}) => {
@@ -94,8 +104,17 @@ export const chatAPI = {
   },
 
   updateRoomStatus: async (roomId, status) => {
-    const response = await chatAPIClient.put(`/chat/rooms/${roomId}/status`, { status });
-    return response.data;
+    try {
+      const response = await chatAPIClient.put(`/chat/rooms/${roomId}/status`, { status });
+      return response.data;
+    } catch (error) {
+      console.error('updateRoomStatus Error:', {
+        message: error.message,
+        status: error.response?.status,
+        data: error.response?.data,
+      });
+      throw error;
+    }
   },
 
   // Messages
@@ -238,10 +257,40 @@ export const chatUtils = {
         return 'Hỗ trợ đơn hàng';
       case 'complaint':
         return 'Khiếu nại';
+      case 'technical_support':
+        return 'Hỗ trợ kỹ thuật';
+      case 'account_support':
+        return 'Hỗ trợ tài khoản';
       case 'general':
         return 'Tổng quát';
       default:
         return 'Khác';
+    }
+  },
+
+  getPriorityText: (priority) => {
+    switch (priority) {
+      case 'low':
+        return 'Thấp';
+      case 'medium':
+        return 'Trung bình';
+      case 'high':
+        return 'Cao';
+      default:
+        return 'Trung bình';
+    }
+  },
+
+  getPriorityColor: (priority) => {
+    switch (priority) {
+      case 'low':
+        return '#4CAF50';
+      case 'medium':
+        return '#FF9800';
+      case 'high':
+        return '#F44336';
+      default:
+        return '#FF9800';
     }
   },
 
@@ -261,3 +310,8 @@ export const chatUtils = {
   },
 };
 
+export const fetchChatRooms = async () => {
+  const response = await chatAPIClient.get('/chat/rooms/my-rooms?t=' + new Date().getTime());
+  console.log('Fetch chat rooms response:', response.data.chatRooms.map(r => ({ roomId: r.roomId, status: r.status, updatedAt: r.updatedAt })));
+  return response.data;
+};

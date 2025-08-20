@@ -163,10 +163,13 @@ class SocketService {
     });
 
     this.socket.on('room_status_updated', (data) => {
-      console.log('📊 Room status updated:', data);
-
-      import('../reudx/chatSlice').then(({ updateRoomStatus }) => {
-        dispatch(updateRoomStatus(data));
+      console.log('🔄 Received room_status_updated from socket:', data);
+      import('../reudx/chatSlice').then(({ updateRoomStatus, fetchChatRooms }) => {
+        dispatch(updateRoomStatus({ roomId: data.roomId, status: data.status }));
+        // Force fetch để sync
+        setTimeout(() => {
+          dispatch(fetchChatRooms());
+        }, 500);
       });
     });
 
@@ -215,10 +218,22 @@ class SocketService {
   // Room operations
   joinUserRooms() {
     if (this.socket && this.isConnected) {
-      this.socket.emit('join_user_rooms');
+      console.log('Joining user rooms...');
+      import('../reudx/chatSlice').then(async ({ fetchChatRooms }) => {
+        try {
+          // ✅ dùng store.dispatch thay vì dispatch
+          const result = await store.dispatch(fetchChatRooms()).unwrap();
+          const rooms = result.chatRooms || [];
+          rooms.forEach(room => {
+            console.log('Joining room:', room.roomId);
+            this.socket.emit('join_room', { roomId: room.roomId });
+          });
+        } catch (error) {
+          console.error('Failed to fetch rooms for joining:', error);
+        }
+      });
     }
   }
-
   joinRoom(roomId) {
     if (this.socket && this.isConnected) {
       console.log('🚪 Joining room:', roomId);

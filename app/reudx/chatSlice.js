@@ -1,3 +1,4 @@
+// app/redux/chatSlice.js
 import { createAsyncThunk, createSelector, createSlice } from '@reduxjs/toolkit';
 import { chatAPI } from '../../app/services/chatService.js';
 
@@ -20,9 +21,15 @@ export const createChatRoom = createAsyncThunk(
   async (roomData, { rejectWithValue }) => {
     try {
       const response = await chatAPI.createChatRoom(roomData);
-      return response.data;
+      console.log('Thunk response:', response);
+      if (!response || !response.chatRoom) {
+        return rejectWithValue('No chatRoom data in response');
+      }
+      return response;
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || 'Lỗi khi tạo phòng chat');
+      const errorMessage = error.response?.data?.message || error.message || 'Lỗi tạo phòng chat không xác định';
+      console.error('Thunk createChatRoom error:', { message: errorMessage, response: error.response?.data });
+      return rejectWithValue({ message: errorMessage, existingRoom: error.response?.data?.existingRoom });
     }
   }
 );
@@ -113,10 +120,14 @@ const chatSlice = createSlice({
       const { roomId, status } = action.payload;
       const roomIndex = state.chatRooms.findIndex(room => room.roomId === roomId);
       if (roomIndex !== -1) {
-        state.chatRooms[roomIndex].status = status;
+        state.chatRooms = [
+          ...state.chatRooms.slice(0, roomIndex),
+          { ...state.chatRooms[roomIndex], status, updatedAt: new Date().toISOString() },
+          ...state.chatRooms.slice(roomIndex + 1)
+        ];
       }
       if (state.currentRoom?.roomId === roomId) {
-        state.currentRoom.status = status;
+        state.currentRoom = { ...state.currentRoom, status, updatedAt: new Date().toISOString() };
       }
     },
     setTypingUsers: (state, action) => {
@@ -156,8 +167,15 @@ const chatSlice = createSlice({
       })
       .addCase(fetchChatRooms.fulfilled, (state, action) => {
         state.isLoadingRooms = false;
-        state.chatRooms = action.payload.chatRooms || action.payload.rooms || [];
-        console.log('🚀 Updated chatRooms:', state.chatRooms);
+        const newRooms = action.payload.chatRooms || action.payload.rooms || [];
+        const roomMap = new Map(state.chatRooms.map(room => [room.roomId, room]));
+        newRooms.forEach(room => {
+          roomMap.set(room.roomId, { ...roomMap.get(room.roomId), ...room });
+        });
+        state.chatRooms = Array.from(roomMap.values()).sort(
+          (a, b) => new Date(b.lastMessageAt) - new Date(a.lastMessageAt)
+        );
+        console.log('🚀 Updated chatRooms:', state.chatRooms.map(r => ({ roomId: r.roomId, status: r.status })));
       })
       .addCase(fetchChatRooms.rejected, (state, action) => {
         state.isLoadingRooms = false;
