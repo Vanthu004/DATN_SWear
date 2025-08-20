@@ -1,12 +1,13 @@
 import { Ionicons } from "@expo/vector-icons";
 import React, { useRef } from "react";
 import {
-  Animated,
-  Image,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    Alert,
+    Animated,
+    Image,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import { useCart } from '../hooks/useCart';
 import { api } from '../utils/api';
@@ -23,6 +24,7 @@ export default function ProductCard({
 }) {
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const { addToCart, isInCart } = useCart();
+  const productId = product?._id || product?.id || product?.product_id;
 
   const handlePressIn = () => {
     Animated.spring(scaleAnim, {
@@ -43,9 +45,12 @@ export default function ProductCard({
 
   const handleAddToCart = async (e) => {
     e.stopPropagation();
-    // TODO: Implement product variant selection logic
-    // For now, we'll pass null as productVariantId
-    await addToCart(product, 1, null);
+    if (!productId) {
+      console.error('❌ Product ID không hợp lệ khi thêm vào giỏ:', productId);
+      Alert.alert('Lỗi', 'Sản phẩm không hợp lệ');
+      return;
+    }
+    await addToCart({ ...product, _id: productId }, 1, null);
   };
 
   const imageSource = product.image_url
@@ -70,19 +75,19 @@ export default function ProductCard({
           } else if (navigation && navigation.navigate) {
             try {
               // Kiểm tra product._id có hợp lệ không
-              if (!product._id || typeof product._id !== 'string') {
-                console.error('❌ Product ID không hợp lệ:', product._id);
+              if (!productId || typeof productId !== 'string') {
+                console.error('❌ Product ID không hợp lệ:', productId);
                 return;
               }
               
-              const res = await api.get(`/products/${product._id}`);
+              const res = await api.get(`/products/${productId}`);
               // ⚠️ Gộp lại image_url từ sản phẩm gốc nếu API không trả về
-              const fullProduct = { ...res.data, image_url: product.image_url };
+              const fullProduct = { ...res.data, image_url: product.image_url, _id: productId };
               navigation.navigate("ProductDetail", { product: fullProduct });
             } catch (error) {
               console.error("❌ Lỗi khi lấy chi tiết sản phẩm:", error);
               // Fallback: navigate với dữ liệu hiện có
-              navigation.navigate("ProductDetail", { product });
+              navigation.navigate("ProductDetail", { product: { ...product, _id: productId } });
             }
           }
         }}
@@ -122,7 +127,7 @@ export default function ProductCard({
           <Text style={styles.ratingCount}>({stock})</Text>
           <View style={{ flex: 1 }} />
           <TouchableOpacity
-            style={[styles.cartBtn, isInCart(product._id) && styles.cartBtnActive]}
+            style={[styles.cartBtn, isInCart(productId) && styles.cartBtnActive]}
             onPress={handleAddToCart}
           >
             <Image source={require("../../assets/images/moreCart.png")} style={{ width: 20, height: 20 }} />

@@ -1,15 +1,15 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useState } from 'react';
 import {
-  Alert,
-  Dimensions,
-  Image,
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    Alert,
+    Dimensions,
+    Image,
+    SafeAreaView,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 import ProductVariantModal from '../components/ProductVariantModal';
 import { useAuth } from '../context/AuthContext';
@@ -39,6 +39,7 @@ const renderStars = (rating) => (
 
 export default function ProductDetailScreen({ route, navigation }) {
   const { product } = route.params || {};
+  const productId = product?._id || product?.id || product?.product_id;
   const { userInfo } = useAuth();
   const [variantActionType, setVariantActionType] = useState(null);
   const [isFavorite, setIsFavorite] = useState(false);
@@ -48,21 +49,20 @@ export default function ProductDetailScreen({ route, navigation }) {
   const [fullProduct, setFullProduct] = useState(product);
   const [selectedVariant, setSelectedVariant] = useState(null);
   const [showVariantModal, setShowVariantModal] = useState(false);
-  const { reviews, avgRating, addReview } = useReview(product?._id);
+  const { reviews, avgRating, addReview } = useReview(productId);
   const [selectedColor, setSelectedColor] = useState(null);
 
     useEffect(() => {
     const fetchProductDetail = async () => {
       try {
-        // Kiểm tra product._id có hợp lệ không
-        if (!product?._id || typeof product._id !== 'string' || product._id.length !== 24) {
-          console.error('❌ Product ID không hợp lệ:', product?._id);
-          console.log('❌ Product object:', product);
+        // Kiểm tra productId có hợp lệ không
+        if (!productId || typeof productId !== 'string' || productId.length !== 24) {
+          console.warn('⚠️ Product ID không hợp lệ, bỏ qua gọi API. ID:', productId);
           return;
         }
         
-        console.log('🔍 Fetching product detail for ID:', product._id);
-        const res = await api.get(`/products/${product._id}/frontend`);
+        console.log('🔍 Fetching product detail for ID:', productId);
+        const res = await api.get(`/products/${productId}/frontend`);
         console.log('✅ API response:', res.data);
         setFullProduct(res.data);
       } catch (error) {
@@ -73,12 +73,12 @@ export default function ProductDetailScreen({ route, navigation }) {
       }
     };
 
-    if (product?._id) {
+    if (productId) {
       fetchProductDetail();
     } else {
       console.log('⚠️ Không có product._id, product object:', product);
     }
-  }, [product]);
+  }, [productId]);
 
   // Load first variant when product loads
   useEffect(() => {
@@ -154,8 +154,10 @@ const handleAddToCart = async ({ product, variant, quantity }) => {
     // Nếu có variant thì thêm các thông tin biến thể
     if (variant && variant._id) {
       payload.product_variant_id = variant._id;
-      payload.size = variant.size;
-      payload.color = variant.color;
+      const sizeName = variant.size || variant.attributes?.size?.name;
+      const colorName = variant.color || variant.attributes?.color?.name;
+      if (sizeName) payload.size = sizeName;
+      if (colorName) payload.color = colorName;
     }
 
     const addItemRes = await api.post('/cart-items', payload);

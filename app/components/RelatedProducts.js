@@ -45,7 +45,7 @@ const RelatedProducts = ({
       ) : (
         <FlatList
           data={products}
-          keyExtractor={(item, index) => item.id || item.product_id || index.toString()}
+          keyExtractor={(item, index) => item._id || item.id || item.product_id || index.toString()}
           renderItem={renderProductItem}
           horizontal
           showsHorizontalScrollIndicator={false}

@@ -1,15 +1,15 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useState } from 'react';
 import {
-  Alert,
-  Dimensions,
-  Image,
-  Modal,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    Alert,
+    Dimensions,
+    Image,
+    Modal,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 import { useProductVariant } from '../hooks/useProductVariant';
 
@@ -159,7 +159,7 @@ const ProductVariantModal = ({
               )}
                {selectedVariant?.stock !== undefined && (
                  <View style={styles.stockInfo}>
-                   <Text style={styles}>
+                   <Text style={styles.stockText}>
                      {selectedVariant.stock > 0 
                        ? `Còn ${selectedVariant.stock} sản phẩm` 
                        : 'Hết hàng'
@@ -371,6 +371,13 @@ const styles = StyleSheet.create({
   },
   sizeText: {
     fontSize: 14,
+  },
+  stockInfo: {
+    marginTop: 6,
+  },
+  stockText: {
+    fontSize: 13,
+    color: '#555',
   },
   quantityRow: {
     flexDirection: 'row',

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Alert } from "react-native";
 import { useAuth } from "../context/AuthContext"; // context đã dùng trong useCart
-import { api } from "../utils/api"; // file API đã có sẵn
+import { api } from "../utils/api"; // giữ import named; đã export trong api.js
 
 export const useReview = (productId) => {
   const [reviews, setReviews] = useState([]);

@@ -2,8 +2,8 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 // Base URL for the API
-const API_BASE_URL = "http://192.168.1.9:3000/api";
-const WEBSOCKET_URL = "http://192.168.1.9:3000";
+const API_BASE_URL = "http://192.168.0.104:3000/api";
+const WEBSOCKET_URL = "http://192.168.0.104:3000";
 
 
 const api = axios.create({
@@ -12,6 +12,9 @@ const api = axios.create({
     "Content-Type": "application/json",
   },
 });
+
+// Xuất cả named và default để tương thích mọi nơi (import { api } hoặc import api)
+
 
 // Interceptors
 api.interceptors.request.use(
@@ -350,14 +353,18 @@ export const addCartItem = async (cartItemData) => {
     const response = await api.post("/cart-items", cartItemData);
     return response.data;
   } catch (error) {
-    console.error("Add cart item error:", error);
+    // Chỉ log nhẹ trong dev nếu không phải lỗi đã biết (ví dụ hết hàng 400)
+    const status = error?.response?.status;
+    if (status !== 400) {
+      console.error("Add cart item error:", error);
+    }
     throw error;
   }
 };
 
 export const getCartItemsByCart = async (cartId) => {
   try {
-    const response = await api.get(`/cart-items/cart/${cartId}?populate=product_id`);
+    const response = await api.get(`/cart-items/cart/${cartId}?populate=product_id,product_variant_id`);
     return response.data;
   } catch (error) {
     console.error("Get cart items by cart error:", error);
