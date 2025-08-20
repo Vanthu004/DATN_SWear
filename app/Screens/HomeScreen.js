@@ -476,6 +476,7 @@ const ShoseMoutainCategoryList = ({ categories }) => (
           ) : null}
         />
 
+
         <View style={styles.sectionRow}>
           <Text style={styles.sectionTitle}>Sản phẩm bán chạy nhất </Text>
         </View>
@@ -580,10 +581,9 @@ const ShoseMoutainCategoryList = ({ categories }) => (
             onViewAll={() => navigation.navigate('SearchSc', { keyword: 'personalized' })}
           />
         )}
-        <View style={styles.sectionRow}>
+        {/* <View style={styles.sectionRow}>
           <Text style={styles.sectionTitle}>Các dịch vụ khác của cửa hàng</Text>
-
-        </View>
+        </View> */}
          <View style={{marginHorizontal: 16, marginBottom: 16,marginTop: 16}}>
           <Text style={{fontSize:20, color:'#3b82f6', fontWeight:'500'}}>Store Swear | Cửa Hàng Thể Thao Chính Hãng Đến Từ Việt Nam</Text>
           <Text style={{fontSize:15}}>Swear là cửa hàng chuyên cung cấp các sản phẩm thể thao chất lượng cao, từ quần áo, giày dép đến phụ kiện tập luyện. Với phong cách hiện đại, trẻ trung và đa dạng mẫu mã, Swear mang đến cho bạn trải nghiệm mua sắm tiện lợi cùng những sản phẩm bền đẹp, giúp bạn tự tin thể hiện phong cách và nâng cao hiệu suất tập luyện.</Text>

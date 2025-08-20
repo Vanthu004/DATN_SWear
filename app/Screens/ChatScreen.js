@@ -45,11 +45,13 @@ const ChatScreen = ({ route }) => {
   const flatListRef = useRef(null);
   const lastMessageId = useRef(null);
 
+  // Check if current user is the room owner
+  const isRoomOwner = user?._id === room?.userId;
+
   useEffect(() => {
     console.log('🔍 Current messages IDs:', currentMessages.map(msg => msg.id));
     const initializeChat = async () => {
       try {
-        // Reset currentMessages trước khi load mới
         dispatch(clearCurrentRoom());
         dispatch(setCurrentRoom(room));
         if (!socketService.getConnectionStatus()) {
@@ -83,7 +85,6 @@ const ChatScreen = ({ route }) => {
   useEffect(() => {
     const handleNewMessage = (message) => {
       console.log('🔍 New message from socket:', message);
-      // Kiểm tra xem tin nhắn đã tồn tại chưa
       const messageExists = currentMessages.some(msg => msg.id === message.id);
       if (!messageExists && (!lastMessageId.current || message.id !== lastMessageId.current)) {
         dispatch(addMessage(message));
@@ -243,9 +244,6 @@ const ChatScreen = ({ route }) => {
           )}
         </View>
       </View>
-      <TouchableOpacity style={styles.menuButton}>
-        <Ionicons name="ellipsis-vertical" size={20} color="#666" />
-      </TouchableOpacity>
     </View>
   );
 
@@ -398,9 +396,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#FF9800',
     fontWeight: '500',
-  },
-  menuButton: {
-    padding: 8,
   },
   chatContainer: {
     flex: 1,

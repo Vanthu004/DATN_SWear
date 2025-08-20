@@ -910,6 +910,6 @@ export const getSearchStats = async (timeRange = 'all') => {
     throw error;
   }
 };
-
+export default api;
 export { api, WEBSOCKET_URL };
 
