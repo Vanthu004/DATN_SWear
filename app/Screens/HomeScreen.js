@@ -412,31 +412,6 @@ const ShoseMoutainCategoryList = ({ categories }) => (
               <Text style={styles.seeAll}>{showAllCategories ? 'Ẩn bớt' : 'Xem tất cả'}</Text>
             </TouchableOpacity>
           </View>
-          {showAllCategories && (
-            <View style={styles.categoryControls}>
-              <View style={styles.controlsRow}>
-                <Text style={styles.controlLabel}>Hiển thị:</Text>
-                <TouchableOpacity 
-                  style={[styles.controlBtn, maxCategoriesToShow === 20 && styles.controlBtnActive]}
-                  onPress={() => setMaxCategoriesToShow(20)}
-                >
-                  <Text style={[styles.controlBtnText, maxCategoriesToShow === 20 && styles.controlBtnTextActive]}>20</Text>
-                </TouchableOpacity>
-                <TouchableOpacity 
-                  style={[styles.controlBtn, maxCategoriesToShow === 40 && styles.controlBtnActive]}
-                  onPress={() => setMaxCategoriesToShow(40)}
-                >
-                  <Text style={[styles.controlBtnText, maxCategoriesToShow === 40 && styles.controlBtnTextActive]}>40</Text>
-                </TouchableOpacity>
-                <TouchableOpacity 
-                  style={[styles.controlBtn, maxCategoriesToShow === categories.length && styles.controlBtnActive]}
-                  onPress={() => setMaxCategoriesToShow(categories.length)}
-                >
-                  <Text style={[styles.controlBtnText, maxCategoriesToShow === categories.length && styles.controlBtnTextActive]}>Tất cả</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          )}
         </View>
         
         {showAllCategories ? (
@@ -583,10 +558,9 @@ const ShoseMoutainCategoryList = ({ categories }) => (
             onViewAll={() => navigation.navigate('SearchSc', { keyword: 'personalized' })}
           />
         )}
-        <View style={styles.sectionRow}>
+        {/* <View style={styles.sectionRow}>
           <Text style={styles.sectionTitle}>Các dịch vụ khác của cửa hàng</Text>
-
-        </View>
+        </View> */}
          <View style={{marginHorizontal: 16, marginBottom: 16,marginTop: 16}}>
           <Text style={{fontSize:20, color:'#3b82f6', fontWeight:'500'}}>Store Swear | Cửa Hàng Thể Thao Chính Hãng Đến Từ Việt Nam</Text>
           <Text style={{fontSize:15}}>Swear là cửa hàng chuyên cung cấp các sản phẩm thể thao chất lượng cao, từ quần áo, giày dép đến phụ kiện tập luyện. Với phong cách hiện đại, trẻ trung và đa dạng mẫu mã, Swear mang đến cho bạn trải nghiệm mua sắm tiện lợi cùng những sản phẩm bền đẹp, giúp bạn tự tin thể hiện phong cách và nâng cao hiệu suất tập luyện.</Text>

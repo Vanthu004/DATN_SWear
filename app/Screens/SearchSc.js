@@ -37,18 +37,18 @@ export default function SearchSc({ route, navigation }) {
   const [sortedProducts, setSortedProducts] = useState([]);
   const [sortType, setSortType] = useState('none');
   const [priceFilter, setPriceFilter] = useState(null); // 'under100' | 'between100_500' | 'above500'
-  
+
   // Product suggestions state
   const [suggestions, setSuggestions] = useState([]);
   const [suggestionsLoading, setSuggestionsLoading] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
-  
+
   // Search history state
   const [showSearchHistory, setShowSearchHistory] = useState(true);
   const [showSmartSuggestions, setShowSmartSuggestions] = useState(false);
 
   const { searchResults, searchLoading, searchError } = useSelector((state) => state.home);
-  
+
   // Search history hook
   const {
     popularKeywords,
@@ -132,7 +132,7 @@ export default function SearchSc({ route, navigation }) {
       setShowSuggestions(false);
       setShowSmartSuggestions(false);
       setShowSearchHistory(false);
-      
+
       // Add to search history if user is logged in
       if (userInfo?._id) {
         try {
@@ -145,7 +145,7 @@ export default function SearchSc({ route, navigation }) {
           console.error('Error adding to search history:', error);
         }
       }
-      
+
       dispatch(searchProducts(input.trim()));
     }
   };
@@ -153,7 +153,7 @@ export default function SearchSc({ route, navigation }) {
   const handleInputChange = (text) => {
     setInput(text);
     setShowSearchHistory(false);
-    
+
     if (text.trim().length >= 2) {
       debouncedSearchSuggestions(text);
       // Fetch smart suggestions if user is logged in
@@ -185,7 +185,7 @@ export default function SearchSc({ route, navigation }) {
     setInput(keyword);
     setShowSearchHistory(false);
     setShowSmartSuggestions(false);
-    
+
     // Add to search history if user is logged in
     if (userInfo?._id) {
       try {
@@ -198,7 +198,7 @@ export default function SearchSc({ route, navigation }) {
         console.error('Error adding to search history:', error);
       }
     }
-    
+
     dispatch(searchProducts(keyword));
   };
 
@@ -222,7 +222,7 @@ export default function SearchSc({ route, navigation }) {
     setInput(keyword);
     setShowSmartSuggestions(false);
     setShowSearchHistory(false);
-    
+
     // Add to search history if user is logged in
     if (userInfo?._id) {
       try {
@@ -235,7 +235,7 @@ export default function SearchSc({ route, navigation }) {
         console.error('Error adding to search history:', error);
       }
     }
-    
+
     dispatch(searchProducts(keyword));
   };
 
@@ -264,6 +264,9 @@ export default function SearchSc({ route, navigation }) {
 
   const handleFilter = () => setFilterVisible(!filterVisible);
 
+  // Check if search has been performed
+  const isSearchPerformed = input.trim() || searchResults?.products?.length > 0;
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.searchBarRow}>
@@ -279,16 +282,16 @@ export default function SearchSc({ route, navigation }) {
             onSubmitEditing={handleSearch}
             returnKeyType="search"
           />
-       <TouchableOpacity onPress={() => { 
-          setInput(''); 
-          setSuggestions([]);
-          setShowSuggestions(false);
-          setShowSmartSuggestions(false);
-          setShowSearchHistory(true);
-          dispatch(clearSearchResults()); 
-        }} style={styles.iconBtn}>
-          <Ionicons name="close" size={26} color="#000" />
-        </TouchableOpacity>
+          <TouchableOpacity onPress={() => { 
+            setInput(''); 
+            setSuggestions([]);
+            setShowSuggestions(false);
+            setShowSmartSuggestions(false);
+            setShowSearchHistory(true);
+            dispatch(clearSearchResults()); 
+          }} style={styles.iconBtn}>
+            <Ionicons name="close" size={26} color="#000" />
+          </TouchableOpacity>
         </View>
         <TouchableOpacity onPress={() => navigation.navigate('Cart')} style={[styles.iconBtn, { marginLeft: 8 }]}>
           <Ionicons name="cart-outline" size={26} color="#000" />
@@ -299,7 +302,6 @@ export default function SearchSc({ route, navigation }) {
           )}
         </TouchableOpacity>
       </View>
-
       {/* Product Suggestions */}
       <ProductSuggestions
         suggestions={suggestions}
@@ -308,7 +310,6 @@ export default function SearchSc({ route, navigation }) {
         onSelectSuggestion={handleSelectSuggestion}
         onClose={handleCloseSuggestions}
       />
-
       {/* Smart Search Suggestions */}
       <SmartSearchSuggestions
         suggestions={searchSuggestions}
@@ -318,7 +319,6 @@ export default function SearchSc({ route, navigation }) {
         onSelectSuggestion={handleSelectSmartSuggestion}
         onClose={() => setShowSmartSuggestions(false)}
       />
-
       {/* Search History and Popular Keywords */}
       {showSearchHistory && !input.trim() && (
         <View style={styles.searchHistoryContainer}>
@@ -330,7 +330,6 @@ export default function SearchSc({ route, navigation }) {
             timeRange="week"
             onKeywordPress={handleKeywordPress}
           />
-
           {/* Recent Search History */}
           {userInfo?._id && (
             <SearchHistory
@@ -344,63 +343,63 @@ export default function SearchSc({ route, navigation }) {
           )}
         </View>
       )}
-
-      <View style={styles.topBar}>
-        <Text style={styles.resultCount}>
-          {sortedProducts.length} Sản phẩm
-        </Text>
-        <View style={styles.actionBtns}>
-          <TouchableOpacity style={styles.actionBtn} onPress={handleSort}>
-            <Ionicons name="swap-vertical" size={18} color="#2979FF" />
-            <Text style={styles.actionText}>Sắp xếp</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.actionBtn} onPress={handleFilter}>
-            <Ionicons name="options" size={18} color="#2979FF" />
-            <Text style={styles.actionText}>Bộ lọc</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      {sortVisible && (
-        <View style={styles.sortBox}>
-          <TouchableOpacity onPress={() => handleSortType('none')} style={styles.sortItem}>
-            <Text>Mặc định</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => handleSortType('priceAsc')} style={styles.sortItem}>
-            <Text>Giá tăng dần</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => handleSortType('priceDesc')} style={styles.sortItem}>
-            <Text>Giá giảm dần</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => handleSortType('nameAZ')} style={styles.sortItem}>
-            <Text>Tên (A–Z)</Text>
-          </TouchableOpacity>
-        </View>
+      {/* Show search results UI only if a search has been performed */}
+      {isSearchPerformed && (
+        <>
+          <View style={styles.topBar}>
+            <Text style={styles.resultCount}>
+              {sortedProducts.length} Sản phẩm
+            </Text>
+            <View style={styles.actionBtns}>
+              <TouchableOpacity style={styles.actionBtn} onPress={handleSort}>
+                <Ionicons name="swap-vertical" size={18} color="#2979FF" />
+                <Text style={styles.actionText}>Sắp xếp</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.actionBtn} onPress={handleFilter}>
+                <Ionicons name="options" size={18} color="#2979FF" />
+                <Text style={styles.actionText}>Bộ lọc</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+          {sortVisible && (
+            <View style={styles.sortBox}>
+              <TouchableOpacity onPress={() => handleSortType('none')} style={styles.sortItem}>
+                <Text>Mặc định</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => handleSortType('priceAsc')} style={styles.sortItem}>
+                <Text>Giá tăng dần</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => handleSortType('priceDesc')} style={styles.sortItem}>
+                <Text>Giá giảm dần</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => handleSortType('nameAZ')} style={styles.sortItem}>
+                <Text>Tên (A–Z)</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+          {filterVisible && (
+            <View style={styles.sortBox}>
+              <TouchableOpacity onPress={() => { setPriceFilter('under100'); setFilterVisible(false); }} style={styles.sortItem}>
+                <Text>Giá dưới 100.000đ</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => { setPriceFilter('between100_500'); setFilterVisible(false); }} style={styles.sortItem}>
+                <Text>Từ 100.000đ đến 500.000đ</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => { setPriceFilter('above500'); setFilterVisible(false); }} style={styles.sortItem}>
+                <Text>Trên 500.000đ</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => { setPriceFilter(null); setFilterVisible(false); }} style={styles.sortItem}>
+                <Text>Hủy lọc</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+          {searchLoading && <ActivityIndicator size="large" color="#2979FF" style={{ marginTop: 20 }} />}
+          {searchError && <Text style={{ color: "red", marginTop: 20 }}>{searchError}</Text>}
+          {!searchLoading && sortedProducts?.length === 0 && (
+            <Text style={{ marginTop: 20, color: '#888', textAlign: 'center' }}>Không tìm thấy sản phẩm phù hợp.</Text>
+          )}
+        </>
       )}
-
-      {filterVisible && (
-        <View style={styles.sortBox}>
-          <TouchableOpacity onPress={() => { setPriceFilter('under100'); setFilterVisible(false); }} style={styles.sortItem}>
-            <Text>Giá dưới 100.000đ</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => { setPriceFilter('between100_500'); setFilterVisible(false); }} style={styles.sortItem}>
-            <Text>Từ 100.000đ đến 500.000đ</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => { setPriceFilter('above500'); setFilterVisible(false); }} style={styles.sortItem}>
-            <Text>Trên 500.000đ</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => { setPriceFilter(null); setFilterVisible(false); }} style={styles.sortItem}>
-            <Text>Hủy lọc</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-
-      {searchLoading && <ActivityIndicator size="large" color="#2979FF" style={{ marginTop: 20 }} />}
-      {searchError && <Text style={{ color: "red", marginTop: 20 }}>{searchError}</Text>}
-      {!searchLoading && sortedProducts?.length === 0 && (
-        <Text style={{ marginTop: 20, color: '#888', textAlign: 'center' }}>Không tìm thấy sản phẩm phù hợp.</Text>
-      )}
-
       <FlatList
         data={sortedProducts}
         keyExtractor={(item, index) => item._id || item.id || index.toString()}
