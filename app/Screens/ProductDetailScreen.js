@@ -41,11 +41,11 @@ export default function ProductDetailScreen({ route, navigation }) {
   const [selectedVariant, setSelectedVariant] = useState(null);
   const [showVariantModal, setShowVariantModal] = useState(false);
   const [selectedColor, setSelectedColor] = useState(null);
-  const [loading, setLoading] = useState(false);
+  
 
   const { reviews, avgRating } = useReview(product?._id);
 
-  const { reviews, avgRating } = useReview(product?._id);
+  
 
   useEffect(() => {
     const fetchProductDetail = async () => {
