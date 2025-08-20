@@ -113,15 +113,17 @@ const productTotal = orderDetails.reduce((sum, item) => {
         <Text style={styles.infoValue}>{order.data.shippingmethod_id.fee} VND</Text>
       </View>
             <View style={styles.infoBox}>
-        <Text style={styles.infoText}>Voucher</Text>
-{order.data.voucher_id && (
-  <>
-    <Text style={styles.infoValue}>
-      {order.data.voucher_id.title === "Miễn phí vận chuyển"
+<Text style={styles.infoText}>Voucher</Text>
+{order.data.voucher_ids && order.data.voucher_ids.length > 0 ? (
+  order.data.voucher_ids.map((voucher) => (
+    <Text key={voucher._id} style={styles.infoValue}>
+      {voucher.title === "Miễn phí vận chuyển"
         ? "Miễn phí vận chuyển"
-        : `${order.data.voucher_id.discount_value} %`}
+        : `Giảm giá ${voucher.discount_value}%`}
     </Text>
-  </>
+  ))
+) : (
+  <Text style={styles.infoValue}>Không áp dụng</Text>
 )}
       </View>
       <View style={styles.infoBox}>
