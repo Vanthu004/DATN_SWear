@@ -2,13 +2,13 @@ import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import React, { useEffect, useState } from "react";
 import {
-  ActivityIndicator,
-  Image,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Image,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import { getOrderById, getOrderDetailsByOrderId } from "../utils/api";
 
@@ -175,12 +175,26 @@ const productTotal = orderDetails.reduce((sum, item) => {
 
       {/* Action buttons */}
       <View style={styles.actionRow}>
-<TouchableOpacity
-  style={styles.confirmBtn}
-  onPress={() => navigation.navigate("Profile", { screen: "OrderHistory" })}
->
-  <Text style={styles.confirmText}>Lịch sử mua hàng</Text>
-</TouchableOpacity>
+        {/* Nút đánh giá - chỉ hiển thị khi đơn hàng đã giao */}
+        {(order.data.status === "delivered" || order.data.status === "completed" || 
+          order.data.status === "Đã giao hàng" || order.data.status === "Hoàn thành") && (
+          <TouchableOpacity
+            style={[styles.confirmBtn, { backgroundColor: '#10b981' }]}
+            onPress={() => navigation.navigate("WriteReview", {
+              orderDetails: orderDetails,
+              orderCode: order.data.order_code
+            })}
+          >
+            <Text style={styles.confirmText}>✍️ Viết đánh giá</Text>
+          </TouchableOpacity>
+        )}
+        
+        <TouchableOpacity
+          style={styles.confirmBtn}
+          onPress={() => navigation.navigate("Profile", { screen: "OrderHistory" })}
+        >
+          <Text style={styles.confirmText}>Lịch sử mua hàng</Text>
+        </TouchableOpacity>
       </View>
                   <View style={{height: 50}}></View>
     </ScrollView>

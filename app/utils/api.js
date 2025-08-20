@@ -8,9 +8,6 @@ const WEBSOCKET_URL = "http://192.168.0.104:3000";
 
 const api = axios.create({
   baseURL: API_BASE_URL,
-  headers: {
-    "Content-Type": "application/json",
-  },
 });
 
 // Xuất cả named và default để tương thích mọi nơi (import { api } hoặc import api)
@@ -26,6 +23,20 @@ api.interceptors.request.use(
       }
     } catch (error) {
       console.log("Error getting token for request:", error);
+    }
+
+    // Nếu gửi FormData, loại bỏ Content-Type mặc định để RN tự thêm boundary
+    try {
+      const isRNFormData = config?.data && typeof config.data === 'object' && typeof config.data._parts !== 'undefined';
+      const isFormData = (typeof FormData !== 'undefined' && config.data instanceof FormData) || isRNFormData;
+      if (isFormData) {
+        if (config.headers && (config.headers['Content-Type'] || config.headers['content-type'])) {
+          delete config.headers['Content-Type'];
+          delete config.headers['content-type'];
+        }
+      }
+    } catch (e) {
+      // noop
     }
 
     // console.log("API Request:", {

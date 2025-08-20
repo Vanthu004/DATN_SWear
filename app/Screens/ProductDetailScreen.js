@@ -1,15 +1,15 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useState } from 'react';
 import {
-    Alert,
-    Dimensions,
-    Image,
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Alert,
+  Dimensions,
+  Image,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import ProductVariantModal from '../components/ProductVariantModal';
 import { useAuth } from '../context/AuthContext';
@@ -399,7 +399,22 @@ const handleShowVariantModal = (type) => {
                       <Text key={i} style={{ color: '#facc15' }}>★</Text>
                     ))}
                   </View>
+                  {!!(review.product_variant_id || review.variant_text || review.size || review.color) && (
+                    <Text style={{ color: '#555', marginBottom: 4 }}>
+                      Phân loại: {[review.variant_text, review.size, review.color].filter(Boolean).join(' - ')}
+                    </Text>
+                  )}
                   <Text>{review.comment}</Text>
+                  {!!review.images && Array.isArray(review.images) && review.images.length > 0 && (
+                    <View style={{ flexDirection: 'row', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
+                      {review.images.map((img, i2) => (
+                        <Image key={i2} source={{ uri: img.url || img }} style={{ width: 80, height: 80, borderRadius: 8 }} />
+                      ))}
+                    </View>
+                  )}
+                  {!review.images && review.image_url && (
+                    <Image source={{ uri: review.image_url }} style={{ width: 120, height: 120, borderRadius: 8, marginTop: 8 }} />
+                  )}
                 </View>
               </View>
             ))}

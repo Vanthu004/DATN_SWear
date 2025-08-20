@@ -1,13 +1,13 @@
 import { Ionicons } from "@expo/vector-icons";
 import React, { useRef } from "react";
 import {
-    Alert,
-    Animated,
-    Image,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Alert,
+  Animated,
+  Image,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { useCart } from '../hooks/useCart';
 import { api } from '../utils/api';
@@ -62,7 +62,7 @@ export default function ProductCard({
       const price = product.price || "";
       const name = product.name || "";
       const rating = product.rating || 5.0;
-      const stock = product.stock_quantity || 0;
+      const stock = product.ratingCount || 0;
       // console.log("🔍 product.stock_quantity", product.stock_quantity);
       // console.log("🔍 full product", product);
   return (
@@ -124,7 +124,7 @@ export default function ProductCard({
         <View style={styles.ratingRow}>
           <Ionicons name="star" size={14} color="#222" style={{ marginRight: 2 }} />
           <Text style={styles.ratingText}>{rating.toFixed(1)}</Text>
-          <Text style={styles.ratingCount}>({stock})</Text>
+          <Text style={styles.ratingCount}>({stock}) đánh giá</Text>
           <View style={{ flex: 1 }} />
           <TouchableOpacity
             style={[styles.cartBtn, isInCart(productId) && styles.cartBtnActive]}

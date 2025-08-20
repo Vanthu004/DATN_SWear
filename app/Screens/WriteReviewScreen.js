@@ -1,24 +1,25 @@
 // WriteReviewScreen.js
 import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as ImagePicker from "expo-image-picker";
 import React, { useEffect, useState } from "react";
 import {
-  ActivityIndicator,
-  Alert,
-  FlatList,
-  Image,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Alert,
+    FlatList,
+    Image,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import { useAuth } from "../context/AuthContext";
 import { api } from "../utils/api";
 
 export default function WriteReviewScreen({ navigation, route }) {
   const { userInfo } = useAuth();
-  const { orderDetails, orderCode } = route.params;
+  const { orderDetails, orderCode, productId, product, isDirectReview } = route.params;
 
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -26,23 +27,45 @@ export default function WriteReviewScreen({ navigation, route }) {
   useEffect(() => {
     const fetchReviewedProducts = async () => {
       try {
-        const res = await api.get(`/reviews/user/${userInfo._id}`);
-        const reviewedProductIds = res.data.map((r) => r.product_id);
-
-        const filtered = orderDetails.filter(
-          (item) => !reviewedProductIds.includes(item.product_id)
-        );
-
-        setReviews(
-          filtered.map((item) => ({
-            product_id: item.product_id,
-            product_name: item.product_name,
-            product_image: item.product_image,
+        // Nếu là đánh giá trực tiếp từ trang chi tiết sản phẩm
+        if (isDirectReview && productId && product) {
+          setReviews([{
+            product_id: productId,
+            product_name: product.name || product.product_name,
+            product_image: product.image_url || product.product_image,
+            product_variant_id: null,
+            variant_text: "",
             rating: 0,
             comment: "",
             image: null,
-          }))
-        );
+          }]);
+          setLoading(false);
+          return;
+        }
+
+        // Nếu là đánh giá từ đơn hàng
+        if (orderDetails && orderDetails.length > 0) {
+          const res = await api.get(`/reviews/user/${userInfo._id}`);
+          const reviewedProductIds = res.data.map((r) => r.product_id);
+
+          const filtered = orderDetails.filter(
+            (item) => !reviewedProductIds.includes(item.product_id)
+          );
+
+          setReviews(
+            filtered.map((item) => ({
+              product_id: item.product_id,
+              product_name: item.product_name,
+              product_image: item.product_image,
+              product_variant_id: item.product_variant_id,
+              // Gộp thông tin biến thể nếu có (vd: Size - Color)
+              variant_text: [item.size, item.color].filter(Boolean).join(" - "),
+              rating: 0,
+              comment: "",
+              image: null,
+            }))
+          );
+        }
       } catch (err) {
         console.error("Lỗi khi tải dữ liệu đánh giá:", err);
         Alert.alert("Lỗi", "Không thể tải dữ liệu đánh giá");
@@ -52,7 +75,7 @@ export default function WriteReviewScreen({ navigation, route }) {
     };
 
     fetchReviewedProducts();
-  }, []);
+  }, [isDirectReview, productId, product, orderDetails]);
 
   const handleRatingChange = (index, value) => {
     const updated = [...reviews];
@@ -91,12 +114,17 @@ export default function WriteReviewScreen({ navigation, route }) {
     }
 
     try {
+      const token = await AsyncStorage.getItem("userToken");
+      const baseURL = api?.defaults?.baseURL || "";
       for (const item of reviews) {
         const formData = new FormData();
-        formData.append("user_id", userInfo._id);
-        formData.append("product_id", item.product_id);
-        formData.append("rating", item.rating);
-        formData.append("comment", item.comment);
+        formData.append("user_id", String(userInfo._id));
+        formData.append("product_id", String(item.product_id));
+        formData.append("rating", String(item.rating));
+        formData.append("comment", item.comment || "");
+        if (item.product_variant_id) {
+          formData.append("product_variant_id", String(item.product_variant_id));
+        }
 
         if (item.image) {
           const fileName = item.image.split("/").pop();
@@ -108,16 +136,26 @@ export default function WriteReviewScreen({ navigation, route }) {
           });
         }
 
-        await api.post("/reviews", formData, {
-          headers: {
-            //Accept: "application/json",
-            Authorization: `Bearer ${userInfo?.token}`,
-          },
+        // Sử dụng fetch để tránh lỗi Network Error với axios + RN khi upload multipart
+        const res = await fetch(`${baseURL}/reviews`, {
+          method: "POST",
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+          body: formData,
         });
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData?.message || `Upload failed with status ${res.status}`);
+        }
       }
 
       Alert.alert("Thành công", "Đã gửi đánh giá");
-      navigation.replace("OrderDetail", { orderCode });
+      
+      // Nếu là đánh giá trực tiếp, quay về trang chi tiết sản phẩm
+      if (isDirectReview) {
+        navigation.goBack();
+      } else {
+        navigation.replace("OrderDetail", { orderCode });
+      }
     } catch (err) {
       const message = err?.response?.data?.message;
       Alert.alert("Lỗi", message || "Không thể gửi đánh giá");
@@ -153,7 +191,10 @@ export default function WriteReviewScreen({ navigation, route }) {
     return (
       <View style={styles.center}>
         <Text style={{ fontSize: 16 }}>
-          Bạn đã đánh giá tất cả sản phẩm trong đơn hàng {orderCode}.
+          {isDirectReview 
+            ? "Bạn đã đánh giá sản phẩm này."
+            : `Bạn đã đánh giá tất cả sản phẩm trong đơn hàng ${orderCode}.`
+          }
         </Text>
       </View>
     );
@@ -161,7 +202,12 @@ export default function WriteReviewScreen({ navigation, route }) {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Đánh giá đơn hàng {orderCode}</Text>
+      <Text style={styles.title}>
+        {isDirectReview 
+          ? "Đánh giá sản phẩm"
+          : `Đánh giá đơn hàng ${orderCode}`
+        }
+      </Text>
       <FlatList
         data={reviews}
         keyExtractor={(item) => item.product_id}
@@ -169,6 +215,9 @@ export default function WriteReviewScreen({ navigation, route }) {
           <View style={styles.itemContainer}>
             <Image source={{ uri: item.product_image }} style={styles.imageLarge} />
             <Text style={styles.productName}>{item.product_name}</Text>
+            {!!item.variant_text && (
+              <Text style={styles.variantText}>Phân loại: {item.variant_text}</Text>
+            )}
             {renderStars(item.rating, index)}
 
             <TextInput
