@@ -23,12 +23,10 @@
       "edgeToEdgeEnabled": true,
       "permissions": [
         "NOTIFICATIONS",
-        "RECEIVE_NOTIFICATIONS",
-        "NOTIFICATIONS",
         "RECEIVE_NOTIFICATIONS"
       ],
       "googleServicesFile": "./google-services.json",
-      "package": "com.vanthu.DATN_SWear"
+      "package": "com.vanthu.datnswear"
     },
     "web": {
       "bundler": "metro"
@@ -47,11 +45,10 @@
         "expo-build-properties",
         {
           "android": {
-            "compileSdkVersion": 34,
+            "compileSdkVersion": 35,
             "targetSdkVersion": 34,
-            "minSdkVersion": 23,
-            "gradleVersion": "8.5.0",
-            "kotlinVersion": "1.9.23"
+            "minSdkVersion": 24,
+            "gradleVersion": "8.5.0"
           },
           "ios": {
             "deploymentTarget": "15.1"
