@@ -3,11 +3,16 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 // Base URL for the API
 const API_BASE_URL = "http://192.168.0.104:3000/api";
+
 const WEBSOCKET_URL = "http://192.168.0.104:3000";
+
 
 
 const api = axios.create({
   baseURL: API_BASE_URL,
+  headers: {
+    "Content-Type": "application/json",
+  },
 });
 
 // Xuất cả named và default để tương thích mọi nơi (import { api } hoặc import api)
@@ -106,6 +111,8 @@ export const uploadImage = async (
   relatedId = null
 ) => {
   try {
+    console.log("📤 uploadImage called with:", { imageFile, relatedModel, relatedId });
+    
     const formData = new FormData();
     formData.append("image", imageFile);
 
@@ -117,15 +124,20 @@ export const uploadImage = async (
       formData.append("relatedId", relatedId);
     }
 
-    const response = await api.post("/upload", formData, {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
-    });
+    console.log("📤 FormData created:", formData);
+    console.log("📤 Uploading to /upload");
 
+    const response = await api.post("/upload", formData);
+
+    console.log("📤 Upload response:", response.data);
     return response.data;
   } catch (error) {
-    console.error("Upload image error:", error);
+    console.error("❌ Upload image error:", error);
+    console.error("❌ Error details:", {
+      message: error.message,
+      response: error.response?.data,
+      status: error.response?.status
+    });
     throw error;
   }
 };
@@ -140,11 +152,7 @@ export const uploadAvatar = async (imageUri) => {
       name: "avatar.jpg",
     });
 
-    const response = await api.post("uploads/upload", formData, {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
-    });
+    const response = await api.post("/upload", formData);
 
     return response.data;
   } catch (error) {

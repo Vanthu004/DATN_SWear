@@ -12,6 +12,7 @@ Hệ thống đánh giá sản phẩm đã được cải thiện để giải q
   - `reviewedProducts`: array - danh sách sản phẩm đã đánh giá
 - **Cải thiện error handling**: Hiển thị thông báo lỗi chi tiết hơn
 - **Logging**: Thêm console.log để debug
+- **Upload ảnh mới**: Sử dụng API `/api/upload/upload` để upload ảnh trước khi tạo review
 
 ### 2. ProductDetailScreen được cập nhật (`app/Screens/ProductDetailScreen.js`)
 - **Nút đánh giá trực tiếp**: Hiển thị nút "Viết đánh giá" trên trang chi tiết sản phẩm
@@ -22,6 +23,11 @@ Hệ thống đánh giá sản phẩm đã được cải thiện để giải q
 - **Hỗ trợ đánh giá trực tiếp**: Có thể đánh giá từ trang chi tiết sản phẩm
 - **Logic phân biệt**: Xử lý khác nhau cho đánh giá từ đơn hàng vs đánh giá trực tiếp
 - **Navigation thông minh**: Quay về trang trước đó sau khi đánh giá thành công
+- **Upload ảnh cải tiến**: 
+  - Chọn ảnh từ camera hoặc thư viện
+  - Upload ảnh lên `/api/upload/upload` trước khi tạo review
+  - Nút xóa ảnh đã chọn
+  - Hiển thị preview ảnh
 
 ### 4. OrderHistoryScreen được cải thiện (`app/Screens/OrderHistoryScreen.js`)
 - **Mở rộng điều kiện đánh giá**: Cho phép đánh giá cả đơn hàng "delivered" và "completed"
@@ -57,19 +63,24 @@ Hệ thống đánh giá sản phẩm đã được cải thiện để giải q
 - `GET /reviews/user/{userId}` - Lấy danh sách đánh giá của user
 - `GET /reviews/product/{productId}` - Lấy đánh giá của sản phẩm
 - `POST /reviews` - Tạo đánh giá mới
+- `POST /api/upload/upload` - Upload ảnh (sử dụng cho review)
 
 ## Debug và Troubleshooting
 
 ### Console Logs:
 - `🔍 Review check:` - Thông tin kiểm tra khả năng đánh giá
-- `📤 Gửi đánh giá:` - Thông tin đánh giá đang gửi
-- `✅ Đánh giá thành công:` - Xác nhận đánh giá thành công
+- `📤 Uploading image for review:` - Thông tin upload ảnh
+- `✅ Image uploaded successfully:` - Xác nhận upload ảnh thành công
+- `📤 Sending review data:` - Thông tin đánh giá đang gửi
+- `✅ Review submitted successfully:` - Xác nhận đánh giá thành công
 - `❌ Lỗi...` - Các lỗi xảy ra
 
 ### Các lỗi thường gặp:
 1. **"Vui lòng đăng nhập để đánh giá"**: User chưa đăng nhập
 2. **"Bạn đã đánh giá sản phẩm này"**: Sản phẩm đã được đánh giá
 3. **"Không thể gửi đánh giá"**: Lỗi từ server
+4. **"Không thể upload ảnh"**: Lỗi upload ảnh (vẫn gửi được review)
+5. **"Không thể chọn ảnh"**: Lỗi quyền truy cập camera/thư viện
 
 ## Cải thiện trong tương lai
 1. Thêm tính năng chỉnh sửa đánh giá

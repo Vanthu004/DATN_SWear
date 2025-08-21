@@ -15,7 +15,14 @@ export const useReview = (productId) => {
     try {
       setLoading(true);
       const res = await api.get(`/reviews/product/${productId}`);
-      setReviews(res.data || []);
+      const raw = res.data || [];
+      const normalized = raw.map(r => {
+        const images = Array.isArray(r.images) ? r.images :
+          r.uploads ? r.uploads.map(u => u.url || u.path) :
+          r.image_url ? [r.image_url] : [];
+        return { ...r, images };
+      });
+      setReviews(normalized);
     } catch (error) {
       console.error("❌ Lỗi tải đánh giá:", error);
       Alert.alert("Lỗi", "Không thể tải đánh giá");
@@ -73,23 +80,59 @@ export const useReview = (productId) => {
       if (product_variant_id) {
         formData.append("product_variant_id", String(product_variant_id));
       }
-      // Hỗ trợ 1 hoặc nhiều ảnh: nếu mảng -> 'images', nếu 1 ảnh -> 'image'
+      // Upload ảnh trước nếu có
+      let uploadIds = [];
       if (images) {
         const imageArray = Array.isArray(images) ? images : [images];
-        imageArray.forEach((img, idx) => {
-          // img có thể là uri string hoặc đối tượng { uri, type, name }
-          if (typeof img === 'string') {
-            const fileName = img.split('/').pop() || `review_${Date.now()}_${idx}.jpg`;
-            const ext = (fileName.split('.').pop() || 'jpg').toLowerCase();
-            const type = `image/${ext}`;
-            formData.append(imageArray.length > 1 ? 'images' : 'image', { uri: img, name: fileName, type });
-          } else if (img && img.uri) {
-            const fileName = img.name || img.uri.split('/').pop() || `review_${Date.now()}_${idx}.jpg`;
-            const ext = (fileName.split('.').pop() || 'jpg').toLowerCase();
-            const type = img.type || `image/${ext}`;
-            formData.append(imageArray.length > 1 ? 'images' : 'image', { uri: img.uri, name: fileName, type });
+        for (const img of imageArray) {
+          try {
+            let imageUri, fileName, fileType;
+            if (typeof img === 'string') {
+              imageUri = img;
+              fileName = img.split('/').pop() || `review_${Date.now()}.jpg`;
+              fileType = (fileName.split('.').pop() || 'jpg').toLowerCase();
+            } else if (img && img.uri) {
+              imageUri = img.uri;
+              fileName = img.name || img.uri.split('/').pop() || `review_${Date.now()}.jpg`;
+              fileType = (img.type || `image/${(fileName.split('.').pop() || 'jpg').toLowerCase()}`).split('/')[1];
+            } else {
+              continue;
+            }
+            
+            const imageFile = {
+              uri: imageUri,
+              type: `image/${fileType}`,
+              name: fileName,
+            };
+            
+            console.log("📤 Uploading image for review:", fileName);
+            console.log("📤 Image file details:", imageFile);
+            
+            const formData = new FormData();
+            formData.append("image", imageFile);
+            
+            console.log("📤 FormData created for upload");
+            
+            const uploadResponse = await api.post("/upload", formData);
+            
+            console.log("📤 Upload response:", uploadResponse.data);
+            
+            if (uploadResponse.data && uploadResponse.data._id) {
+              uploadIds.push(uploadResponse.data._id);
+              console.log("✅ Image uploaded successfully, uploadId:", uploadResponse.data._id);
+            } else {
+              console.warn("⚠️ Upload response doesn't contain _id:", uploadResponse.data);
+            }
+          } catch (uploadError) {
+            console.error("❌ Image upload failed:", uploadError);
+            console.error("❌ Upload error details:", {
+              message: uploadError.message,
+              response: uploadError.response?.data,
+              status: uploadError.response?.status
+            });
+            throw new Error("Không thể upload ảnh: " + uploadError.message);
           }
-        });
+        }
       }
 
       console.log("📤 Gửi đánh giá:", {
@@ -100,7 +143,24 @@ export const useReview = (productId) => {
         product_variant_id
       });
 
-      const res = await api.post("/reviews", formData);
+      // Tạo đánh giá với uploadIds nếu có
+      const reviewData = {
+        user_id: userInfo._id,
+        product_id: productId,
+        rating: rating,
+        comment: comment || "",
+      };
+      
+      if (product_variant_id) {
+        reviewData.product_variant_id = product_variant_id;
+      }
+      
+      if (uploadIds.length > 0) {
+        reviewData.upload_ids = uploadIds;
+      }
+
+      console.log("📤 Sending review data:", reviewData);
+      const res = await api.post("/reviews", reviewData);
       const created = res?.data || res;
       
       console.log("✅ Đánh giá thành công:", created);

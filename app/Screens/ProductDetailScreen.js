@@ -49,7 +49,7 @@ export default function ProductDetailScreen({ route, navigation }) {
   const [fullProduct, setFullProduct] = useState(product);
   const [selectedVariant, setSelectedVariant] = useState(null);
   const [showVariantModal, setShowVariantModal] = useState(false);
-  const { reviews, avgRating, addReview } = useReview(productId);
+  const { reviews, avgRating, addReview, canReview, checkCanReview } = useReview(productId);
   const [selectedColor, setSelectedColor] = useState(null);
 
     useEffect(() => {

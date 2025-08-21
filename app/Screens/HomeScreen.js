@@ -2,15 +2,15 @@ import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import React, { useEffect, useRef, useState } from "react";
 import {
-  Animated,
-  Dimensions,
-  FlatList,
-  Image,
-  SafeAreaView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    Animated,
+    Dimensions,
+    FlatList,
+    Image,
+    SafeAreaView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import Swiper from 'react-native-swiper';
 import { useDispatch, useSelector } from "react-redux";
@@ -20,18 +20,18 @@ import TrendingProducts from "../components/TrendingProducts";
 import { useAuth } from "../context/AuthContext";
 import { useCart } from "../hooks/useCart";
 import {
-  fetchBestSellers,
-  fetchCategories,
-  fetchNewest,
-  fetchPopular
+    fetchBestSellers,
+    fetchCategories,
+    fetchNewest,
+    fetchPopular
 } from "../reudx/homeSlice";
 import {
-  addFavorite,
-  getCategoriesById,
-  getFavoritesByUser,
-  getPersonalizedProducts,
-  getTrendingProducts,
-  removeFavorite
+    addFavorite,
+    getCategoriesById,
+    getFavoritesByUser,
+    getPersonalizedProducts,
+    getTrendingProducts,
+    removeFavorite
 } from "../utils/api";
 
 const { width } = Dimensions.get("window");
@@ -86,6 +86,19 @@ export default function HomeScreen() {
     dispatch(fetchPopular());
     dispatch(fetchNewest());
   }, [dispatch]);
+
+  // Reload khi nhận tham số refresh từ navigation
+  useFocusEffect(
+    React.useCallback(() => {
+      // Nếu có params.refresh, re-fetch các danh sách
+      const unsubscribe = navigation.addListener('state', () => {});
+      dispatch(fetchCategories());
+      dispatch(fetchBestSellers());
+      dispatch(fetchPopular());
+      dispatch(fetchNewest());
+      return () => unsubscribe();
+    }, [dispatch])
+  );
 
   // Lấy danh sách sản phẩm yêu thích khi vào Home
   useEffect(() => {
