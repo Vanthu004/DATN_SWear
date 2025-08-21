@@ -6,12 +6,15 @@ import { io } from "socket.io-client";
 import { navigationRef } from "../navigation/TabNavigator";
 import { api, WEBSOCKET_URL } from "../utils/api";
 
+
+
 const socket = io(WEBSOCKET_URL, {
   reconnection: true,
   reconnectionAttempts: 5,
   reconnectionDelay: 1000,
 });
 
+export let logoutGlobal = async () => {};
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
@@ -22,6 +25,7 @@ export const AuthProvider = ({ children }) => {
   const [isBanned, setIsBanned] = useState(false);
 
   useEffect(() => {
+    logoutGlobal = logout;
     checkLoginState();
 
     socket.on("connect", () => {
@@ -258,6 +262,11 @@ export const AuthProvider = ({ children }) => {
       }
     } catch (error) {
       console.log("Error refreshing user data:", error.message);
+      if (error.response?.status === 401 && error.response?.data?.message === 'Token đã hết hạn') {
+        await logout();
+        Alert.alert('Phiên hết hạn', 'Vui lòng đăng nhập lại.');
+        return;
+      }
       if (error.response?.status === 403 && error.response?.data?.message?.includes("bị khóa")) {
         console.log("Handling 403 ban error in refreshUserData");
         if (!isBanned) {
