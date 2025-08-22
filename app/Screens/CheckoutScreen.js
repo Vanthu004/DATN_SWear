@@ -413,7 +413,10 @@ if (selectedDiscountVoucher) {
 
         {/* Shipping Address */}
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Địa chỉ giao hàng</Text>
+          <View style={{flexDirection:'row'}}>
+            <Text style={styles.cardTitle}>Địa chỉ giao hàng</Text>
+
+          </View>
           {addressList.length > 0 ? (
             <Picker
               selectedValue={selectedAddressId}

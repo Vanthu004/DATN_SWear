@@ -334,8 +334,8 @@ const handleShowVariantModal = (type) => {
         {/* Tên, giá, danh mục */}
         <Text style={styles.title}>{fullProduct.name || product.name}</Text>
         <Text style={styles.price}>{(fullProduct.price || product.price)?.toLocaleString('vi-VN')} VND</Text>
-        {(fullProduct.category || product.category) && (
-          <Text style={styles.category}>Danh mục: {(fullProduct.category?.name || fullProduct.category) || (product.category?.name || product.category)}</Text>
+        {(fullProduct.stock_quantity || product.stock_quantity) && (
+          <Text style={styles.category}>Số lượng: {(fullProduct.stock_quantity || fullProduct.quantity) || (product.stock_quantity || product.category)}</Text>
         )}
         
         {/* Thông báo hết hàng */}

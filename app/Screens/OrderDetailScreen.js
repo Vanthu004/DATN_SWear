@@ -2,13 +2,13 @@ import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import React, { useEffect, useState } from "react";
 import {
-    ActivityIndicator,
-    Image,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { getOrderById, getOrderDetailsByOrderId } from "../utils/api";
 
@@ -110,24 +110,24 @@ const productTotal = orderDetails.reduce((sum, item) => {
       </View>
       <View style={styles.infoBox}>
         <Text style={styles.infoText}>Phí vận chuyển</Text>
-        <Text style={styles.infoValue}>{order.data.shippingmethod_id.fee} VND</Text>
+        <Text style={styles.infoValue}>{order.data.shippingmethod_id.fee.toLocaleString()} VND</Text>
       </View>
             <View style={styles.infoBox}>
         <Text style={styles.infoText}>Voucher</Text>
-{order.data.voucher_id && (
-  <>
-    <Text style={styles.infoValue}>
-      {order.data.voucher_id.title === "Miễn phí vận chuyển"
-        ? "Miễn phí vận chuyển"
-        : `${order.data.voucher_id.discount_value} %`}
-    </Text>
-  </>
-)}
+      {order.data.voucher_id && (
+        <>
+          <Text style={styles.infoValue}>
+            {order.data.voucher_id.title === "Miễn phí vận chuyển"
+              ? "Miễn phí vận chuyển"
+              : `${order.data.voucher_id.discount_value} %`}
+          </Text>
+        </>
+      )}
       </View>
       <View style={styles.infoBox}>
         <Text style={styles.infoTextBold}>Thành tiền</Text>
         <Text style={styles.infoValueBold}>
-          {order.data.total_price} VND
+          {order.data.total_price.toLocaleString()} VND
         </Text>
       </View>
 
@@ -147,7 +147,7 @@ const productTotal = orderDetails.reduce((sum, item) => {
     {order.data.shipping_address}
   </Text>
 </View>
-      <View style={styles.infoBox}>
+      {/* <View style={styles.infoBox}>
         <Text style={styles.infoText}>Phương thức Thanh toán</Text>
         <Text style={styles.infoValue}>{order.data.paymentmethod_id.name}</Text>
       </View>
@@ -155,7 +155,7 @@ const productTotal = orderDetails.reduce((sum, item) => {
         <Text style={styles.infoText}>Hình thức vận chuyển</Text>
         <Text style={styles.infoValue}>{order.data.shippingmethod_id.name}</Text>
 
-      </View>
+      </View> */}
       {order.data.paymentmethod_id && (
         <View style={styles.infoBox}>
           <Text style={styles.infoText}>Phương thức Thanh toán</Text>
@@ -196,7 +196,7 @@ const productTotal = orderDetails.reduce((sum, item) => {
           <Text style={styles.confirmText}>Lịch sử mua hàng</Text>
         </TouchableOpacity>
       </View>
-                  <View style={{height: 50}}></View>
+                  <View style={{height: 70}}></View>
     </ScrollView>
   );
 };
