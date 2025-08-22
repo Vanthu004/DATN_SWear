@@ -2,36 +2,35 @@ import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import React, { useEffect, useRef, useState } from "react";
 import {
-    Animated,
-    Dimensions,
-    FlatList,
-    Image,
-    SafeAreaView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Animated,
+  Dimensions,
+  FlatList,
+  Image,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import Swiper from 'react-native-swiper';
 import { useDispatch, useSelector } from "react-redux";
 import ProductCard from "../components/ProductCard";
 import RelatedProducts from "../components/RelatedProducts";
-import TrendingProducts from "../components/TrendingProducts";
 import { useAuth } from "../context/AuthContext";
 import { useCart } from "../hooks/useCart";
 import {
-    fetchBestSellers,
-    fetchCategories,
-    fetchNewest,
-    fetchPopular
+  fetchBestSellers,
+  fetchCategories,
+  fetchNewest,
+  fetchPopular
 } from "../reudx/homeSlice";
 import {
-    addFavorite,
-    getCategoriesById,
-    getFavoritesByUser,
-    getPersonalizedProducts,
-    getTrendingProducts,
-    removeFavorite
+  addFavorite,
+  getCategoriesById,
+  getFavoritesByUser,
+  getPersonalizedProducts,
+  getTrendingProducts,
+  removeFavorite
 } from "../utils/api";
 
 const { width } = Dimensions.get("window");
@@ -526,7 +525,7 @@ const ShoseMoutainCategoryList = ({ categories }) => (
           keyExtractor={(item) => String(item._id || item.id)}
           horizontal
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{paddingBottom: 12, }}
+          contentContainerStyle={{paddingBottom: 12,paddingHorizontal: 18 }}
           renderItem={({ item }) => (
             <ProductCard
               product={item}
@@ -558,7 +557,7 @@ const ShoseMoutainCategoryList = ({ categories }) => (
           keyExtractor={(item) => String(item._id || item.id)}
           horizontal
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{paddingBottom: 12, }}
+          contentContainerStyle={{paddingBottom: 12,paddingHorizontal: 18 }}
           renderItem={({ item }) => (
             <ProductCard
               product={item}
@@ -574,15 +573,6 @@ const ShoseMoutainCategoryList = ({ categories }) => (
           ) : null}
         />
 
-        {/* Trending Products */}
-        <TrendingProducts
-          products={trendingProducts}
-          loading={trendingLoading}
-          title="Sản phẩm phổ biến tuần này"
-          timeRange="week"
-          navigation={navigation}
-          onViewAll={() => navigation.navigate('SearchSc', { keyword: 'trending' })}
-        />
 
         {/* Personalized Products */}
         {userId && (
@@ -591,7 +581,10 @@ const ShoseMoutainCategoryList = ({ categories }) => (
             loading={personalizedLoading}
             title="Gợi ý dành cho bạn"
             navigation={navigation}
-            onViewAll={() => navigation.navigate('SearchSc', { keyword: 'personalized' })}
+            // isFavorite={favoriteIds.includes(item._id)}
+            // onToggleFavorite={handleToggleFavorite}
+            // showFavoriteIcon={true}
+            // onViewAll={() => navigation.navigate('SearchSc', { keyword: 'personalized' })}
           />
         )}
         {/* <View style={styles.sectionRow}>

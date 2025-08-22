@@ -1,12 +1,10 @@
-import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import {
-    ActivityIndicator,
-    FlatList,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View
+  ActivityIndicator,
+  FlatList,
+  StyleSheet,
+  Text,
+  View
 } from 'react-native';
 import ProductCard from './ProductCard';
 
@@ -14,7 +12,6 @@ const RelatedProducts = ({
   products, 
   loading, 
   title = "Sản phẩm liên quan",
-  onViewAll,
   navigation 
 }) => {
   if (!products?.length && !loading) return null;
@@ -29,18 +26,12 @@ const RelatedProducts = ({
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>{title}</Text>
-        {onViewAll && (
-          <TouchableOpacity onPress={onViewAll} style={styles.viewAllButton}>
-            <Text style={styles.viewAllText}>Xem tất cả</Text>
-            <Ionicons name="chevron-forward" size={16} color="#2979FF" />
-          </TouchableOpacity>
-        )}
       </View>
 
       {loading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#2979FF" />
-          <Text style={styles.loadingText}>Đang tải sản phẩm liên quan...</Text>
+          <Text style={styles.loadingText}>Đang tải sản phẩm ...</Text>
         </View>
       ) : (
         <FlatList

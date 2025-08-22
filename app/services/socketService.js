@@ -4,7 +4,7 @@ import { io } from 'socket.io-client';
 import { store } from '../reudx/store';
 import { chatAPI } from './chatService';
 
-const WEBSOCKET_URL = "http://192.168.0.104:3000";
+const WEBSOCKET_URL = "http://192.168.1.9:3000";
 
 
 class SocketService {
