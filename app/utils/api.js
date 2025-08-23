@@ -1,6 +1,9 @@
 
+// app/utils/api.js
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
+import { Alert } from "react-native";
+import { logoutGlobal } from "../context/AuthContext";
 // Base URL for the API
 const API_BASE_URL = "http://192.168.1.9:3000/api";
 
@@ -74,23 +77,29 @@ api.interceptors.response.use(
     const status = error.response?.status;
     const message = error.response?.data?.message || "Lỗi không xác định";
 
+    if (status === 401 && message === 'Token đã hết hạn') {
+      // Xử lý token expired: logout và alert
+      await logoutGlobal();
+      Alert.alert('Phiên hết hạn', 'Vui lòng đăng nhập lại.');
+      return Promise.reject(error);
+    }
+
+    if (status === 403 && message === 'Token không hợp lệ') {
+      // Xử lý invalid token: tương tự expired
+      await logoutGlobal();
+      Alert.alert('Token không hợp lệ', 'Vui lòng đăng nhập lại.');
+      return Promise.reject(error);
+    }
     if (status === 403 && message.includes("bị khóa")) {
       try {
         await AsyncStorage.setItem("banMessage", message);
         console.log("api.js: Ban detected, stored banMessage, relying on AuthContext for logout");
+        await logoutGlobal();
       } catch (err) {
         console.error("Error handling 403:", err);
       }
     }
 
-    if (status === 401 && message.toLowerCase().includes("jwt")) {
-      try {
-        await AsyncStorage.setItem("banMessage", message);
-        console.log("api.js: JWT error detected, stored banMessage, relying on AuthContext for logout");
-      } catch (err) {
-        console.error("Error handling 401:", err);
-      }
-    }
 
     console.log("API Response Error:", {
       status,
