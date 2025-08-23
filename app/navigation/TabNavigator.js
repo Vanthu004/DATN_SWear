@@ -12,6 +12,9 @@ import AddressListScreen from "../Screens/AddressListScreen";
 import CartScreen from "../Screens/CartScreen";
 import CategoryScreen from "../Screens/CategoryScreen";
 import ChangePasswordScreen from "../Screens/ChangePasswordScreen";
+
+import ChatListScreen from "../Screens/ChatListScreen";
+import ChatScreen from "../Screens/ChatScreen";
 import CheckoutScreen from "../Screens/CheckoutScreen";
 import EditProfileScreen from "../Screens/EditProfileScreen";
 import HelpScreen from "../Screens/HelpScreen";
@@ -28,6 +31,7 @@ import ProductDetailScreen from "../Screens/ProductDetailScreen";
 import ProductScreen from "../Screens/ProductScreen";
 import ProfileScreen from "../Screens/ProfileScreen";
 import SearchSc from '../Screens/SearchSc';
+import SupportScreen from "../Screens/SupportScreen";
 import TermsScreen from "../Screens/TermsScreen";
 import UserInfoScreen from "../Screens/UserInfoScreen";
 import WishlistScreen from "../Screens/WishlistScreen.js";
@@ -38,8 +42,8 @@ export const navigationRef = createRef();
 
 // Hàm resetNavigation để chuyển hướng về màn hình bất kỳ
 export const resetNavigation = (screenName) => {
-    console.log("resetNavigation called with screen:", screenName);
-       console.log("navigationRef.current:", navigationRef.current);
+  console.log("resetNavigation called with screen:", screenName);
+  console.log("navigationRef.current:", navigationRef.current);
   if (navigationRef.current) {
     navigationRef.current.reset({
       index: 0,
@@ -186,11 +190,11 @@ function ProfileStack() {
         component={ProfileScreen}
         options={{ headerShown: false }}
       />
-        <Stack.Screen
-  name="ProductDetail"
-  component={ProductDetailScreen}
-  options={{ headerShown: false }}
-/>
+      <Stack.Screen
+        name="ProductDetail"
+        component={ProductDetailScreen}
+        options={{ headerShown: false }}
+      />
 
       <Stack.Screen
         name="EditProfile"
@@ -212,7 +216,7 @@ function ProfileStack() {
         component={AddAddressScreen}
         options={{ headerShown: false }}
       />
-      <Stack.Screen
+      {/* <Stack.Screen
         name="Payment"
         component={PaymentScreen}
         options={{ headerShown: false }}
@@ -221,7 +225,9 @@ function ProfileStack() {
         name="AddBankCard"
         component={AddBankCardScreen}
         options={{ headerShown: false }}
-      />
+      /> */}
+
+
       <Stack.Screen
         name="ChangePassword"
         component={ChangePasswordScreen}
@@ -252,11 +258,30 @@ function ProfileStack() {
         component={OrderDetailScreen}
         options={{ headerShown: false }}
       />
+
+      <Stack.Screen
+        name="SupportScreen"
+        component={SupportScreen}
+        options={{ headerShown: false }}
+      />
       <Stack.Screen
         name="Help"
         component={HelpScreen}
-        options={{ title: "Trợ giúp" }}
+        options={{headerShown: false }}
       />
+
+      <Stack.Screen
+        name="ChatScreen"
+        component={ChatScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="ChatListScreen"
+        component={ChatListScreen}
+        options={{ headerShown: false }}
+      />
+
+
       <Stack.Screen
         name="TermsScreen"
         component={TermsScreen}
@@ -296,9 +321,27 @@ const CustomTabBar = ({ state, descriptors, navigation }) => (
       else if (route.name === "Notifications") iconName = "notifications-outline";
       else if (route.name === "Wishlist") iconName = "heart-outline";
       else if (route.name === "Profile") iconName = "person-outline";
+      
       const onPress = () => {
-        if (!isFocused) navigation.navigate(route.name);
+        if (isFocused) {
+          // Nếu tab đang được focus, quay về màn hình đầu tiên của stack đó
+          const targetScreen = route.name === "Home" ? "HomeScreen" : 
+                             route.name === "Notifications" ? "NotificationsScreen" :
+                             route.name === "Wishlist" ? "WishlistScreen" :
+                             "ProfileScreen";
+          
+          // Sử dụng navigate với merge: true để quay về màn hình đầu tiên của stack
+          navigation.navigate(route.name, {
+            screen: targetScreen,
+            merge: true,
+            params: {}
+          });
+        } else {
+          // Nếu tab chưa được focus, chuyển sang tab đó
+          navigation.navigate(route.name);
+        }
       };
+      
       return (
         <TouchableOpacity
           key={route.key}
@@ -374,6 +417,6 @@ const customStyles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  
+
 });
 

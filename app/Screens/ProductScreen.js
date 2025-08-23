@@ -4,6 +4,7 @@ import {
     Alert,
     Image,
     ScrollView,
+    StyleSheet,
     Text,
     TouchableOpacity,
     View,
@@ -13,7 +14,7 @@ import { useCart } from "../hooks/useCart";
 
 const ProductScreen = ({ route }) => {
   const [size, setSize] = useState("S");
-  const [color, setColor] = useState("black");
+  const [color, setSelectedColor] = useState("black");
   const [quantity, setQuantity] = useState(1);
   const { addToCart, isInCart } = useCart();
 
@@ -29,6 +30,33 @@ const ProductScreen = ({ route }) => {
 
   const sizes = ["S", "M", "L", "XL"];
   const colors = ["black", "white"];
+
+  // Kiểm tra sản phẩm có hết hàng không
+  const isOutOfStock = () => {
+    // Kiểm tra stock từ nhiều nguồn khác nhau
+    const getStockQuantity = (productData) => {
+      const possibleStockFields = [
+        productData?.stock_quantity,
+        productData?.stock,
+        productData?.quantity,
+        productData?.available_quantity,
+        productData?.inventory
+      ];
+      
+      for (const stock of possibleStockFields) {
+        if (stock !== undefined && stock !== null && stock > 0) {
+          return stock;
+        }
+      }
+      
+      return 0;
+    };
+    
+    const stock = getStockQuantity(product);
+    return stock <= 0;
+  };
+
+  const outOfStock = isOutOfStock();
 
   const reviews = [
     {
@@ -63,6 +91,12 @@ const ProductScreen = ({ route }) => {
   };
 
   const handleAddToCart = async () => {
+    // Kiểm tra nếu sản phẩm hết hàng thì không cho thêm vào giỏ
+    if (outOfStock) {
+      Alert.alert("Thông báo", "Sản phẩm này đã hết hàng!");
+      return;
+    }
+    
     // TODO: Implement product variant selection logic
     // For now, we'll pass null as productVariantId
     const success = await addToCart(product, quantity, null);
@@ -78,15 +112,23 @@ const ProductScreen = ({ route }) => {
       <ScrollView style={{ padding: 16 }}>
         {/* Ảnh sản phẩm */}
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          <Image
-            source={{ uri: product.image_url }}
-            style={{
-              width: 300,
-              height: 300,
-              borderRadius: 12,
-              marginRight: 12,
-            }}
-          />
+          <View style={{ position: 'relative' }}>
+            <Image
+              source={{ uri: product.image_url }}
+              style={{
+                width: 300,
+                height: 300,
+                borderRadius: 12,
+                marginRight: 12,
+              }}
+            />
+            {/* Nhãn "Hết hàng" trên ảnh */}
+            {outOfStock && (
+              <View style={styles.outOfStockLabel}>
+                <Text style={styles.outOfStockText}>Hết hàng</Text>
+              </View>
+            )}
+          </View>
           <Image
             source={{ uri: "https://example.com/image2.jpg" }}
             style={{ width: 300, height: 300, borderRadius: 12 }}
@@ -100,6 +142,14 @@ const ProductScreen = ({ route }) => {
         <Text style={{ color: "#3b82f6", fontWeight: "bold", marginTop: 4 }}>
           {product.price.toLocaleString()} VND
         </Text>
+
+        {/* Thông báo hết hàng */}
+        {outOfStock && (
+          <View style={styles.outOfStockBanner}>
+            <Ionicons name="alert-circle" size={20} color="#dc2626" />
+            <Text style={styles.outOfStockBannerText}>Sản phẩm này hiện đã hết hàng</Text>
+          </View>
+        )}
 
         {/* Kích cỡ */}
         <Text style={{ marginTop: 16, fontWeight: "500" }}>Kích cỡ</Text>
@@ -127,7 +177,7 @@ const ProductScreen = ({ route }) => {
           {colors.map((item) => (
             <TouchableOpacity
               key={item}
-              onPress={() => setColor(item)}
+              onPress={() => setSelectedColor(item)}
               style={{
                 width: 30,
                 height: 30,
@@ -214,23 +264,83 @@ const ProductScreen = ({ route }) => {
         <Text style={{ fontSize: 18, fontWeight: "bold", color: "#3b82f6" }}>
           {product.price.toLocaleString()} VND
         </Text>
-        <TouchableOpacity
-          style={{
-            backgroundColor: isProductInCart ? "#10b981" : "#3b82f6",
-            paddingVertical: 12,
-            paddingHorizontal: 20,
-            borderRadius: 10,
-          }}
-          onPress={handleAddToCart}
-          disabled={isProductInCart}
-        >
-          <Text style={{ color: "#fff", fontWeight: "bold" }}>
-            {isProductInCart ? "Đã có trong giỏ" : "Thêm vào Giỏ hàng"}
-          </Text>
-        </TouchableOpacity>
+        
+        {/* Nút thêm vào giỏ hàng - ẩn khi hết hàng */}
+        {!outOfStock && (
+          <TouchableOpacity
+            style={{
+              backgroundColor: isProductInCart ? "#10b981" : "#3b82f6",
+              paddingVertical: 12,
+              paddingHorizontal: 20,
+              borderRadius: 10,
+            }}
+            onPress={handleAddToCart}
+            disabled={isProductInCart}
+          >
+            <Text style={{ color: "#fff", fontWeight: "bold" }}>
+              {isProductInCart ? "Đã có trong giỏ" : "Thêm vào Giỏ hàng"}
+            </Text>
+          </TouchableOpacity>
+        )}
+
+        {/* Thông báo hết hàng trong footer */}
+        {outOfStock && (
+          <View style={styles.outOfStockFooter}>
+            <Ionicons name="alert-circle" size={20} color="#dc2626" />
+            <Text style={styles.outOfStockFooterText}>Hết hàng</Text>
+          </View>
+        )}
       </View>
     </SafeAreaView>
   );
 };
+
+const styles = StyleSheet.create({
+  outOfStockLabel: {
+    position: 'absolute',
+    top: 10,
+    left: 10,
+    backgroundColor: 'rgba(220, 38, 38, 0.9)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+    zIndex: 3,
+  },
+  outOfStockText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  outOfStockBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#ffebee',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    marginTop: 12,
+    marginBottom: 12,
+  },
+  outOfStockBannerText: {
+    marginLeft: 8,
+    fontSize: 14,
+    color: '#dc2626',
+    fontWeight: 'bold',
+  },
+  outOfStockFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#ffebee',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+  },
+  outOfStockFooterText: {
+    marginLeft: 8,
+    fontSize: 14,
+    color: '#dc2626',
+    fontWeight: 'bold',
+  },
+});
 
 export default ProductScreen;

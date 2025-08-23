@@ -43,27 +43,27 @@ const ProfileScreen = ({ navigation }) => {
       icon: "location-outline",
       onPress: () => navigation.navigate("AddressList"),
     },
+    { 
+      id: 2, 
+      title: "Đơn hàng", 
+      icon: "cube-outline", 
+      onPress: () => navigation.navigate("OrderHistory") 
+    },
     {
-      id: 2,
+      id: 3,
       title: "Đổi mật khẩu",
       icon: "lock-closed-outline",
       onPress: () => navigation.navigate("ChangePassword"),
     },
     {
-      id: 3,
-      title: "Thanh toán",
+      id: 4,
+      title: "Yêu cầu hỗ trợ",
       icon: "card-outline",
-      onPress: () => navigation.navigate("Payment"),
-    },
-    { 
-      id: 4, 
-      title: "Đơn hàng", 
-      icon: "cube-outline", 
-      onPress: () => navigation.navigate("OrderHistory") 
+      onPress: () => navigation.navigate("SupportScreen"),
     },
     { 
       id: 5, 
-      title: "Trợ giúp", 
+      title: "Điều khoản chính sách sử dụng ", 
       icon: "help-circle-outline", 
       onPress: () => navigation.navigate("Help"), 
     },

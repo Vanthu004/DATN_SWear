@@ -1,8 +1,10 @@
 import { Ionicons } from "@expo/vector-icons";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Alert,
+  FlatList,
   KeyboardAvoidingView,
+  Modal,
   Platform,
   ScrollView,
   StyleSheet,
@@ -28,6 +30,49 @@ const AddAddressScreen = ({ navigation, route }) => {
     is_default: editAddress?.is_default || false, //  Mặc định là false
   });
 
+  // Province/District cascading state
+  const [provinces, setProvinces] = useState([]); // full objects with districts
+  const [districts, setDistricts] = useState([]); // list of district names
+  const [wards, setWards] = useState([]); // list of ward names
+  const [selectedProvince, setSelectedProvince] = useState(null);
+  const [selectedDistrict, setSelectedDistrict] = useState(null);
+  const [showProvinceModal, setShowProvinceModal] = useState(false);
+  const [showDistrictModal, setShowDistrictModal] = useState(false);
+  const [showWardModal, setShowWardModal] = useState(false);
+
+  useEffect(() => {
+    const fetchProvinces = async () => {
+      try {
+        const res = await fetch("https://provinces.open-api.vn/api/?depth=3");
+        const data = await res.json();
+        data.sort((a, b) => a.name.localeCompare(b.name));
+        setProvinces(data);
+        // hydrate from existing form data when editing
+        if (formData.city) {
+          const found = data.find((p) => p.name === formData.city);
+          if (found) {
+            setSelectedProvince(found);
+            const dists = (found.districts || []).map((d) => d.name).sort((a,b)=>a.localeCompare(b));
+            setDistricts(dists);
+            // If editing and district exists, sync wards
+            if (formData.district) {
+              const foundDistrict = found.districts?.find((d) => d.name === formData.district);
+              if (foundDistrict) {
+                setSelectedDistrict(foundDistrict);
+                const wardList = (foundDistrict.wards || []).map((w) => w.name).sort((a,b)=>a.localeCompare(b));
+                setWards(wardList);
+              }
+            }
+          }
+        }
+      } catch (e) {
+        console.log("Fetch provinces failed:", e);
+      }
+    };
+    fetchProvinces();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
 
   // Hàm xử lý lưu hoặc cập nhật địa chỉ
 
@@ -51,6 +96,21 @@ const AddAddressScreen = ({ navigation, route }) => {
 
     if (!formData.city) errors.push("Vui lòng chọn Tỉnh/Thành phố.");
     if (!formData.district) errors.push("Vui lòng chọn Quận/Huyện.");
+    if (!formData.ward) errors.push("Vui lòng chọn Phường/Xã.");
+    // Validate district belongs to province
+    if (formData.city && formData.district && districts.length > 0) {
+      const isValidDistrict = districts.includes(formData.district);
+      if (!isValidDistrict) {
+        errors.push("Quận/Huyện không khớp với Tỉnh/Thành phố đã chọn.");
+      }
+    }
+    // Validate ward belongs to district
+    if (formData.district && formData.ward && wards.length > 0) {
+      const isValidWard = wards.includes(formData.ward);
+      if (!isValidWard) {
+        errors.push("Phường/Xã không khớp với Quận/Huyện đã chọn.");
+      }
+    }
 
     // Nếu có lỗi, hiển thị
     if (errors.length > 0) {
@@ -140,12 +200,12 @@ const AddAddressScreen = ({ navigation, route }) => {
 
             {/* Địa chỉ */}
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Tên đường</Text>
+              <Text style={styles.label}>Địa chỉ cụ thể</Text>
               <TextInput
                 style={styles.input}
                 value={formData.address}
                 onChangeText={(text) => setFormData({ ...formData, address: text })}
-                placeholder="Nhập tên đường"
+                placeholder="Nhập địa chỉ cụ thể"
                 multiline
               />
             </View>
@@ -153,12 +213,22 @@ const AddAddressScreen = ({ navigation, route }) => {
             {/* Phường/Xã */}
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Phường/Xã</Text>
-              <TextInput
-                style={styles.input}
-                value={formData.ward}
-                onChangeText={(text) => setFormData({ ...formData, ward: text })}
-                placeholder="Chọn phường/xã"
-              />
+              <TouchableOpacity
+                style={[styles.input, styles.selectInput]}
+                onPress={() => {
+                  if (!selectedDistrict) {
+                    Alert.alert("Thông báo", "Vui lòng chọn Quận/Huyện trước");
+                    return;
+                  }
+                  setShowWardModal(true);
+                }}
+                activeOpacity={0.7}
+              >
+                <Text style={formData.ward ? styles.selectText : styles.placeholderText}>
+                  {formData.ward || "Chọn phường/xã"}
+                </Text>
+                <Ionicons name="chevron-down" size={18} color="#666" />
+              </TouchableOpacity>
             </View>
 
 
@@ -167,24 +237,36 @@ const AddAddressScreen = ({ navigation, route }) => {
 
               <View style={[styles.inputGroup, { flex: 1, marginRight: 10 }]}>
                 <Text style={styles.label}>Quận/Huyện</Text>
-                <TextInput
-                  style={styles.input}
-                  value={formData.district}
-                  onChangeText={(text) =>
-                    setFormData({ ...formData, district: text })
-                  }
-                  placeholder="Chọn quận/huyện"
-                />
+                <TouchableOpacity
+                  style={[styles.input, styles.selectInput]}
+                  onPress={() => {
+                    if (!selectedProvince) {
+                      Alert.alert("Thông báo", "Vui lòng chọn Tỉnh/Thành phố trước");
+                      return;
+                    }
+                    setShowDistrictModal(true);
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Text style={formData.district ? styles.selectText : styles.placeholderText}>
+                    {formData.district || "Chọn quận/huyện"}
+                  </Text>
+                  <Ionicons name="chevron-down" size={18} color="#666" />
+                </TouchableOpacity>
               </View>
 
               <View style={[styles.inputGroup, { flex: 1 }]}>
                 <Text style={styles.label}>Tỉnh/Thành phố</Text>
-                <TextInput
-                  style={styles.input}
-                  value={formData.city}
-                  onChangeText={(text) => setFormData({ ...formData, city: text })}
-                  placeholder="Chọn tỉnh/thành phố"
-                />
+                <TouchableOpacity
+                  style={[styles.input, styles.selectInput]}
+                  onPress={() => setShowProvinceModal(true)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={formData.city ? styles.selectText : styles.placeholderText}>
+                    {formData.city || "Chọn tỉnh/thành phố"}
+                  </Text>
+                  <Ionicons name="chevron-down" size={18} color="#666" />
+                </TouchableOpacity>
               </View>
             </View>
 
@@ -243,6 +325,98 @@ const AddAddressScreen = ({ navigation, route }) => {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+      {/* Province Modal */}
+      <Modal visible={showProvinceModal} transparent animationType="fade">
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalContainer}>
+            <Text style={styles.modalTitle}>Chọn Tỉnh/Thành phố</Text>
+            <FlatList
+              data={provinces}
+              keyExtractor={(item) => String(item.code)}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={styles.modalItem}
+                  onPress={() => {
+                    setSelectedProvince(item);
+                    setFormData((prev) => ({ ...prev, city: item.name, district: "", ward: "" }));
+                    const dists = (item.districts || []).map((d) => d.name).sort((a,b)=>a.localeCompare(b));
+                    setDistricts(dists);
+                    setWards([]);
+                    setSelectedDistrict(null);
+                    setShowProvinceModal(false);
+                  }}
+                >
+                  <Text>{item.name}</Text>
+                </TouchableOpacity>
+              )}
+            />
+            <TouchableOpacity style={styles.modalClose} onPress={() => setShowProvinceModal(false)}>
+              <Text style={styles.modalCloseText}>Đóng</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* District Modal */}
+      <Modal visible={showDistrictModal} transparent animationType="fade">
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalContainer}>
+            <Text style={styles.modalTitle}>Chọn Quận/Huyện</Text>
+            <FlatList
+              data={districts}
+              keyExtractor={(item, idx) => String(idx)}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={styles.modalItem}
+                  onPress={() => {
+                    // Find the district object from selectedProvince
+                    const districtObj = selectedProvince.districts?.find(d => d.name === item);
+                    if (districtObj) {
+                      setSelectedDistrict(districtObj);
+                      setFormData((prev) => ({ ...prev, district: item, ward: "" }));
+                      const wardList = (districtObj.wards || []).map((w) => w.name).sort((a,b)=>a.localeCompare(b));
+                      setWards(wardList);
+                    }
+                    setShowDistrictModal(false);
+                  }}
+                >
+                  <Text>{item}</Text>
+                </TouchableOpacity>
+              )}
+            />
+            <TouchableOpacity style={styles.modalClose} onPress={() => setShowDistrictModal(false)}>
+              <Text style={styles.modalCloseText}>Đóng</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Ward Modal */}
+      <Modal visible={showWardModal} transparent animationType="fade">
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalContainer}>
+            <Text style={styles.modalTitle}>Chọn Phường/Xã</Text>
+            <FlatList
+              data={wards}
+              keyExtractor={(item, idx) => String(idx)}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={styles.modalItem}
+                  onPress={() => {
+                    setFormData((prev) => ({ ...prev, ward: item }));
+                    setShowWardModal(false);
+                  }}
+                >
+                  <Text>{item}</Text>
+                </TouchableOpacity>
+              )}
+            />
+            <TouchableOpacity style={styles.modalClose} onPress={() => setShowWardModal(false)}>
+              <Text style={styles.modalCloseText}>Đóng</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
       {/* Nút tạo ở dưới */}
       <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
         <Text style={styles.saveButtonText}>
@@ -297,6 +471,19 @@ const styles = StyleSheet.create({
     fontSize: 16,
     backgroundColor: "#f8f8f8",
   },
+  selectInput: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  selectText: {
+    color: "#222",
+    fontSize: 16,
+  },
+  placeholderText: {
+    color: "#999",
+    fontSize: 16,
+  },
   row: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -345,6 +532,41 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingBottom: 100, // để tránh che nút phía dưới
+  },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: "#0008",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalContainer: {
+    width: "85%",
+    maxHeight: "70%",
+    backgroundColor: "#fff",
+    borderRadius: 10,
+    padding: 16,
+  },
+  modalTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    marginBottom: 10,
+  },
+  modalItem: {
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: "#eee",
+  },
+  modalClose: {
+    alignSelf: "flex-end",
+    marginTop: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    backgroundColor: "#007AFF",
+    borderRadius: 6,
+  },
+  modalCloseText: {
+    color: "#fff",
+    fontWeight: "600",
   },
 
 

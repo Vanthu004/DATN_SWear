@@ -8,11 +8,14 @@ import AddressListScreen from "../Screens/AddressListScreen";
 import ChangePasswordScreen from "../Screens/ChangePasswordScreen";
 import EditProfileScreen from "../Screens/EditProfileScreen";
 import HelpScreen from "../Screens/HelpScreen";
+import ChatListScreen from "../Screens/ChatListScreen";
+import ChatScreen from "../Screens/ChatScreen";
 import PaymentScreen from "../Screens/PaymentScreen";
 import PrivacyPolicyScreen from "../Screens/PrivacyPolicyScreen";
 import ProfileScreen from "../Screens/ProfileScreen";
 import TermsScreen from "../Screens/TermsScreen";
 import UserInfoScreen from "../Screens/UserInfoScreen";
+import SupportScreen from "../Screens/SupportScreen";
 
 const ProfileStack = createNativeStackNavigator();
 
@@ -37,18 +40,23 @@ export default function ProfileNavigator() {
         name={ROUTES.ADD_ADDRESS}
         component={AddAddressScreen}
       />
-      <ProfileStack.Screen name={ROUTES.PAYMENT} component={PaymentScreen} />
-      <ProfileStack.Screen
+      {/* <ProfileStack.Screen name={ROUTES.PAYMENT} component={PaymentScreen} /> */}
+      {/* <ProfileStack.Screen
         name={ROUTES.ADD_BANK_CARD}
         component={AddBankCardScreen}
-      />
+      /> */}
+      <ProfileStack.Screen name={ROUTES.SUPPORT} component={SupportScreen} />
+      <ProfileStack.Screen name={ROUTES.CHATLIST} component={ChatListScreen} />
+      <ProfileStack.Screen name={ROUTES.CHAT} component={ChatScreen} />
       <ProfileStack.Screen
         name={ROUTES.CHANGE_PASSWORD}
         component={ChangePasswordScreen}
       />
       <ProfileStack.Screen name={ROUTES.HELP} component={HelpScreen} />
-      <ProfileStack.Screen name={ROUTES.TERMS} component={TermsScreen} options={ { headerShown: false }} />
-      <ProfileStack.Screen name={ROUTES.PRIVACY_POLICY} component={PrivacyPolicyScreen} options={ { headerShown: false }} />
+
+      <ProfileStack.Screen name={ROUTES.TERMS} component={TermsScreen} options={{ headerShown: false }} />
+      <ProfileStack.Screen name={ROUTES.PRIVACY_POLICY} component={PrivacyPolicyScreen} options={{ headerShown: false }} />
+
 
     </ProfileStack.Navigator>
   );

@@ -1,10 +1,12 @@
-// app/utils/api.js
+
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 // Base URL for the API
-
 const API_BASE_URL = "http://192.168.1.9:3000/api";
+
 const WEBSOCKET_URL = "http://192.168.1.9:3000";
+
+
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -12,6 +14,9 @@ const api = axios.create({
     "Content-Type": "application/json",
   },
 });
+
+// Xuất cả named và default để tương thích mọi nơi (import { api } hoặc import api)
+
 
 // Interceptors
 api.interceptors.request.use(
@@ -25,13 +30,27 @@ api.interceptors.request.use(
       console.log("Error getting token for request:", error);
     }
 
-    console.log("API Request:", {
-      method: config.method?.toUpperCase(),
-      url: config.url,
-      data: config.data,
-      params: config.params,
-      headers: config.headers,
-    });
+    // Nếu gửi FormData, loại bỏ Content-Type mặc định để RN tự thêm boundary
+    try {
+      const isRNFormData = config?.data && typeof config.data === 'object' && typeof config.data._parts !== 'undefined';
+      const isFormData = (typeof FormData !== 'undefined' && config.data instanceof FormData) || isRNFormData;
+      if (isFormData) {
+        if (config.headers && (config.headers['Content-Type'] || config.headers['content-type'])) {
+          delete config.headers['Content-Type'];
+          delete config.headers['content-type'];
+        }
+      }
+    } catch (e) {
+      // noop
+    }
+
+    // console.log("API Request:", {
+    //   method: config.method?.toUpperCase(),
+    //   url: config.url,
+    //   data: config.data,
+    //   params: config.params,
+    //   headers: config.headers,
+    // });
 
     return config;
   },
@@ -44,11 +63,11 @@ api.interceptors.request.use(
 // Response interceptor for logging and handling errors
 api.interceptors.response.use(
   (response) => {
-    console.log("API Response:", {
-      status: response.status,
-      url: response.config.url,
-      data: response.data,
-    });
+    // console.log("API Response:", {
+    //   status: response.status,
+    //   url: response.config.url,
+    //   data: response.data,
+    // });
     return response;
   },
   async (error) => {
@@ -92,6 +111,8 @@ export const uploadImage = async (
   relatedId = null
 ) => {
   try {
+    console.log("📤 uploadImage called with:", { imageFile, relatedModel, relatedId });
+    
     const formData = new FormData();
     formData.append("image", imageFile);
 
@@ -103,15 +124,20 @@ export const uploadImage = async (
       formData.append("relatedId", relatedId);
     }
 
-    const response = await api.post("/upload", formData, {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
-    });
+    console.log("📤 FormData created:", formData);
+    console.log("📤 Uploading to /upload");
 
+    const response = await api.post("/upload", formData);
+
+    console.log("📤 Upload response:", response.data);
     return response.data;
   } catch (error) {
-    console.error("Upload image error:", error);
+    console.error("❌ Upload image error:", error);
+    console.error("❌ Error details:", {
+      message: error.message,
+      response: error.response?.data,
+      status: error.response?.status
+    });
     throw error;
   }
 };
@@ -126,11 +152,7 @@ export const uploadAvatar = async (imageUri) => {
       name: "avatar.jpg",
     });
 
-    const response = await api.post("uploads/upload", formData, {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
-    });
+    const response = await api.post("/upload", formData);
 
     return response.data;
   } catch (error) {
@@ -350,14 +372,18 @@ export const addCartItem = async (cartItemData) => {
     const response = await api.post("/cart-items", cartItemData);
     return response.data;
   } catch (error) {
-    console.error("Add cart item error:", error);
+    // Chỉ log nhẹ trong dev nếu không phải lỗi đã biết (ví dụ hết hàng 400)
+    const status = error?.response?.status;
+    if (status !== 400) {
+      console.error("Add cart item error:", error);
+    }
     throw error;
   }
 };
 
 export const getCartItemsByCart = async (cartId) => {
   try {
-    const response = await api.get(`/cart-items/cart/${cartId}`);
+    const response = await api.get(`/cart-items/cart/${cartId}?populate=product_id,product_variant_id`);
     return response.data;
   } catch (error) {
     console.error("Get cart items by cart error:", error);
@@ -584,10 +610,6 @@ export const getUserVouchers = async (userId) => {
   const res = await api.get(`/vouchers/user/${userId}`);
   return res.data;
 };
-export const applyVoucherApi = async (userId, voucherId) => {
-  const res = await api.put(`/vouchers/apply-voucher/${voucherId}/${userId}`);
-  return res.data;
-};
 
 // Payment and Shipping Methods APIs
 export const getPaymentMethods = async () => {
@@ -634,6 +656,13 @@ export const getAllReviews = async () => {
 
 
 
+
+
+export const applyVoucherApi = async (voucherId) => {
+  const res = await api.post(`/vouchers/apply-voucher/${voucherId}`);
+  return res.data;
+
+};
 // ===== SHIPPING METHODS APIs =====
 
 export const createShippingMethod = async (shippingData) => {
@@ -687,7 +716,219 @@ export const getProductDetail = async (productId) => {
     throw error;
   }
 };
+// Giảm tồn kho
+export const decreaseProductStock = async (items) => {
+  try {
+    const response = await api.post("/products/decrease-stock", { items });
+    return response.data; // { message: "Cập nhật tồn kho thành công" }
+  } catch (error) {
+    console.error("Error decreasing stock:", error);
+    throw error;
+  }
+};
 
+// Hoàn tồn kho
+export const increaseProductStock = async (items) => {
+  try {
+    const response = await api.post("/products/increase-stock", { items });
+    return response.data; // { message: "Cập nhật tồn kho thành công" }
+  } catch (error) {
+    console.error("Error increasing stock:", error);
+    throw error;
+  }
+};
+
+// ===== PRODUCT SUGGESTION APIs =====
+
+// Gợi ý sản phẩm (Autocomplete)
+export const getProductSuggestions = async (keyword, limit = 8) => {
+  try {
+    const response = await api.get("/products/suggest", {
+      params: { keyword, limit }
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Get product suggestions error:", error);
+    throw error;
+  }
+};
+
+// Sản phẩm liên quan
+export const getRelatedProducts = async (productId, limit = 6) => {
+  try {
+    const response = await api.get("/products/related", {
+      params: { productId, limit }
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Get related products error:", error);
+    throw error;
+  }
+};
+
+// Sản phẩm phổ biến (Trending)
+export const getTrendingProducts = async (limit = 10, timeRange = 'all') => {
+  try {
+    const response = await api.get("/products/trending", {
+      params: { limit, timeRange }
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Get trending products error:", error);
+    throw error;
+  }
+};
+
+// Gợi ý cá nhân hóa
+export const getPersonalizedProducts = async (userId, limit = 8) => {
+  try {
+    const response = await api.get("/products/personalized", {
+      params: { userId, limit }
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Get personalized products error:", error);
+    throw error;
+  }
+};
+
+// Tìm kiếm nâng cao với gợi ý
+export const searchProductsEnhanced = async (params) => {
+  try {
+    const {
+      keyword,
+      page = 1,
+      limit = 10,
+      category,
+      priceMin,
+      priceMax,
+      sortBy = 'relevance'
+    } = params;
+
+    const searchParams = {
+      keyword,
+      page,
+      limit,
+      sortBy
+    };
+
+    if (category) searchParams.category = category;
+    if (priceMin) searchParams.priceMin = priceMin;
+    if (priceMax) searchParams.priceMax = priceMax;
+
+    const response = await api.get("/products/search/enhanced", {
+      params: searchParams
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Search products enhanced error:", error);
+    throw error;
+  }
+};
+
+// ===== SEARCH HISTORY APIs =====
+
+// Lấy từ khóa tìm kiếm phổ biến
+export const getPopularKeywords = async (limit = 10, timeRange = 'all') => {
+  try {
+    const response = await api.get("/search-history/popular", {
+      params: { limit, timeRange }
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Get popular keywords error:", error);
+    throw error;
+  }
+};
+
+// Lấy từ khóa phổ biến thời gian thực
+export const getRealtimePopularKeywords = async (limit = 10, hours = 24) => {
+  try {
+    const response = await api.get("/search-history/realtime-popular", {
+      params: { limit, hours }
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Get realtime popular keywords error:", error);
+    throw error;
+  }
+};
+
+// Lấy lịch sử tìm kiếm của user
+export const getSearchHistory = async (limit = 10) => {
+  try {
+    const response = await api.get("/search-history/history", {
+      params: { limit }
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Get search history error:", error);
+    throw error;
+  }
+};
+
+// Lấy lịch sử tìm kiếm gần đây
+export const getRecentSearchHistory = async (limit = 5) => {
+  try {
+    const response = await api.get("/search-history/recent", {
+      params: { limit }
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Get recent search history error:", error);
+    throw error;
+  }
+};
+
+// Lấy gợi ý tìm kiếm thông minh
+export const getSearchSuggestions = async (keyword, limit = 5) => {
+  try {
+    const response = await api.get("/search-history/suggestions", {
+      params: { keyword, limit }
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Get search suggestions error:", error);
+    throw error;
+  }
+};
+
+// Thêm lịch sử tìm kiếm
+export const addSearchHistory = async (searchData) => {
+  try {
+    const response = await api.post("/search-history/add", searchData);
+    return response.data;
+  } catch (error) {
+    console.error("Add search history error:", error);
+    throw error;
+  }
+};
+
+// Xóa lịch sử tìm kiếm
+export const deleteSearchHistory = async (keyword = null) => {
+  try {
+    const response = await api.delete("/search-history/delete", {
+      data: keyword ? { keyword } : {}
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Delete search history error:", error);
+    throw error;
+  }
+};
+
+// Lấy thống kê tìm kiếm
+export const getSearchStats = async (timeRange = 'all') => {
+  try {
+    const response = await api.get("/search-history/stats", {
+      params: { timeRange }
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Get search stats error:", error);
+    throw error;
+  }
+};
+export default api;
 export { api, WEBSOCKET_URL };
 
-export default api;

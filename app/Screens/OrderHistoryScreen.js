@@ -2,25 +2,24 @@ import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import React, { useEffect, useRef, useState } from "react";
 import {
-  ActivityIndicator,
-  Alert,
-  Dimensions,
-  FlatList,
-  Image,
-  Modal,
-  Pressable,
-  SafeAreaView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View
+    ActivityIndicator,
+    Alert,
+    Dimensions,
+    FlatList,
+    Image,
+    Modal,
+    Pressable,
+    SafeAreaView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View
 } from "react-native";
 import Dialog from "react-native-dialog";
 import { TabBar, TabView } from 'react-native-tab-view';
 import { useAuth } from "../context/AuthContext";
-import { cancelOrder, getOrderDetailsByOrderId, getOrdersByUser } from "../utils/api";
-
+import { cancelOrder, getOrderDetailsByOrderId, getOrdersByUser, increaseProductStock } from "../utils/api";
 const ORDER_TABS = [
   { key: "all", label: "Tất cả" },
   { key: "pending", label: "Chờ xử lý" },
@@ -59,6 +58,7 @@ export default function OrderHistoryScreen() {
   const [index, setIndex] = useState(0);
   const [routes] = useState(ORDER_TABS.map(tab => ({ key: tab.key, title: tab.label })));
   const [modalVisible, setModalVisible] = useState(false);
+
 const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
   const [selectedOrderId, setSelectedOrderId] = useState(null);
@@ -85,6 +85,18 @@ const [showCancelDialog, setShowCancelDialog] = useState(false);
 
     try {
       await cancelOrder(selectedOrderId, cancelReason.trim());
+          // Lấy thông tin chi tiết sản phẩm trong đơn vừa hủy
+    const orderDetails = await getOrderDetailsByOrderId(selectedOrderId);
+    if (orderDetails && orderDetails.length > 0) {
+      const stockItems = orderDetails.map(item => ({
+        productId: item.product_id || item.product?._id,
+        quantity: item.quantity,
+      }));
+
+      // Hoàn kho sản phẩm
+      await increaseProductStock(stockItems);
+      console.log("✅ Stock increased successfully after order cancellation");
+    }
       Alert.alert("Thành công", "Đơn hàng đã được hủy.");
       setShowCancelDialog(false);
       setCancelReason("");
@@ -156,6 +168,7 @@ const [showCancelDialog, setShowCancelDialog] = useState(false);
     const tabKey = getTabKeyFromStatus(item.status);
     const tabLabel = ORDER_TABS.find(t => t.key === tabKey)?.label || item.status || "";
     // Tổng số lượng sản phẩm trong đơn hàng
+
     const totalQuantity = Array.isArray(item.orderDetails)
   ? item.orderDetails.reduce((sum, prod) => sum + (prod.quantity || 0), 0)
   : 0;
@@ -191,6 +204,7 @@ const [showCancelDialog, setShowCancelDialog] = useState(false);
         </View>
         <View style={styles.orderActions}>
           {getTabKeyFromStatus(item.status) === "pending" && (
+
            <TouchableOpacity
               style={styles.cancelBtn}
               onPress={() => {
@@ -201,7 +215,7 @@ const [showCancelDialog, setShowCancelDialog] = useState(false);
               <Text style={styles.cancelBtnText}>Hủy đơn hàng</Text>
             </TouchableOpacity>
           )}
-          {getTabKeyFromStatus(item.status) === "delivered" && (
+          {(getTabKeyFromStatus(item.status) === "delivered" || getTabKeyFromStatus(item.status) === "completed") && (
             <>
              <TouchableOpacity 
               style={styles.refundBtn}
@@ -337,6 +351,7 @@ const [showCancelDialog, setShowCancelDialog] = useState(false);
           </View>
         </Pressable>
       </Modal>
+
       {/* Dialog hủy đơn hàng */}
       <Dialog.Container visible={showCancelDialog}>
         <Dialog.Title>Hủy đơn hàng</Dialog.Title>

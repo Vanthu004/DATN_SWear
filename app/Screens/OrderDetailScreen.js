@@ -108,37 +108,54 @@ const productTotal = orderDetails.reduce((sum, item) => {
           {productTotal?.toLocaleString()} VND
         </Text>
       </View>
-      {order.data.shippingmethod_id && (
-        <View style={styles.infoBox}>
-          <Text style={styles.infoText}>Phí vận chuyển</Text>
-          <Text style={styles.infoValue}>{order.data.shippingmethod_id.fee || 0} VND</Text>
-        </View>
+      <View style={styles.infoBox}>
+        <Text style={styles.infoText}>Phí vận chuyển</Text>
+        <Text style={styles.infoValue}>{order.data.shippingmethod_id.fee.toLocaleString()} VND</Text>
+      </View>
+            <View style={styles.infoBox}>
+        <Text style={styles.infoText}>Voucher</Text>
+      {order.data.voucher_id && (
+        <>
+          <Text style={styles.infoValue}>
+            {order.data.voucher_id.title === "Miễn phí vận chuyển"
+              ? "Miễn phí vận chuyển"
+              : `${order.data.voucher_id.discount_value} %`}
+          </Text>
+        </>
       )}
-            {order.data.voucher_id && (
-              <View style={styles.infoBox}>
-                <Text style={styles.infoText}>Giảm </Text>
-                <Text style={styles.infoValue}>{order.data.voucher_id.discount_value || 0} %</Text>
-              </View>
-            )}
+      </View>
       <View style={styles.infoBox}>
         <Text style={styles.infoTextBold}>Thành tiền</Text>
         <Text style={styles.infoValueBold}>
-          {order.data.total_price} VND
+          {order.data.total_price.toLocaleString()} VND
         </Text>
       </View>
 
       {/* Thông tin giao hàng */}
       <Text style={styles.sectionTitle}>Thông tin giao hàng</Text>
-      {order.data.user_id && (
-        <View style={styles.infoBox}>
-          <Text style={styles.infoText}>Người nhận</Text>
-          <Text style={styles.infoValue}>{order.data.user_id.name || "---"}</Text>
-        </View>
-      )}
       <View style={styles.infoBox}>
-        <Text style={styles.infoText}>Địa chỉ giao hàng</Text>
-        <Text style={styles.infoValue}>{order.data.shipping_address}</Text>
+        <Text style={styles.infoText}>Người nhận</Text>
+        <Text style={styles.infoValue}>{order.data.user_id.name}</Text>
       </View>
+<View style={styles.infoBox}>
+  <Text style={styles.infoText}>Địa chỉ giao hàng  </Text>
+  <Text
+    style={styles.infoValue}
+    numberOfLines={3}
+    ellipsizeMode="tail"
+  >
+    {order.data.shipping_address}
+  </Text>
+</View>
+      {/* <View style={styles.infoBox}>
+        <Text style={styles.infoText}>Phương thức Thanh toán</Text>
+        <Text style={styles.infoValue}>{order.data.paymentmethod_id.name}</Text>
+      </View>
+      <View style={styles.infoBox}>
+        <Text style={styles.infoText}>Hình thức vận chuyển</Text>
+        <Text style={styles.infoValue}>{order.data.shippingmethod_id.name}</Text>
+
+      </View> */}
       {order.data.paymentmethod_id && (
         <View style={styles.infoBox}>
           <Text style={styles.infoText}>Phương thức Thanh toán</Text>
@@ -158,14 +175,28 @@ const productTotal = orderDetails.reduce((sum, item) => {
 
       {/* Action buttons */}
       <View style={styles.actionRow}>
-<TouchableOpacity
-  style={styles.confirmBtn}
-  onPress={() => navigation.navigate("Profile", { screen: "OrderHistory" })}
->
-  <Text style={styles.confirmText}>Lịch sử mua hàng</Text>
-</TouchableOpacity>
+        {/* Nút đánh giá - chỉ hiển thị khi đơn hàng đã giao */}
+        {(order.data.status === "delivered" || order.data.status === "completed" || 
+          order.data.status === "Đã giao hàng" || order.data.status === "Hoàn thành") && (
+          <TouchableOpacity
+            style={[styles.confirmBtn, { backgroundColor: '#10b981' }]}
+            onPress={() => navigation.navigate("WriteReview", {
+              orderDetails: orderDetails,
+              orderCode: order.data.order_code
+            })}
+          >
+            <Text style={styles.confirmText}>✍️ Viết đánh giá</Text>
+          </TouchableOpacity>
+        )}
+        
+        <TouchableOpacity
+          style={styles.confirmBtn}
+          onPress={() => navigation.navigate("Profile", { screen: "OrderHistory" })}
+        >
+          <Text style={styles.confirmText}>Lịch sử mua hàng</Text>
+        </TouchableOpacity>
       </View>
-                  <View style={{height: 50}}></View>
+                  <View style={{height: 70}}></View>
     </ScrollView>
   );
 };
@@ -223,7 +254,7 @@ const styles = StyleSheet.create({
     padding: 10,
     marginHorizontal: 16,
     marginVertical: 4,
-    flexDirection: "row",
+    flexDirection: "column",
     justifyContent: "space-between",
   },
   infoText: { color: "#888", fontSize: 13 },

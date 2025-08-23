@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -11,16 +11,24 @@ import {
   View
 } from "react-native";
 import { useDispatch, useSelector } from "react-redux";
+import PopularKeywords from "../components/PopularKeywords";
 import ProductCard from "../components/ProductCard";
+import ProductSuggestions from "../components/ProductSuggestions";
+import SearchHistory from "../components/SearchHistory";
+import SmartSearchSuggestions from "../components/SmartSearchSuggestions";
+import { useAuth } from "../context/AuthContext";
 import { useCart } from "../hooks/useCart";
+import { useSearchHistory } from "../hooks/useSearchHistory";
 import {
   clearSearchResults,
   searchProducts
 } from "../reudx/homeSlice";
+import { getProductSuggestions } from "../utils/api";
 
 export default function SearchSc({ route, navigation }) {
   const dispatch = useDispatch();
   const { cartCount } = useCart();
+  const { userInfo } = useAuth();
   const keywordFromNav = route?.params?.keyword || "";
 
   const [input, setInput] = useState(keywordFromNav);
@@ -30,16 +38,46 @@ export default function SearchSc({ route, navigation }) {
   const [sortType, setSortType] = useState('none');
   const [priceFilter, setPriceFilter] = useState(null); // 'under100' | 'between100_500' | 'above500'
 
+  // Product suggestions state
+  const [suggestions, setSuggestions] = useState([]);
+  const [suggestionsLoading, setSuggestionsLoading] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+
+  // Search history state
+  const [showSearchHistory, setShowSearchHistory] = useState(true);
+  const [showSmartSuggestions, setShowSmartSuggestions] = useState(false);
+
   const { searchResults, searchLoading, searchError } = useSelector((state) => state.home);
+
+  // Search history hook
+  const {
+    popularKeywords,
+    recentHistory,
+    searchSuggestions,
+    loading: searchHistoryLoading,
+    fetchPopularKeywords,
+    fetchRecentHistory,
+    fetchSearchSuggestions,
+    addToSearchHistory,
+    removeFromSearchHistory,
+    clearSuggestions
+  } = useSearchHistory();
 
   useEffect(() => {
     if (keywordFromNav) {
       dispatch(searchProducts(keywordFromNav));
+      setShowSearchHistory(false);
+    } else {
+      // Load search history when no keyword
+      fetchPopularKeywords(8, 'week');
+      if (userInfo?._id) {
+        fetchRecentHistory(5);
+      }
     }
     return () => {
       dispatch(clearSearchResults());
     };
-  }, [dispatch, keywordFromNav]);
+  }, [dispatch, keywordFromNav, fetchPopularKeywords, fetchRecentHistory, userInfo]);
 
   useEffect(() => {
     if (searchResults?.products) {
@@ -63,10 +101,142 @@ export default function SearchSc({ route, navigation }) {
     setSortedProducts(filtered);
   }, [priceFilter, searchResults]);
 
-  const handleSearch = () => {
+  // Debounced search suggestions
+  const debouncedSearchSuggestions = useCallback(
+    async (keyword) => {
+      if (keyword.trim().length < 2) {
+        setSuggestions([]);
+        setShowSuggestions(false);
+        return;
+      }
+
+      setSuggestionsLoading(true);
+      try {
+        const response = await getProductSuggestions(keyword.trim(), 8);
+        if (response.success) {
+          setSuggestions(response.suggestions || []);
+          setShowSuggestions(true);
+        }
+      } catch (error) {
+        console.error('Error fetching suggestions:', error);
+        setSuggestions([]);
+      } finally {
+        setSuggestionsLoading(false);
+      }
+    },
+    []
+  );
+
+  const handleSearch = async () => {
     if (input.trim()) {
+      setShowSuggestions(false);
+      setShowSmartSuggestions(false);
+      setShowSearchHistory(false);
+
+      // Add to search history if user is logged in
+      if (userInfo?._id) {
+        try {
+          await addToSearchHistory({
+            keyword: input.trim(),
+            searchType: 'product',
+            resultCount: 0 // Will be updated after search
+          });
+        } catch (error) {
+          console.error('Error adding to search history:', error);
+        }
+      }
+
       dispatch(searchProducts(input.trim()));
     }
+  };
+
+  const handleInputChange = (text) => {
+    setInput(text);
+    setShowSearchHistory(false);
+
+    if (text.trim().length >= 2) {
+      debouncedSearchSuggestions(text);
+      // Fetch smart suggestions if user is logged in
+      if (userInfo?._id) {
+        fetchSearchSuggestions(text);
+        setShowSmartSuggestions(true);
+      }
+    } else {
+      setSuggestions([]);
+      setShowSuggestions(false);
+      setShowSmartSuggestions(false);
+      setShowSearchHistory(true);
+    }
+  };
+
+  const handleSelectSuggestion = (suggestion) => {
+    setInput(suggestion.name);
+    setShowSuggestions(false);
+    setShowSmartSuggestions(false);
+    setShowSearchHistory(false);
+    dispatch(searchProducts(suggestion.name));
+  };
+
+  const handleCloseSuggestions = () => {
+    setShowSuggestions(false);
+  };
+
+  const handleKeywordPress = async (keyword) => {
+    setInput(keyword);
+    setShowSearchHistory(false);
+    setShowSmartSuggestions(false);
+
+    // Add to search history if user is logged in
+    if (userInfo?._id) {
+      try {
+        await addToSearchHistory({
+          keyword: keyword,
+          searchType: 'product',
+          resultCount: 0
+        });
+      } catch (error) {
+        console.error('Error adding to search history:', error);
+      }
+    }
+
+    dispatch(searchProducts(keyword));
+  };
+
+  const handleDeleteHistory = async (keyword) => {
+    try {
+      await removeFromSearchHistory(keyword);
+    } catch (error) {
+      console.error('Error deleting history:', error);
+    }
+  };
+
+  const handleClearAllHistory = async () => {
+    try {
+      await removeFromSearchHistory();
+    } catch (error) {
+      console.error('Error clearing history:', error);
+    }
+  };
+
+  const handleSelectSmartSuggestion = async (keyword) => {
+    setInput(keyword);
+    setShowSmartSuggestions(false);
+    setShowSearchHistory(false);
+
+    // Add to search history if user is logged in
+    if (userInfo?._id) {
+      try {
+        await addToSearchHistory({
+          keyword: keyword,
+          searchType: 'product',
+          resultCount: 0
+        });
+      } catch (error) {
+        console.error('Error adding to search history:', error);
+      }
+    }
+
+    dispatch(searchProducts(keyword));
   };
 
   const handleSort = () => {
@@ -94,6 +264,9 @@ export default function SearchSc({ route, navigation }) {
 
   const handleFilter = () => setFilterVisible(!filterVisible);
 
+  // Check if search has been performed
+  const isSearchPerformed = input.trim() || searchResults?.products?.length > 0;
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.searchBarRow}>
@@ -105,11 +278,18 @@ export default function SearchSc({ route, navigation }) {
             style={styles.input}
             placeholder="Tìm kiếm sản phẩm..."
             value={input}
-            onChangeText={setInput}
+            onChangeText={handleInputChange}
             onSubmitEditing={handleSearch}
             returnKeyType="search"
           />
-          <TouchableOpacity onPress={() => { setInput(''); dispatch(clearSearchResults()); }} style={styles.iconBtn}>
+          <TouchableOpacity onPress={() => { 
+            setInput(''); 
+            setSuggestions([]);
+            setShowSuggestions(false);
+            setShowSmartSuggestions(false);
+            setShowSearchHistory(true);
+            dispatch(clearSearchResults()); 
+          }} style={styles.iconBtn}>
             <Ionicons name="close" size={26} color="#000" />
           </TouchableOpacity>
         </View>
@@ -122,63 +302,104 @@ export default function SearchSc({ route, navigation }) {
           )}
         </TouchableOpacity>
       </View>
-
-      <View style={styles.topBar}>
-        <Text style={styles.resultCount}>
-          {sortedProducts.length} Sản phẩm
-        </Text>
-        <View style={styles.actionBtns}>
-          <TouchableOpacity style={styles.actionBtn} onPress={handleSort}>
-            <Ionicons name="swap-vertical" size={18} color="#2979FF" />
-            <Text style={styles.actionText}>Sắp xếp</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.actionBtn} onPress={handleFilter}>
-            <Ionicons name="options" size={18} color="#2979FF" />
-            <Text style={styles.actionText}>Bộ lọc</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      {sortVisible && (
-        <View style={styles.sortBox}>
-          <TouchableOpacity onPress={() => handleSortType('none')} style={styles.sortItem}>
-            <Text>Mặc định</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => handleSortType('priceAsc')} style={styles.sortItem}>
-            <Text>Giá tăng dần</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => handleSortType('priceDesc')} style={styles.sortItem}>
-            <Text>Giá giảm dần</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => handleSortType('nameAZ')} style={styles.sortItem}>
-            <Text>Tên (A–Z)</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-
-      {filterVisible && (
-        <View style={styles.sortBox}>
-          <TouchableOpacity onPress={() => { setPriceFilter('under100'); setFilterVisible(false); }} style={styles.sortItem}>
-            <Text>Giá dưới 100.000đ</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => { setPriceFilter('between100_500'); setFilterVisible(false); }} style={styles.sortItem}>
-            <Text>Từ 100.000đ đến 500.000đ</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => { setPriceFilter('above500'); setFilterVisible(false); }} style={styles.sortItem}>
-            <Text>Trên 500.000đ</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => { setPriceFilter(null); setFilterVisible(false); }} style={styles.sortItem}>
-            <Text>Hủy lọc</Text>
-          </TouchableOpacity>
+      {/* Product Suggestions */}
+      <ProductSuggestions
+        suggestions={suggestions}
+        loading={suggestionsLoading}
+        visible={showSuggestions}
+        onSelectSuggestion={handleSelectSuggestion}
+        onClose={handleCloseSuggestions}
+      />
+      {/* Smart Search Suggestions */}
+      <SmartSearchSuggestions
+        suggestions={searchSuggestions}
+        loading={searchHistoryLoading}
+        visible={showSmartSuggestions}
+        currentKeyword={input}
+        onSelectSuggestion={handleSelectSmartSuggestion}
+        onClose={() => setShowSmartSuggestions(false)}
+      />
+      {/* Search History and Popular Keywords */}
+      {showSearchHistory && !input.trim() && (
+        <View style={styles.searchHistoryContainer}>
+          {/* Popular Keywords */}
+          <PopularKeywords
+            keywords={popularKeywords}
+            loading={searchHistoryLoading}
+            title="🔥 Từ khóa phổ biến"
+            timeRange="week"
+            onKeywordPress={handleKeywordPress}
+          />
+          {/* Recent Search History */}
+          {userInfo?._id && (
+            <SearchHistory
+              history={recentHistory}
+              loading={searchHistoryLoading}
+              title="🔍 Tìm kiếm gần đây"
+              onKeywordPress={handleKeywordPress}
+              onDeleteHistory={handleDeleteHistory}
+              onClearAll={handleClearAllHistory}
+            />
+          )}
         </View>
       )}
-
-      {searchLoading && <ActivityIndicator size="large" color="#2979FF" style={{ marginTop: 20 }} />}
-      {searchError && <Text style={{ color: "red", marginTop: 20 }}>{searchError}</Text>}
-      {!searchLoading && sortedProducts?.length === 0 && (
-        <Text style={{ marginTop: 20, color: '#888', textAlign: 'center' }}>Không tìm thấy sản phẩm phù hợp.</Text>
+      {/* Show search results UI only if a search has been performed */}
+      {isSearchPerformed && (
+        <>
+          <View style={styles.topBar}>
+            <Text style={styles.resultCount}>
+              {sortedProducts.length} Sản phẩm
+            </Text>
+            <View style={styles.actionBtns}>
+              <TouchableOpacity style={styles.actionBtn} onPress={handleSort}>
+                <Ionicons name="swap-vertical" size={18} color="#2979FF" />
+                <Text style={styles.actionText}>Sắp xếp</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.actionBtn} onPress={handleFilter}>
+                <Ionicons name="options" size={18} color="#2979FF" />
+                <Text style={styles.actionText}>Bộ lọc</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+          {sortVisible && (
+            <View style={styles.sortBox}>
+              <TouchableOpacity onPress={() => handleSortType('none')} style={styles.sortItem}>
+                <Text>Mặc định</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => handleSortType('priceAsc')} style={styles.sortItem}>
+                <Text>Giá tăng dần</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => handleSortType('priceDesc')} style={styles.sortItem}>
+                <Text>Giá giảm dần</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => handleSortType('nameAZ')} style={styles.sortItem}>
+                <Text>Tên (A–Z)</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+          {filterVisible && (
+            <View style={styles.sortBox}>
+              <TouchableOpacity onPress={() => { setPriceFilter('under100'); setFilterVisible(false); }} style={styles.sortItem}>
+                <Text>Giá dưới 100.000đ</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => { setPriceFilter('between100_500'); setFilterVisible(false); }} style={styles.sortItem}>
+                <Text>Từ 100.000đ đến 500.000đ</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => { setPriceFilter('above500'); setFilterVisible(false); }} style={styles.sortItem}>
+                <Text>Trên 500.000đ</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => { setPriceFilter(null); setFilterVisible(false); }} style={styles.sortItem}>
+                <Text>Hủy lọc</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+          {searchLoading && <ActivityIndicator size="large" color="#2979FF" style={{ marginTop: 20 }} />}
+          {searchError && <Text style={{ color: "red", marginTop: 20 }}>{searchError}</Text>}
+          {!searchLoading && sortedProducts?.length === 0 && (
+            <Text style={{ marginTop: 20, color: '#888', textAlign: 'center' }}>Không tìm thấy sản phẩm phù hợp.</Text>
+          )}
+        </>
       )}
-
       <FlatList
         data={sortedProducts}
         keyExtractor={(item, index) => item._id || item.id || index.toString()}
@@ -263,5 +484,9 @@ const styles = StyleSheet.create({
   sortItem: {
     paddingVertical: 10,
     paddingHorizontal: 16,
+  },
+  searchHistoryContainer: {
+    flex: 1,
+    paddingTop: 8,
   },
 });

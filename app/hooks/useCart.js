@@ -75,8 +75,8 @@ export const useCart = () => {
         items = []; // Fallback thành mảng rỗng
       }
       
-      console.log("CartItem:", items);
-      console.log("CartItem length:", items.length);
+      // console.log("CartItem:", items);
+      // console.log("CartItem length:", items.length);
 
       // Kiểm tra items có phải là mảng không
       if (!Array.isArray(items)) {
@@ -85,15 +85,38 @@ export const useCart = () => {
         return;
       }
 
-      const processedItems = items.map((item) => ({
-        ...item,
-        product: {
-          _id: item.product_id,
-          name: item.product_name,
-          price: item.price_at_time,
-          image_url: item.product_image,
-        },
-      }));
+      const processedItems = items.map((item) => {
+        // Kiểm tra nếu item.product_id là object (đã populate)
+        if (item.product_id && typeof item.product_id === 'object' && item.product_id._id) {
+          return {
+            ...item,
+            size: item.size || item.product_variant_id?.attributes?.size?.name || item.product_variant_id?.size,
+            color: item.color || item.product_variant_id?.attributes?.color?.name || item.product_variant_id?.color,
+            product: {
+              ...item.product_id, // Sử dụng toàn bộ thông tin sản phẩm đã populate
+              _id: item.product_id._id,
+              name: item.product_id.name || item.product_name,
+              price: item.price_at_time || item.product_id.price,
+              image_url: item.product_image || item.product_id.image_url,
+              variants: item.product_id.variants || [],
+            },
+          };
+        } else {
+          // Fallback cho trường hợp chưa populate
+          return {
+            ...item,
+            size: item.size,
+            color: item.color,
+            product: {
+              _id: item.product_id,
+              name: item.product_name,
+              price: item.price_at_time,
+              image_url: item.product_image,
+              variants: [],
+            },
+          };
+        }
+      });
 
       setCartItems(processedItems);
     } catch (err) {
@@ -189,7 +212,12 @@ export const useCart = () => {
       Alert.alert("Thành công", "Đã thêm sản phẩm vào giỏ hàng");
       return true;
     } catch (err) {
-      console.error("❌ Lỗi thêm vào giỏ hàng:", err);
+      const status = err?.response?.status;
+      const apiMsg = err?.response?.data?.msg || err?.response?.data?.message;
+      if (status === 400 && apiMsg) {
+        Alert.alert("Hết hàng", apiMsg);
+        return false;
+      }
       Alert.alert("Lỗi", "Không thể thêm sản phẩm vào giỏ hàng");
       return false;
     } finally {

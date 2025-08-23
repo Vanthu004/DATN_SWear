@@ -8,24 +8,58 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "UIBackgroundModes": [
+          "remote-notification"
+        ],
+        "NSUserNotificationUsageDescription": "Ứng dụng cần quyền gửi thông báo để cập nhật thông tin."
+      }
     },
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "permissions": [
+        "NOTIFICATIONS",
+        "RECEIVE_NOTIFICATIONS"
+      ],
+      "googleServicesFile": "./google-services.json",
+      "package": "com.vanthu.datnswear"
     },
     "web": {
       "bundler": "metro"
     },
     "plugins": [
+      "expo-splash-screen",
       [
-        "expo-splash-screen",
+        "@react-native-firebase/app",
         {
-          "backgroundColor": "#ffffff"
+          "androidGoogleServicesFile": "./google-services.json",
+          "iosGoogleServicesFile": "./GoogleService-Info.plist"
+        }
+      ],
+      "@react-native-firebase/messaging",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "compileSdkVersion": 35,
+            "targetSdkVersion": 34,
+            "minSdkVersion": 24,
+            "gradleVersion": "8.5.0"
+          },
+          "ios": {
+            "deploymentTarget": "15.1"
+          }
         }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "a2cea276-0297-4d80-b5bd-d4f21792a83a"
+      }
+    }
   }
 }

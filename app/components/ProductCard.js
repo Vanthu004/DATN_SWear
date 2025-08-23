@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import React, { useRef } from "react";
 import {
+  Alert,
   Animated,
   Image,
   StyleSheet,
@@ -23,6 +24,7 @@ export default function ProductCard({
 }) {
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const { addToCart, isInCart } = useCart();
+  const productId = product?._id || product?.id || product?.product_id;
 
   const handlePressIn = () => {
     Animated.spring(scaleAnim, {
@@ -43,9 +45,12 @@ export default function ProductCard({
 
   const handleAddToCart = async (e) => {
     e.stopPropagation();
-    // TODO: Implement product variant selection logic
-    // For now, we'll pass null as productVariantId
-    await addToCart(product, 1, null);
+    if (!productId) {
+      console.error('❌ Product ID không hợp lệ khi thêm vào giỏ:', productId);
+      Alert.alert('Lỗi', 'Sản phẩm không hợp lệ');
+      return;
+    }
+    await addToCart({ ...product, _id: productId }, 1, null);
   };
 
   const imageSource = product.image_url
@@ -57,7 +62,7 @@ export default function ProductCard({
       const price = product.price || "";
       const name = product.name || "";
       const rating = product.rating || 5.0;
-      const stock = product.stock_quantity || 0;
+      const stock = product.ratingCount || 0;
       // console.log("🔍 product.stock_quantity", product.stock_quantity);
       // console.log("🔍 full product", product);
   return (
@@ -69,12 +74,20 @@ export default function ProductCard({
             onPress(product);
           } else if (navigation && navigation.navigate) {
             try {
-              const res = await api.get(`/products/${product._id}`);
+              // Kiểm tra product._id có hợp lệ không
+              if (!productId || typeof productId !== 'string') {
+                console.error('❌ Product ID không hợp lệ:', productId);
+                return;
+              }
+              
+              const res = await api.get(`/products/${productId}`);
               // ⚠️ Gộp lại image_url từ sản phẩm gốc nếu API không trả về
-              const fullProduct = { ...res.data, image_url: product.image_url };
+              const fullProduct = { ...res.data, image_url: product.image_url, _id: productId };
               navigation.navigate("ProductDetail", { product: fullProduct });
             } catch (error) {
               console.error("❌ Lỗi khi lấy chi tiết sản phẩm:", error);
+              // Fallback: navigate với dữ liệu hiện có
+              navigation.navigate("ProductDetail", { product: { ...product, _id: productId } });
             }
           }
         }}
@@ -111,10 +124,10 @@ export default function ProductCard({
         <View style={styles.ratingRow}>
           <Ionicons name="star" size={14} color="#222" style={{ marginRight: 2 }} />
           <Text style={styles.ratingText}>{rating.toFixed(1)}</Text>
-          <Text style={styles.ratingCount}>({stock})</Text>
+          <Text style={styles.ratingCount}>({stock}) đánh giá</Text>
           <View style={{ flex: 1 }} />
           <TouchableOpacity
-            style={[styles.cartBtn, isInCart(product._id) && styles.cartBtnActive]}
+            style={[styles.cartBtn, isInCart(productId) && styles.cartBtnActive]}
             onPress={handleAddToCart}
           >
             <Image source={require("../../assets/images/moreCart.png")} style={{ width: 20, height: 20 }} />
