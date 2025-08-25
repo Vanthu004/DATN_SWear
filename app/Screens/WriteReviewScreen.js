@@ -3,22 +3,22 @@ import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import React, { useEffect, useState } from "react";
 import {
-  ActivityIndicator,
-  Alert,
-  FlatList,
-  Image,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Alert,
+    FlatList,
+    Image,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import { useAuth } from "../context/AuthContext";
 import { api } from "../utils/api";
 
 export default function WriteReviewScreen({ navigation, route }) {
   const { userInfo } = useAuth();
-  const { orderDetails, orderCode } = route.params;
+  const { orderDetails, orderCode, productId, product, isDirectReview } = route.params;
 
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -26,23 +26,45 @@ export default function WriteReviewScreen({ navigation, route }) {
   useEffect(() => {
     const fetchReviewedProducts = async () => {
       try {
-        const res = await api.get(`/reviews/user/${userInfo._id}`);
-        const reviewedProductIds = res.data.map((r) => r.product_id);
-
-        const filtered = orderDetails.filter(
-          (item) => !reviewedProductIds.includes(item.product_id)
-        );
-
-        setReviews(
-          filtered.map((item) => ({
-            product_id: item.product_id,
-            product_name: item.product_name,
-            product_image: item.product_image,
+        // Nếu là đánh giá trực tiếp từ trang chi tiết sản phẩm
+        if (isDirectReview && productId && product) {
+          setReviews([{
+            product_id: productId,
+            product_name: product.name || product.product_name,
+            product_image: product.image_url || product.product_image,
+            product_variant_id: null,
+            variant_text: "",
             rating: 0,
             comment: "",
             image: null,
-          }))
-        );
+          }]);
+          setLoading(false);
+          return;
+        }
+
+        // Nếu là đánh giá từ đơn hàng
+        if (orderDetails && orderDetails.length > 0) {
+          const res = await api.get(`/reviews/user/${userInfo._id}`);
+          const reviewedProductIds = res.data.map((r) => r.product_id);
+
+          const filtered = orderDetails.filter(
+            (item) => !reviewedProductIds.includes(item.product_id)
+          );
+
+          setReviews(
+            filtered.map((item) => ({
+              product_id: item.product_id,
+              product_name: item.product_name,
+              product_image: item.product_image,
+              product_variant_id: item.product_variant_id,
+              // Gộp thông tin biến thể nếu có (vd: Size - Color)
+              variant_text: [item.size, item.color].filter(Boolean).join(" - "),
+              rating: 0,
+              comment: "",
+              image: null,
+            }))
+          );
+        }
       } catch (err) {
         console.error("Lỗi khi tải dữ liệu đánh giá:", err);
         Alert.alert("Lỗi", "Không thể tải dữ liệu đánh giá");
@@ -52,7 +74,7 @@ export default function WriteReviewScreen({ navigation, route }) {
     };
 
     fetchReviewedProducts();
-  }, []);
+  }, [isDirectReview, productId, product, orderDetails]);
 
   const handleRatingChange = (index, value) => {
     const updated = [...reviews];
@@ -67,17 +89,58 @@ export default function WriteReviewScreen({ navigation, route }) {
   };
 
   const handlePickImage = async (index) => {
-    let result = await ImagePicker.launchCameraAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      quality: 0.7,
-    });
+    Alert.alert(
+      "Chọn ảnh",
+      "Bạn muốn chụp ảnh mới hay chọn từ thư viện?",
+      [
+        {
+          text: "Chụp ảnh",
+          onPress: async () => {
+            try {
+              const result = await ImagePicker.launchCameraAsync({
+                mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                allowsEditing: true,
+                quality: 0.7,
+              });
 
-    if (!result.canceled) {
-      const updated = [...reviews];
-      updated[index].image = result.assets[0].uri;
-      setReviews(updated);
-    }
+              if (!result.canceled) {
+                const updated = [...reviews];
+                updated[index].image = result.assets[0].uri;
+                setReviews(updated);
+              }
+            } catch (error) {
+              console.error("Lỗi chụp ảnh:", error);
+              Alert.alert("Lỗi", "Không thể chụp ảnh. Vui lòng thử lại.");
+            }
+          },
+        },
+        {
+          text: "Chọn từ thư viện",
+          onPress: async () => {
+            try {
+              const result = await ImagePicker.launchImageLibraryAsync({
+                mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                allowsEditing: true,
+                quality: 0.7,
+              });
+
+              if (!result.canceled) {
+                const updated = [...reviews];
+                updated[index].image = result.assets[0].uri;
+                setReviews(updated);
+              }
+            } catch (error) {
+              console.error("Lỗi chọn ảnh:", error);
+              Alert.alert("Lỗi", "Không thể chọn ảnh. Vui lòng thử lại.");
+            }
+          },
+        },
+        {
+          text: "Hủy",
+          style: "cancel",
+        },
+      ]
+    );
   };
 
   const handleSubmit = async () => {
@@ -92,35 +155,84 @@ export default function WriteReviewScreen({ navigation, route }) {
 
     try {
       for (const item of reviews) {
-        const formData = new FormData();
-        formData.append("user_id", userInfo._id);
-        formData.append("product_id", item.product_id);
-        formData.append("rating", item.rating);
-        formData.append("comment", item.comment);
-
+        let uploadId = null;
+        
+        // Upload ảnh trước nếu có
         if (item.image) {
-          const fileName = item.image.split("/").pop();
-          const fileType = fileName.split(".").pop();
-          formData.append("image", {
-            uri: item.image,
-            type: `image/${fileType}`,
-            name: fileName,
-          });
+          try {
+            console.log("📤 Uploading image for review...");
+            const fileName = item.image.split("/").pop() || `review_${Date.now()}.jpg`;
+            const fileType = (fileName.split(".").pop() || 'jpg').toLowerCase();
+            
+            const imageFile = {
+              uri: item.image,
+              type: `image/${fileType}`,
+              name: fileName,
+            };
+            
+            console.log("📤 Image file to upload:", imageFile);
+            
+            const formData = new FormData();
+            formData.append("image", imageFile);
+            
+            console.log("📤 FormData created:", formData);
+            
+            const uploadResponse = await api.post("/upload", formData);
+            
+            console.log("📤 Upload response:", uploadResponse.data);
+            
+            if (uploadResponse.data && uploadResponse.data._id) {
+              uploadId = uploadResponse.data._id;
+              console.log("✅ Image uploaded successfully, uploadId:", uploadId);
+            } else {
+              console.warn("⚠️ Upload response doesn't contain _id:", uploadResponse.data);
+            }
+          } catch (uploadError) {
+            console.error("❌ Image upload failed:", uploadError);
+            console.error("❌ Upload error details:", {
+              message: uploadError.message,
+              response: uploadError.response?.data,
+              status: uploadError.response?.status
+            });
+            Alert.alert("Cảnh báo", "Không thể upload ảnh, nhưng vẫn sẽ gửi đánh giá");
+          }
         }
 
-        await api.post("/reviews", formData, {
-          headers: {
-            //Accept: "application/json",
-            Authorization: `Bearer ${userInfo?.token}`,
-          },
-        });
+        // Tạo đánh giá với uploadId nếu có
+        const reviewData = {
+          user_id: userInfo._id,
+          product_id: item.product_id,
+          rating: item.rating,
+          comment: item.comment || "",
+        };
+        
+        if (item.product_variant_id) {
+          reviewData.product_variant_id = item.product_variant_id;
+        }
+        
+        if (uploadId) {
+          // Sử dụng upload_ids (số nhiều) để khớp với server
+          reviewData.upload_ids = [uploadId];
+          console.log("📤 Review will include upload_ids:", reviewData.upload_ids);
+        }
+
+        console.log("📤 Sending review data:", reviewData);
+        const res = await api.post("/reviews", reviewData);
+        
+        if (!res.data) {
+          throw new Error("Invalid review response");
+        }
+        
+        console.log("✅ Review submitted successfully:", res.data);
       }
 
       Alert.alert("Thành công", "Đã gửi đánh giá");
-      navigation.replace("OrderDetail", { orderCode });
+      // Điều hướng về Home và yêu cầu refresh
+      navigation.navigate('Home', { screen: 'HomeScreen', params: { refresh: Date.now() } });
     } catch (err) {
-      const message = err?.response?.data?.message;
-      Alert.alert("Lỗi", message || "Không thể gửi đánh giá");
+      console.error("❌ Review submission error:", err);
+      const message = err?.response?.data?.message || "Không thể gửi đánh giá";
+      Alert.alert("Lỗi", message);
     }
   };
 
@@ -153,7 +265,10 @@ export default function WriteReviewScreen({ navigation, route }) {
     return (
       <View style={styles.center}>
         <Text style={{ fontSize: 16 }}>
-          Bạn đã đánh giá tất cả sản phẩm trong đơn hàng {orderCode}.
+          {isDirectReview 
+            ? "Bạn đã đánh giá sản phẩm này."
+            : `Bạn đã đánh giá tất cả sản phẩm trong đơn hàng ${orderCode}.`
+          }
         </Text>
       </View>
     );
@@ -161,7 +276,12 @@ export default function WriteReviewScreen({ navigation, route }) {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Đánh giá đơn hàng {orderCode}</Text>
+      <Text style={styles.title}>
+        {isDirectReview 
+          ? "Đánh giá sản phẩm"
+          : `Đánh giá đơn hàng ${orderCode}`
+        }
+      </Text>
       <FlatList
         data={reviews}
         keyExtractor={(item) => item.product_id}
@@ -169,6 +289,9 @@ export default function WriteReviewScreen({ navigation, route }) {
           <View style={styles.itemContainer}>
             <Image source={{ uri: item.product_image }} style={styles.imageLarge} />
             <Text style={styles.productName}>{item.product_name}</Text>
+            {!!item.variant_text && (
+              <Text style={styles.variantText}>Phân loại: {item.variant_text}</Text>
+            )}
             {renderStars(item.rating, index)}
 
             <TextInput
@@ -180,14 +303,28 @@ export default function WriteReviewScreen({ navigation, route }) {
             />
 
             {item.image && (
-              <Image source={{ uri: item.image }} style={styles.reviewImage} />
+              <View style={styles.imageContainer}>
+                <Image source={{ uri: item.image }} style={styles.reviewImage} />
+                <TouchableOpacity
+                  style={styles.removeImageButton}
+                  onPress={() => {
+                    const updated = [...reviews];
+                    updated[index].image = null;
+                    setReviews(updated);
+                  }}
+                >
+                  <Text style={styles.removeImageText}>✕</Text>
+                </TouchableOpacity>
+              </View>
             )}
 
             <TouchableOpacity
               onPress={() => handlePickImage(index)}
               style={styles.cameraButton}
             >
-              <Text style={styles.cameraText}>📷 Chụp ảnh sản phẩm thực tế</Text>
+              <Text style={styles.cameraText}>
+                {item.image ? "📷 Thay đổi ảnh" : "📷 Thêm ảnh sản phẩm"}
+              </Text>
             </TouchableOpacity>
           </View>
         )}
@@ -237,6 +374,26 @@ const styles = StyleSheet.create({
     resizeMode: "cover",
     borderRadius: 10,
     marginTop: 10,
+  },
+  imageContainer: {
+    position: "relative",
+    marginTop: 10,
+  },
+  removeImageButton: {
+    position: "absolute",
+    top: 5,
+    right: 5,
+    backgroundColor: "rgba(255, 0, 0, 0.8)",
+    borderRadius: 15,
+    width: 30,
+    height: 30,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  removeImageText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "bold",
   },
   cameraButton: {
     backgroundColor: "#eee",
