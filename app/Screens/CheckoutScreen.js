@@ -299,6 +299,7 @@ if (selectedDiscountVoucher) {
               voucher_discount: voucherDiscount,
               amount: totalAmount,
               cart_id: cartId,
+              cart_item_ids: selectedItems.map(item => item._id).filter(Boolean), //  Thêm cart_item_ids
             });
 
             const paymentData = paymentRes.data;

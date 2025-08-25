@@ -26,7 +26,7 @@ const ZaloPayQRScreen = () => {
     qrCodeUrl,
     paymentUrl,
     backendOrderId, // orderId backend để check trạng thái
-    checkedItems, // danh sách sản phẩm để xóa sau khi thanh toán thành công
+    selectedItems, // danh sách sản phẩm để xóa sau khi thanh toán thành công
   } = route.params || {};
 
   // Tính toán thời gian hết hạn và khởi tạo countdown

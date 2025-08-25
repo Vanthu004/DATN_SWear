@@ -2,9 +2,9 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 // Base URL for the API
-const API_BASE_URL = "http://192.168.1.9:3000/api";
+const API_BASE_URL = "http://192.168.1.6:3000/api";
 
-const WEBSOCKET_URL = "http://192.168.1.9:3000";
+const WEBSOCKET_URL = "http://192.168.1.6:3000";
 
 
 
