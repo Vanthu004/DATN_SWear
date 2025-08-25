@@ -28,6 +28,9 @@ export const createChatRoom = createAsyncThunk(
       return response;
     } catch (error) {
       const errorMessage = error.response?.data?.message || error.message || 'Lỗi tạo phòng chat không xác định';
+      if (typeof errorMessage === 'string' && errorMessage.includes('Dữ liệu không hợp lệ')) {
+        return rejectWithValue({ message: errorMessage, response: error.response?.data || {} });
+      }
       console.error('Thunk createChatRoom error:', { message: errorMessage, response: error.response?.data });
       return rejectWithValue({ message: errorMessage, existingRoom: error.response?.data?.existingRoom });
     }

@@ -297,10 +297,11 @@ const CustomTabBar = ({ state, descriptors, navigation }) => {
   const currentScreen = nestedState?.routes?.[nestedState.index]?.name;
 
   // Hide the tab bar if the current screen is ChatScreen
-  if (currentScreen === "ChatScreen") {
+  if (currentScreen === "ChatScreen" || currentScreen === "SupportScreen") {
     return null;
   }
 
+ 
   return (
     <View style={customStyles.tabBar}>
       {state.routes.map((route, index) => {

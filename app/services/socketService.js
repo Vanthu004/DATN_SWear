@@ -1,11 +1,8 @@
-// app/services/socketService.js
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { io } from 'socket.io-client';
 import { store } from '../reudx/store';
 import { chatAPI } from './chatService';
-
-
-const WEBSOCKET_URL = "http://192.168.1.112:3000";
+import { WEBSOCKET_URL } from '@env';  // Import từ .env
 
 
 class SocketService {
