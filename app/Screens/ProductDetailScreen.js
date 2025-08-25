@@ -56,10 +56,10 @@ export default function ProductDetailScreen({ route, navigation }) {
     const fetchProductDetail = async () => {
       try {
         // Kiểm tra productId có hợp lệ không
-        if (!productId || typeof productId !== 'string' || productId.length !== 24) {
-          console.warn('⚠️ Product ID không hợp lệ, bỏ qua gọi API. ID:', productId);
-          return;
-        }
+    if (!productId) {
+  console.warn('⚠️ Product ID không hợp lệ, bỏ qua gọi API. ID:', productId);
+  return;
+}
         
         console.log('🔍 Fetching product detail for ID:', productId);
         const res = await api.get(`/products/${productId}/frontend`);
@@ -334,9 +334,12 @@ const handleShowVariantModal = (type) => {
         {/* Tên, giá, danh mục */}
         <Text style={styles.title}>{fullProduct.name || product.name}</Text>
         <Text style={styles.price}>{(fullProduct.price || product.price)?.toLocaleString('vi-VN')} VND</Text>
-        {(fullProduct.stock_quantity || product.stock_quantity) && (
-          <Text style={styles.category}>Số lượng: {(fullProduct.stock_quantity || fullProduct.quantity) || (product.stock_quantity || product.category)}</Text>
-        )}
+       {(fullProduct.stock_quantity || fullProduct.quantity || product.stock_quantity || product.quantity) && (
+  <Text style={styles.category}>
+    Số lượng: {(fullProduct.stock_quantity || fullProduct.quantity || product.stock_quantity || product.quantity)}
+  </Text>
+)}
+
         
         {/* Thông báo hết hàng */}
         {outOfStock && (
@@ -441,7 +444,7 @@ const handleShowVariantModal = (type) => {
             <Text style={{ color: '#888', marginTop: 8 }}>Chưa có đánh giá nào.</Text>
           )}
 
-      </ScrollView>                {/* Footer */}
+      </ScrollView>{/* Footer */}
         <View style={styles.footer}>
           <Text style={styles.footerPrice}>
             {selectedVariant?.price?.toLocaleString('vi-VN') || (fullProduct.price || product.price)?.toLocaleString('vi-VN')} VND

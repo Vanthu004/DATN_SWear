@@ -34,6 +34,14 @@
     "plugins": [
       "expo-splash-screen",
       [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#ffffff",
+          "sounds": ["./assets/notification-sound.wav"]
+        }
+      ],
+      [
         "@react-native-firebase/app",
         {
           "androidGoogleServicesFile": "./google-services.json",
