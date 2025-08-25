@@ -235,11 +235,10 @@ const formatExpiryDayMonth = (dateString) => {
           product_id: item.product?._id || item.product_id,
           quantity: item.quantity,
         })),
-  ...(selectedFreeShippingVoucher ? { freeShippingVoucherId: selectedFreeShippingVoucher._id } : {}),
-  ...(selectedDiscountVoucher ? { discountVoucherId: selectedDiscountVoucher._id } : {}),
+        voucher_ids: [selectedFreeShippingVoucher?._id, selectedDiscountVoucher?._id].filter(Boolean),
 };
 
-
+      console.log("🚀 Voucher IDs being sent:", orderData.voucher_ids);
       const result = await createOrderFromCart(selectedItems, orderData);
       if (result) {
           // --- Trừ kho ngay sau khi order thành công ---
