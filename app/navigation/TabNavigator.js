@@ -1,4 +1,3 @@
-//
 import { Ionicons } from "@expo/vector-icons";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
@@ -12,10 +11,8 @@ import AddressListScreen from "../Screens/AddressListScreen";
 import CartScreen from "../Screens/CartScreen";
 import CategoryScreen from "../Screens/CategoryScreen";
 import ChangePasswordScreen from "../Screens/ChangePasswordScreen";
-
 import ChatListScreen from "../Screens/ChatListScreen";
 import ChatScreen from "../Screens/ChatScreen";
-import SupportScreen from "../Screens/SupportScreen";
 import CheckoutScreen from "../Screens/CheckoutScreen";
 import EditProfileScreen from "../Screens/EditProfileScreen";
 import HelpScreen from "../Screens/HelpScreen";
@@ -32,6 +29,7 @@ import ProductDetailScreen from "../Screens/ProductDetailScreen";
 import ProductScreen from "../Screens/ProductScreen";
 import ProfileScreen from "../Screens/ProfileScreen";
 import SearchSc from '../Screens/SearchSc';
+import SupportScreen from "../Screens/SupportScreen";
 import TermsScreen from "../Screens/TermsScreen";
 import UserInfoScreen from "../Screens/UserInfoScreen";
 import WishlistScreen from "../Screens/WishlistScreen.js";
@@ -195,7 +193,6 @@ function ProfileStack() {
         component={ProductDetailScreen}
         options={{ headerShown: false }}
       />
-
       <Stack.Screen
         name="EditProfile"
         component={EditProfileScreen}
@@ -216,18 +213,6 @@ function ProfileStack() {
         component={AddAddressScreen}
         options={{ headerShown: false }}
       />
-      {/* <Stack.Screen
-        name="Payment"
-        component={PaymentScreen}
-        options={{ headerShown: false }}
-      />
-      <Stack.Screen
-        name="AddBankCard"
-        component={AddBankCardScreen}
-        options={{ headerShown: false }}
-      /> */}
-
-
       <Stack.Screen
         name="ChangePassword"
         component={ChangePasswordScreen}
@@ -258,7 +243,6 @@ function ProfileStack() {
         component={OrderDetailScreen}
         options={{ headerShown: false }}
       />
-
       <Stack.Screen
         name="SupportScreen"
         component={SupportScreen}
@@ -269,7 +253,6 @@ function ProfileStack() {
         component={HelpScreen}
         options={{ title: "Trợ giúp" }}
       />
-
       <Stack.Screen
         name="ChatScreen"
         component={ChatScreen}
@@ -280,8 +263,6 @@ function ProfileStack() {
         component={ChatListScreen}
         options={{ headerShown: false }}
       />
-
-
       <Stack.Screen
         name="TermsScreen"
         component={TermsScreen}
@@ -309,40 +290,50 @@ function NotificationsStack() {
   );
 }
 
+const CustomTabBar = ({ state, descriptors, navigation }) => {
+  // Get the current route name from the nested stack navigator
+  const currentRoute = state.routes[state.index];
+  const nestedState = currentRoute.state;
+  const currentScreen = nestedState?.routes?.[nestedState.index]?.name;
 
+  // Hide the tab bar if the current screen is ChatScreen
+  if (currentScreen === "ChatScreen") {
+    return null;
+  }
 
-const CustomTabBar = ({ state, descriptors, navigation }) => (
-  <View style={customStyles.tabBar}>
-    {state.routes.map((route, index) => {
-      const { options } = descriptors[route.key];
-      const isFocused = state.index === index;
-      let iconName;
-      if (route.name === "Home") iconName = "home-outline";
-      else if (route.name === "Notifications") iconName = "notifications-outline";
-      else if (route.name === "Wishlist") iconName = "heart-outline";
-      else if (route.name === "Profile") iconName = "person-outline";
-      const onPress = () => {
-        if (!isFocused) navigation.navigate(route.name);
-      };
-      return (
-        <TouchableOpacity
-          key={route.key}
-          accessibilityRole="button"
-          accessibilityState={isFocused ? { selected: true } : {}}
-          onPress={onPress}
-          style={customStyles.tabButton}
-          activeOpacity={0.8}
-        >
-          <Ionicons
-            name={iconName}
-            size={28}
-            color={isFocused ? "#2979FF" : "#B0B0B0"}
-          />
-        </TouchableOpacity>
-      );
-    })}
-  </View>
-);
+  return (
+    <View style={customStyles.tabBar}>
+      {state.routes.map((route, index) => {
+        const { options } = descriptors[route.key];
+        const isFocused = state.index === index;
+        let iconName;
+        if (route.name === "Home") iconName = "home-outline";
+        else if (route.name === "Notifications") iconName = "notifications-outline";
+        else if (route.name === "Wishlist") iconName = "heart-outline";
+        else if (route.name === "Profile") iconName = "person-outline";
+        const onPress = () => {
+          if (!isFocused) navigation.navigate(route.name);
+        };
+        return (
+          <TouchableOpacity
+            key={route.key}
+            accessibilityRole="button"
+            accessibilityState={isFocused ? { selected: true } : {}}
+            onPress={onPress}
+            style={customStyles.tabButton}
+            activeOpacity={0.8}
+          >
+            <Ionicons
+              name={iconName}
+              size={28}
+              color={isFocused ? "#2979FF" : "#B0B0B0"}
+            />
+          </TouchableOpacity>
+        );
+      })}
+    </View>
+  );
+};
 
 export default function TabNavigator() {
   return (
@@ -373,10 +364,11 @@ export default function TabNavigator() {
     </Tab.Navigator>
   );
 }
+
 const customStyles = StyleSheet.create({
   tabBar: {
     flexDirection: "row",
-    backgroundColor: "#fff", // Nền mờ trong suốt
+    backgroundColor: "#fff",
     borderRadius: 100,
     margin: 10,
     height: 64,
@@ -387,7 +379,7 @@ const customStyles = StyleSheet.create({
     right: 0,
     bottom: 0,
     borderWidth: 1,
-    borderColor: "#fff", // Border trắng rõ ràng
+    borderColor: "#fff",
     shadowColor: "#000",
     shadowOpacity: 0.08,
     shadowOffset: { width: 0, height: 2 },
@@ -399,6 +391,4 @@ const customStyles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-
 });
-

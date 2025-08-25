@@ -33,7 +33,7 @@ const ChatScreen = ({ route }) => {
   console.log('🔍 ChatScreen params:', route.params);
   const navigation = useAppNavigation();
   const dispatch = useDispatch();
-  const { user } = useAuth();
+  const { userInfo } = useAuth(); // Sử dụng userInfo thay vì user
   const { room: initialRoom } = route.params;
   const { currentRoom, currentMessages, isLoadingMessages, isSendingMessage, isConnected, error, hasMoreMessages } = useSelector(state => state.chat);
   
@@ -45,8 +45,13 @@ const ChatScreen = ({ route }) => {
   const flatListRef = useRef(null);
   const lastMessageId = useRef(null);
 
+  // Debug userInfo từ useAuth
+  useEffect(() => {
+    console.log('🔍 useAuth userInfo:', userInfo);
+  }, [userInfo]);
+
   // Check if current user is the room owner
-  const isRoomOwner = user?._id === room?.userId;
+  const isRoomOwner = userInfo?._id === room?.userId || userInfo?.id === room?.userId;
 
   useEffect(() => {
     console.log('🔍 Current messages IDs:', currentMessages.map(msg => msg.id));
@@ -124,7 +129,8 @@ const ChatScreen = ({ route }) => {
       roomId: room.roomId,
       content: content.trim(),
       type: 'text',
-      metadata: {}
+      metadata: {},
+      role: 'user' // Thêm role cho tin nhắn của user
     };
 
     try {
@@ -155,7 +161,8 @@ const ChatScreen = ({ route }) => {
         metadata: {
           publicId: uploadResult.publicId,
           originalUri: imageUri
-        }
+        },
+        role: 'user' // Thêm role cho tin nhắn hình ảnh của user
       };
 
       const socketSent = socketService.sendMessage(messageData);
@@ -194,7 +201,11 @@ const ChatScreen = ({ route }) => {
   }, []);
 
   const getCurrentUserId = () => {
-    return user?._id || null;
+    const userId = userInfo?._id || userInfo?.id || null; // Kiểm tra cả _id và id
+    if (!userId) {
+      console.warn('🔍 Warning: userInfo._id or userInfo.id is null. Check AuthContext.');
+    }
+    return userId;
   };
 
   const renderMessage = ({ item, index }) => {
@@ -275,7 +286,7 @@ const ChatScreen = ({ route }) => {
       <KeyboardAvoidingView 
         style={styles.chatContainer}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 60 : 80}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 10 : 20}
       >
         {isLoadingMessages ? (
           <View style={styles.loadingContainer}>
@@ -486,7 +497,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderTopWidth: 1,
     borderTopColor: '#e0e0e0',
-    paddingBottom: 30,
   },
 });
 

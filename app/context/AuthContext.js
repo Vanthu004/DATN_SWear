@@ -1,12 +1,9 @@
-// app/context/AuthContext.js
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { Alert } from "react-native";
 import { io } from "socket.io-client";
 import { navigationRef } from "../navigation/TabNavigator";
 import { api, WEBSOCKET_URL } from "../utils/api";
-
-
 
 const socket = io(WEBSOCKET_URL, {
   reconnection: true,
@@ -46,8 +43,8 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     if (!userInfo) return;
 
-    socket.emit("join", userInfo._id);
-    console.log("WebSocket: Joined room", userInfo._id);
+    socket.emit("join", userInfo._id || userInfo.id); // Sử dụng _id hoặc id
+    console.log("WebSocket: Joined room", userInfo._id || userInfo.id);
 
     socket.on("banned", async (data) => {
       console.log("WebSocket: Received banned event", data);
@@ -82,7 +79,7 @@ export const AuthProvider = ({ children }) => {
     };
 
     checkBanStatus();
-    const interval = setInterval(checkBanStatus, 30000); // Tăng từ 10s lên 30s
+    const interval = setInterval(checkBanStatus, 30000);
     return () => clearInterval(interval);
   }, [userToken]);
 
@@ -118,6 +115,11 @@ export const AuthProvider = ({ children }) => {
 
       if (token && user) {
         const userData = JSON.parse(user);
+        // Đảm bảo userData có _id, nếu không thì thử lấy id
+        if (userData.id && !userData._id) {
+          userData._id = userData.id;
+          console.log("Converted userData.id to userData._id:", userData._id);
+        }
         const isVerified = emailVerified === "true" || userData.email_verified === true;
 
         console.log("User data:", userData);
@@ -160,6 +162,11 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (token, user, verified = true) => {
     try {
+      // Nếu API trả về id thay vì _id, chuyển đổi tại đây
+      if (user.id && !user._id) {
+        user._id = user.id;
+        console.log("Converted user.id to user._id in login:", user._id);
+      }
       await AsyncStorage.setItem("userToken", token);
       await AsyncStorage.setItem("userInfo", JSON.stringify(user));
       await AsyncStorage.setItem("isEmailVerified", verified.toString());
@@ -167,6 +174,7 @@ export const AuthProvider = ({ children }) => {
       setUserToken(token);
       setUserInfo(user);
       setIsEmailVerified(verified);
+      console.log("Logged in with user:", user);
     } catch (error) {
       console.log("Error storing auth data:", error);
     }
@@ -216,6 +224,12 @@ export const AuthProvider = ({ children }) => {
       console.log("AuthContext: Updating user info from:", userInfo);
       console.log("AuthContext: Updating user info to:", newUserInfo);
 
+      // Đảm bảo _id nếu API trả về id
+      if (newUserInfo.id && !newUserInfo._id) {
+        newUserInfo._id = newUserInfo.id;
+        console.log("Converted newUserInfo.id to newUserInfo._id:", newUserInfo._id);
+      }
+
       await AsyncStorage.setItem("userInfo", JSON.stringify(newUserInfo));
       setUserInfo(newUserInfo);
       console.log("User info updated successfully:", newUserInfo);
@@ -232,6 +246,11 @@ export const AuthProvider = ({ children }) => {
       const response = await api.get("/users/me");
       if (response.data) {
         const freshUser = response.data;
+        // Đảm bảo _id nếu API trả về id
+        if (freshUser.id && !freshUser._id) {
+          freshUser._id = freshUser.id;
+          console.log("Converted freshUser.id to freshUser._id:", freshUser._id);
+        }
         console.log("Fresh user data from server:", freshUser);
 
         const now = new Date();
