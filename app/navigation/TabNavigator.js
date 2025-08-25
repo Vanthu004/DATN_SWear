@@ -97,14 +97,9 @@ function HomeStack() {
         options={{ headerShown: false }}
       />
       <Stack.Screen
-        name="AddressList"
-        component={AddressListScreen}
-        options={{ title: "Địa chỉ" }}
-      />
-      <Stack.Screen
         name="AddAddress"
         component={AddAddressScreen}
-        options={{ title: "Thêm địa chỉ" }}
+        options={{headerShown: false }}
       />
       <Stack.Screen
         name="Payment"
@@ -326,9 +321,9 @@ const CustomTabBar = ({ state, descriptors, navigation }) => (
         if (isFocused) {
           // Nếu tab đang được focus, quay về màn hình đầu tiên của stack đó
           const targetScreen = route.name === "Home" ? "HomeScreen" : 
-                             route.name === "Notifications" ? "NotificationsScreen" :
-                             route.name === "Wishlist" ? "WishlistScreen" :
-                             "ProfileScreen";
+            route.name === "Notifications" ? "NotificationsScreen" :
+            route.name === "Wishlist" ? "WishlistScreen" :
+            "ProfileScreen";
           
           // Sử dụng navigate với merge: true để quay về màn hình đầu tiên của stack
           navigation.navigate(route.name, {

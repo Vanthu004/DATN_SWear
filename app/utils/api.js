@@ -5,9 +5,9 @@ import axios from "axios";
 import { Alert } from "react-native";
 import { logoutGlobal } from "../context/AuthContext";
 // Base URL for the API
-const API_BASE_URL = "http://192.168.0.104:3000/api";
+const API_BASE_URL = "http://192.168.1.9:3000/api";
 
-const WEBSOCKET_URL = "http://192.168.0.104:3000";
+const WEBSOCKET_URL = "http://192.168.1.9:3000";
 
 
 

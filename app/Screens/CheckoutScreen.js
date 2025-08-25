@@ -414,8 +414,14 @@ if (selectedDiscountVoucher) {
         {/* Shipping Address */}
         <View style={styles.card}>
           <View style={{flexDirection:'row'}}>
+            <View style={{flex:1, flexDirection:'row', justifyContent:'space-between'}}>
             <Text style={styles.cardTitle}>Địa chỉ giao hàng</Text>
+            <TouchableOpacity onPress={() => navigation.navigate('AddAddress')}>
+              <Text style={{color:'blue'}}>+ Thêm</Text>
+            </TouchableOpacity>
+            </View>
 
+              
           </View>
           {addressList.length > 0 ? (
             <Picker
