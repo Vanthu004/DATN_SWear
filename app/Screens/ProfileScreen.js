@@ -97,10 +97,10 @@ const ProfileScreen = ({ navigation }) => {
       >
         <View style={styles.avatarContainer}>
           <Image
-            key={userInfo?.avata_url || "default"}
+            key={userInfo?.avatar_url || "default"}
             source={
-              userInfo?.avata_url
-                ? { uri: userInfo.avata_url }
+              userInfo?.avatar_url
+                ? { uri: userInfo.avatar_url }
                 : require("../../assets/images/default-avatar.png")
             }
             style={styles.avatar}

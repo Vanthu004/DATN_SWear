@@ -56,8 +56,8 @@ export default function RatingReviewsScreen({ navigation }) {
       <Image
         source={{
           uri:
-            review.user_id?.avata_url && review.user_id.avata_url !== ""
-              ? review.user_id.avata_url
+            review.user_id?.avatar_url && review.user_id.avatar_url !== ""
+              ? review.user_id.avatar_url
               : "https://randomuser.me/api/portraits/lego/1.jpg",
         }}
         style={styles.avatar}
