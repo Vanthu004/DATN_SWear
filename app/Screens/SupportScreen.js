@@ -27,7 +27,7 @@ const SupportScreen = () => {
 
   // Redux state
   const { isConnected, chatRooms, isLoadingRooms, error } = useSelector(state => state.chat);
-  console.log('💬 Chat State:', { chatRooms, isLoadingRooms, error, isConnected });
+  //console.log('💬 Chat State:', { chatRooms, isLoadingRooms, error, isConnected });
 
   // Local state
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -64,7 +64,7 @@ const SupportScreen = () => {
     setRefreshing(true);
     try {
       const result = await dispatch(fetchChatRooms()).unwrap();
-      console.log('Refresh result:', result.chatRooms.map(r => ({ roomId: r.roomId, status: r.status, updatedAt: r.updatedAt })));
+      //console.log('Refresh result:', result.chatRooms.map(r => ({ roomId: r.roomId, status: r.status, updatedAt: r.updatedAt })));
     } catch (error) {
       console.error('Refresh error:', error);
       Alert.alert('Lỗi', 'Không thể làm mới danh sách. Vui lòng thử lại.');
@@ -78,7 +78,7 @@ const SupportScreen = () => {
       try {
         const resultAction = await dispatch(createChatRoom(roomData));
         const result = await unwrapResult(resultAction);
-        console.log('✅ Create room result:', result);
+        //console.log('✅ Create room result:', result);
 
         const newRoom = result?.chatRoom || result?.room || result;
         if (!newRoom || !newRoom.roomId) {

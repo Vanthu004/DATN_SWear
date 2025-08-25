@@ -7,7 +7,7 @@ export const fetchChatRooms = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const response = await chatAPI.getMyChatRooms();
-      console.log('🌐 fetchChatRooms Response:', response);
+      //console.log('🌐 fetchChatRooms Response:', response);
       return response;
     } catch (error) {
       console.error('🌐 fetchChatRooms Error:', error);
@@ -21,7 +21,7 @@ export const createChatRoom = createAsyncThunk(
   async (roomData, { rejectWithValue }) => {
     try {
       const response = await chatAPI.createChatRoom(roomData);
-      console.log('Thunk response:', response);
+      //console.log('Thunk response:', response);
       if (!response || !response.chatRoom) {
         return rejectWithValue('No chatRoom data in response');
       }
@@ -42,7 +42,7 @@ export const fetchMessages = createAsyncThunk(
   async ({ roomId, page }, { rejectWithValue }) => {
     try {
       const response = await chatAPI.getMessages(roomId, page);
-      console.log('🌐 fetchMessages Response:', response);
+      //console.log('🌐 fetchMessages Response:', response);
       return { roomId, ...response };
     } catch (error) {
       console.error('fetchMessages Error:', error);
@@ -178,7 +178,7 @@ const chatSlice = createSlice({
         state.chatRooms = Array.from(roomMap.values()).sort(
           (a, b) => new Date(b.lastMessageAt) - new Date(a.lastMessageAt)
         );
-        console.log('🚀 Updated chatRooms:', state.chatRooms.map(r => ({ roomId: r.roomId, status: r.status })));
+        //console.log('🚀 Updated chatRooms:', state.chatRooms.map(r => ({ roomId: r.roomId, status: r.status })));
       })
       .addCase(fetchChatRooms.rejected, (state, action) => {
         state.isLoadingRooms = false;

@@ -40,8 +40,8 @@ export const navigationRef = createRef();
 
 // Hàm resetNavigation để chuyển hướng về màn hình bất kỳ
 export const resetNavigation = (screenName) => {
-  console.log("resetNavigation called with screen:", screenName);
-  console.log("navigationRef.current:", navigationRef.current);
+  //console.log("resetNavigation called with screen:", screenName);
+  //console.log("navigationRef.current:", navigationRef.current);
   if (navigationRef.current) {
     navigationRef.current.reset({
       index: 0,
@@ -297,7 +297,7 @@ const CustomTabBar = ({ state, descriptors, navigation }) => {
   const currentScreen = nestedState?.routes?.[nestedState.index]?.name;
 
   // Hide the tab bar if the current screen is ChatScreen
-  if (currentScreen === "ChatScreen" || currentScreen === "SupportScreen") {
+  if (currentScreen === "ChatScreen" || currentScreen === "SupportScreen" || currentScreen === "AddAddress" || currentScreen ==="AddressList") {
     return null;
   }
 

@@ -26,11 +26,11 @@ export const AuthProvider = ({ children }) => {
     checkLoginState();
 
     socket.on("connect", () => {
-      console.log("WebSocket connected");
+      //console.log("WebSocket connected");
     });
 
     socket.on("disconnect", () => {
-      console.log("WebSocket disconnected");
+      //console.log("WebSocket disconnected");
     });
 
     return () => {
@@ -44,10 +44,10 @@ export const AuthProvider = ({ children }) => {
     if (!userInfo) return;
 
     socket.emit("join", userInfo._id || userInfo.id); // Sử dụng _id hoặc id
-    console.log("WebSocket: Joined room", userInfo._id || userInfo.id);
+    //console.log("WebSocket: Joined room", userInfo._id || userInfo.id);
 
     socket.on("banned", async (data) => {
-      console.log("WebSocket: Received banned event", data);
+      //console.log("WebSocket: Received banned event", data);
       if (!isBanned) {
         setIsBanned(true);
         await logout();
@@ -90,15 +90,15 @@ export const AuthProvider = ({ children }) => {
       const emailVerified = await AsyncStorage.getItem("isEmailVerified");
       const banMessage = await AsyncStorage.getItem("banMessage");
 
-      console.log("Checking login state:", {
-        hasToken: !!token,
-        hasUser: !!user,
-        emailVerified: emailVerified,
-        banMessage: banMessage,
-      });
+      // console.log("Checking login state:", {
+      //   hasToken: !!token,
+      //   hasUser: !!user,
+      //   emailVerified: emailVerified,
+      //   banMessage: banMessage,
+      // });
 
       if (banMessage && !isBanned) {
-        console.log("Ban message found in AsyncStorage:", banMessage);
+        //console.log("Ban message found in AsyncStorage:", banMessage);
         setIsBanned(true);
         await logout();
         Alert.alert("Tài khoản bị khóa", banMessage, [
@@ -118,18 +118,18 @@ export const AuthProvider = ({ children }) => {
         // Đảm bảo userData có _id, nếu không thì thử lấy id
         if (userData.id && !userData._id) {
           userData._id = userData.id;
-          console.log("Converted userData.id to userData._id:", userData._id);
+          //console.log("Converted userData.id to userData._id:", userData._id);
         }
         const isVerified = emailVerified === "true" || userData.email_verified === true;
 
-        console.log("User data:", userData);
-        console.log("Email verified status:", isVerified);
+        //console.log("User data:", userData);
+        //console.log("Email verified status:", isVerified);
 
         const now = new Date();
         const bannedUntil = userData.ban?.bannedUntil ? new Date(userData.ban.bannedUntil) : null;
 
         if (bannedUntil && bannedUntil > now && !isBanned) {
-          console.log("Tài khoản bị ban đến:", bannedUntil);
+          //console.log("Tài khoản bị ban đến:", bannedUntil);
           setIsBanned(true);
           await clearAllData();
           Alert.alert(
@@ -165,7 +165,7 @@ export const AuthProvider = ({ children }) => {
       // Nếu API trả về id thay vì _id, chuyển đổi tại đây
       if (user.id && !user._id) {
         user._id = user.id;
-        console.log("Converted user.id to user._id in login:", user._id);
+        //console.log("Converted user.id to user._id in login:", user._id);
       }
       await AsyncStorage.setItem("userToken", token);
       await AsyncStorage.setItem("userInfo", JSON.stringify(user));
@@ -174,7 +174,7 @@ export const AuthProvider = ({ children }) => {
       setUserToken(token);
       setUserInfo(user);
       setIsEmailVerified(verified);
-      console.log("Logged in with user:", user);
+      //console.log("Logged in with user:", user);
     } catch (error) {
       console.log("Error storing auth data:", error);
     }
@@ -187,9 +187,9 @@ export const AuthProvider = ({ children }) => {
       setUserInfo(null);
       setIsEmailVerified(false);
       setIsBanned(false);
-      console.log("Logged out successfully");
+      //console.log("Logged out successfully");
       if (navigationRef.current) {
-        console.log("Resetting to Auth/Login");
+        //console.log("Resetting to Auth/Login");
         navigationRef.current.resetRoot({
           index: 0,
           routes: [{ name: "Auth", params: { screen: "Login" } }],
@@ -213,7 +213,7 @@ export const AuthProvider = ({ children }) => {
         setUserInfo(updatedUserInfo);
       }
 
-      console.log("Email verification status updated:", verified);
+      //console.log("Email verification status updated:", verified);
     } catch (error) {
       console.log("Error updating email verification status:", error);
     }
@@ -221,18 +221,18 @@ export const AuthProvider = ({ children }) => {
 
   const updateUserInfo = async (newUserInfo) => {
     try {
-      console.log("AuthContext: Updating user info from:", userInfo);
-      console.log("AuthContext: Updating user info to:", newUserInfo);
+      //console.log("AuthContext: Updating user info from:", userInfo);
+      //console.log("AuthContext: Updating user info to:", newUserInfo);
 
       // Đảm bảo _id nếu API trả về id
       if (newUserInfo.id && !newUserInfo._id) {
         newUserInfo._id = newUserInfo.id;
-        console.log("Converted newUserInfo.id to newUserInfo._id:", newUserInfo._id);
+        //console.log("Converted newUserInfo.id to newUserInfo._id:", newUserInfo._id);
       }
 
       await AsyncStorage.setItem("userInfo", JSON.stringify(newUserInfo));
       setUserInfo(newUserInfo);
-      console.log("User info updated successfully:", newUserInfo);
+      //console.log("User info updated successfully:", newUserInfo);
     } catch (error) {
       console.log("Error updating user info:", error);
     }
@@ -242,22 +242,22 @@ export const AuthProvider = ({ children }) => {
     if (!userToken) return;
 
     try {
-      console.log("Refreshing user data from server...");
+      //console.log("Refreshing user data from server...");
       const response = await api.get("/users/me");
       if (response.data) {
         const freshUser = response.data;
         // Đảm bảo _id nếu API trả về id
         if (freshUser.id && !freshUser._id) {
           freshUser._id = freshUser.id;
-          console.log("Converted freshUser.id to freshUser._id:", freshUser._id);
+          //console.log("Converted freshUser.id to freshUser._id:", freshUser._id);
         }
-        console.log("Fresh user data from server:", freshUser);
+        //console.log("Fresh user data from server:", freshUser);
 
         const now = new Date();
         const bannedUntil = freshUser.ban?.bannedUntil ? new Date(freshUser.ban.bannedUntil) : null;
 
         if (bannedUntil && bannedUntil > now && !isBanned) {
-          console.log("Tài khoản bị ban đến:", bannedUntil);
+          //console.log("Tài khoản bị ban đến:", bannedUntil);
           setIsBanned(true);
           await logout();
           const banMessage = await AsyncStorage.getItem("banMessage") || 
@@ -287,7 +287,7 @@ export const AuthProvider = ({ children }) => {
         return;
       }
       if (error.response?.status === 403 && error.response?.data?.message?.includes("bị khóa")) {
-        console.log("Handling 403 ban error in refreshUserData");
+        //console.log("Handling 403 ban error in refreshUserData");
         if (!isBanned) {
           setIsBanned(true);
           await logout();
@@ -314,9 +314,9 @@ export const AuthProvider = ({ children }) => {
       setUserInfo(null);
       setIsEmailVerified(false);
       setIsBanned(false);
-      console.log("All auth data cleared");
+      //console.log("All auth data cleared");
       if (navigationRef.current) {
-        console.log("Resetting to Auth/Login from clearAllData");
+        //console.log("Resetting to Auth/Login from clearAllData");
         navigationRef.current.resetRoot({
           index: 0,
           routes: [{ name: "Auth", params: { screen: "Login" } }],

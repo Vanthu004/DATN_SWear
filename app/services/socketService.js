@@ -37,7 +37,7 @@ class SocketService {
 
       return new Promise((resolve) => {
         this.socket.on('connect', () => {
-          console.log('✅ Socket connected to chat namespace');
+          //console.log('✅ Socket connected to chat namespace');
           this.isConnected = true;
           this.reconnectAttempts = 0;
 
@@ -73,7 +73,7 @@ class SocketService {
 
     // Connection events
     this.socket.on('disconnect', (reason) => {
-      console.log('🔌 Socket disconnected:', reason);
+      //console.log('🔌 Socket disconnected:', reason);
       this.isConnected = false;
 
       import('../reudx/chatSlice').then(({ setConnectionStatus }) => {
@@ -87,7 +87,7 @@ class SocketService {
     });
 
     this.socket.on('reconnect', () => {
-      console.log('🔄 Socket reconnected');
+      //console.log('🔄 Socket reconnected');
       this.isConnected = true;
       this.reconnectAttempts = 0;
 
@@ -100,7 +100,7 @@ class SocketService {
 
     // Room events
     this.socket.on('rooms_joined', async (data) => {
-      console.log('🏠 Joined rooms:', data);
+      //console.log('🏠 Joined rooms:', data);
       try {
         const { setChatRooms, selectChatRooms } = await import('../reudx/chatSlice');
         if (!store || !store.getState) {
@@ -134,18 +134,18 @@ class SocketService {
     });
 
     this.socket.on('room_joined', (data) => {
-      console.log('🚪 Joined room:', data.roomId);
+      //console.log('🚪 Joined room:', data.roomId);
       this.executeCallback('room_joined', data);
     });
 
     this.socket.on('user_joined', (data) => {
-      console.log('👋 User joined room:', data);
+      //console.log('👋 User joined room:', data);
       this.executeCallback('user_joined', data);
     });
 
     // Message events
     this.socket.on('new_message', (message) => {
-      console.log('💬 New message received:', message);
+      //console.log('💬 New message received:', message);
 
       import('../reudx/chatSlice').then(({ addMessage }) => {
         dispatch(addMessage(message));
@@ -155,12 +155,12 @@ class SocketService {
     });
 
     this.socket.on('room_updated', (data) => {
-      console.log('🔄 Room updated:', data);
+      //console.log('🔄 Room updated:', data);
       this.executeCallback('room_updated', data);
     });
 
     this.socket.on('room_status_updated', (data) => {
-      console.log('🔄 Received room_status_updated from socket:', data);
+      //console.log('🔄 Received room_status_updated from socket:', data);
       import('../reudx/chatSlice').then(({ updateRoomStatus, fetchChatRooms }) => {
         dispatch(updateRoomStatus({ roomId: data.roomId, status: data.status }));
         // Force fetch để sync
@@ -194,7 +194,7 @@ class SocketService {
     this.reconnectAttempts++;
     const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 10000);
 
-    console.log(`🔄 Scheduling reconnect attempt ${this.reconnectAttempts} in ${delay}ms`);
+    //console.log(`🔄 Scheduling reconnect attempt ${this.reconnectAttempts} in ${delay}ms`);
 
     setTimeout(() => {
       if (!this.isConnected) {
@@ -205,7 +205,7 @@ class SocketService {
 
   disconnect() {
     if (this.socket) {
-      console.log('🔌 Disconnecting socket...');
+      //console.log('🔌 Disconnecting socket...');
       this.socket.disconnect();
       this.socket = null;
       this.isConnected = false;
@@ -215,14 +215,14 @@ class SocketService {
   // Room operations
   joinUserRooms() {
     if (this.socket && this.isConnected) {
-      console.log('Joining user rooms...');
+      //console.log('Joining user rooms...');
       import('../reudx/chatSlice').then(async ({ fetchChatRooms }) => {
         try {
           // ✅ dùng store.dispatch thay vì dispatch
           const result = await store.dispatch(fetchChatRooms()).unwrap();
           const rooms = result.chatRooms || [];
           rooms.forEach(room => {
-            console.log('Joining room:', room.roomId);
+            //console.log('Joining room:', room.roomId);
             this.socket.emit('join_room', { roomId: room.roomId });
           });
         } catch (error) {
@@ -233,14 +233,14 @@ class SocketService {
   }
   joinRoom(roomId) {
     if (this.socket && this.isConnected) {
-      console.log('🚪 Joining room:', roomId);
+      //console.log('🚪 Joining room:', roomId);
       this.socket.emit('join_room', { roomId });
     }
   }
 
   leaveRoom(roomId) {
     if (this.socket && this.isConnected) {
-      console.log('🚪 Leaving room:', roomId);
+      //console.log('🚪 Leaving room:', roomId);
       this.socket.emit('leave_room', { roomId });
     }
   }
@@ -248,7 +248,7 @@ class SocketService {
   // Message operations
   sendMessage(messageData) {
     if (this.socket && this.isConnected) {
-      console.log('📤 Sending message via socket:', messageData);
+      //console.log('📤 Sending message via socket:', messageData);
       this.socket.emit('send_message', messageData);
       return true;
     } else {

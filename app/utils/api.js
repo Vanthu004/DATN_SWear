@@ -26,13 +26,13 @@ api.interceptors.request.use(
       console.log("Error getting token for request:", error);
     }
 
-    console.log("API Request:", {
-      method: config.method?.toUpperCase(),
-      url: config.url,
-      data: config.data,
-      params: config.params,
-      headers: config.headers,
-    });
+    // console.log("API Request:", {
+    //   method: config.method?.toUpperCase(),
+    //   url: config.url,
+    //   data: config.data,
+    //   params: config.params,
+    //   headers: config.headers,
+    // });
 
     return config;
   },
@@ -45,11 +45,11 @@ api.interceptors.request.use(
 // Response interceptor for logging and handling errors
 api.interceptors.response.use(
   (response) => {
-    console.log("API Response:", {
-      status: response.status,
-      url: response.config.url,
-      data: response.data,
-    });
+    // console.log("API Response:", {
+    //   status: response.status,
+    //   url: response.config.url,
+    //   data: response.data,
+    // });
     return response;
   },
   async (error) => {

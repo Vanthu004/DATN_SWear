@@ -11,7 +11,7 @@ const OrderSuccessScreen = () => {
   const { orderId } = route.params || {};
 
   useEffect(() => {
-    console.log("id đơn hàng.......",orderId);
+    //console.log("id đơn hàng.......",orderId);
     Toast.show({
       type: "success",
       text1: "Đặt hàng thành công!",

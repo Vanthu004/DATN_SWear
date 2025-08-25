@@ -84,7 +84,7 @@ const AddressListScreen = ({ navigation }) => {
       >
         <Text style={styles.addButtonText}>Thêm địa chỉ mới</Text>
       </TouchableOpacity>
-      <View style={{height: 60}}></View>
+      {/* <View style={{height: 10}}></View> */}
     </SafeAreaView>
   );
 };
@@ -149,7 +149,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#007AFF",
     borderRadius: 8,
     alignItems: "center",
-    marginBottom: 50,
+    marginBottom: 20,
   },
   addButtonText: {
     color: "#fff",
