@@ -113,6 +113,7 @@ const productTotal = orderDetails.reduce((sum, item) => {
         <Text style={styles.infoValue}>{order.data.shippingmethod_id.fee.toLocaleString()} VND</Text>
       </View>
             <View style={styles.infoBox}>
+
         <Text style={styles.infoText}>Voucher</Text>
       {order.data.voucher_id && (
         <>
