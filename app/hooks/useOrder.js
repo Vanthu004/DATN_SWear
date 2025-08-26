@@ -56,7 +56,7 @@ export const useOrder = () => {
         shippingmethod_id: orderData.shippingMethodId, // Temporary ObjectId
         paymentmethod_id: orderData.paymentMethodId, // Temporary ObjectId
         shipping_address: orderData.shippingAddress,
-        voucher_id: orderData.voucherId,
+        voucher_ids: orderData.voucher_ids || [],
         note: orderData.note || "",
         orderDetails: orderDetails,
       };

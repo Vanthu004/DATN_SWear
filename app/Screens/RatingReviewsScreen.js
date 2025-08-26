@@ -56,8 +56,8 @@ export default function RatingReviewsScreen({ navigation }) {
       <Image
         source={{
           uri:
-            review.user_id?.avata_url && review.user_id.avata_url !== ""
-              ? review.user_id.avata_url
+            review.user_id?.avatar_url && review.user_id.avatar_url !== ""
+              ? review.user_id.avatar_url
               : "https://randomuser.me/api/portraits/lego/1.jpg",
         }}
         style={styles.avatar}
@@ -72,7 +72,22 @@ export default function RatingReviewsScreen({ navigation }) {
           </Text>
         </View>
         {renderStars(review.rating)}
+        {!!(review.product_variant_id || review.variant_text || review.size || review.color) && (
+          <Text style={styles.variantRow}>
+            Phân loại: {[review.variant_text, review.size, review.color].filter(Boolean).join(" - ")}
+          </Text>
+        )}
         <Text style={styles.comment}>{review.comment}</Text>
+        {!!review.images && Array.isArray(review.images) && review.images.length > 0 && (
+          <View style={{ flexDirection: 'row', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
+            {review.images.map((img, idx) => (
+              <Image key={idx} source={{ uri: img.url || img }} style={{ width: 80, height: 80, borderRadius: 8 }} />
+            ))}
+          </View>
+        )}
+        {!review.images && review.image_url && (
+          <Image source={{ uri: review.image_url }} style={{ width: 120, height: 120, borderRadius: 8, marginTop: 8 }} />
+        )}
       </View>
     </View>
   );

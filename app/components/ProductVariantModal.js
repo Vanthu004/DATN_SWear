@@ -1,15 +1,15 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useState } from 'react';
 import {
-  Alert,
-  Dimensions,
-  Image,
-  Modal,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    Alert,
+    Dimensions,
+    Image,
+    Modal,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 import { useProductVariant } from '../hooks/useProductVariant';
 
@@ -114,7 +114,6 @@ const ProductVariantModal = ({
 
     const getWeightRange = (size) => {
     const weightRanges = {
-
       'M': '40kg đến 53kg',
       'L': '54kg đến 63kg',
       'XL': '64kg đến 80kg',
@@ -160,7 +159,7 @@ const ProductVariantModal = ({
               )}
                {selectedVariant?.stock !== undefined && (
                  <View style={styles.stockInfo}>
-                   <Text style={styles}>
+                   <Text style={styles.stockText}>
                      {selectedVariant.stock > 0 
                        ? `Còn ${selectedVariant.stock} sản phẩm` 
                        : 'Hết hàng'
@@ -228,13 +227,11 @@ const ProductVariantModal = ({
               <Text style={styles.sectionTitle}>Gợi ý cân nặng phù hợp</Text>
               <View style={styles.sizeContainer}>
                 <Text style={styles.sizeText}>
-
                   Size {selectedVariant.size}: {getWeightRange(selectedVariant.size)}
                 </Text>
               </View>
             </View>
           )}
-
             {/* Quantity */}
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Số lượng</Text>
@@ -255,6 +252,7 @@ const ProductVariantModal = ({
               </View>
             </View>
           </ScrollView>
+
           {/* Footer */}
           <View style={styles.footer}>
             {actionType === 'buy' && (
@@ -373,6 +371,13 @@ const styles = StyleSheet.create({
   },
   sizeText: {
     fontSize: 14,
+  },
+  stockInfo: {
+    marginTop: 6,
+  },
+  stockText: {
+    fontSize: 13,
+    color: '#555',
   },
   quantityRow: {
     flexDirection: 'row',

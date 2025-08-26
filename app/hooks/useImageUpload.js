@@ -112,13 +112,13 @@ export const useImageUpload = () => {
       //console.log('Upload response:', response);
       
       setUploadProgress(100);
-      
-      // Đảm bảo response có đúng format
-      if (response && response.upload && response.upload._id) {
-        return response;
-      } else {
-        throw new Error('Invalid upload response format');
+
+      // Chuẩn hóa: backend trả về đối tượng upload với _id và url
+      const upload = response?.upload || response;
+      if (upload && upload._id) {
+        return { upload };
       }
+      throw new Error('Invalid upload response format');
     } catch (error) {
       console.error('Upload failed:', error);
       throw error;

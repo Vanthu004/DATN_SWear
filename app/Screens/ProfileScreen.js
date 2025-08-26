@@ -43,27 +43,27 @@ const ProfileScreen = ({ navigation }) => {
       icon: "location-outline",
       onPress: () => navigation.navigate("AddressList"),
     },
+    { 
+      id: 2, 
+      title: "Đơn hàng", 
+      icon: "cube-outline", 
+      onPress: () => navigation.navigate("OrderHistory") 
+    },
     {
-      id: 2,
+      id: 3,
       title: "Đổi mật khẩu",
       icon: "lock-closed-outline",
       onPress: () => navigation.navigate("ChangePassword"),
     },
     {
-      id: 3,
-      title: "Tin nhắn hỗ trợ",
+      id: 4,
+      title: "Yêu cầu hỗ trợ",
       icon: "card-outline",
       onPress: () => navigation.navigate("SupportScreen"),
     },
     { 
-      id: 4, 
-      title: "Đơn hàng", 
-      icon: "cube-outline", 
-      onPress: () => navigation.navigate("OrderHistory") 
-    },
-    { 
       id: 5, 
-      title: "Trợ giúp", 
+      title: "Điều khoản chính sách sử dụng ", 
       icon: "help-circle-outline", 
       onPress: () => navigation.navigate("Help"), 
     },
@@ -97,10 +97,10 @@ const ProfileScreen = ({ navigation }) => {
       >
         <View style={styles.avatarContainer}>
           <Image
-            key={userInfo?.avata_url || "default"}
+            key={userInfo?.avatar_url || "default"}
             source={
-              userInfo?.avata_url
-                ? { uri: userInfo.avata_url }
+              userInfo?.avatar_url
+                ? { uri: userInfo.avatar_url }
                 : require("../../assets/images/default-avatar.png")
             }
             style={styles.avatar}

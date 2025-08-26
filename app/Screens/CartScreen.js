@@ -61,6 +61,19 @@ function CartItem({ item, checked, onCheck, onRemove, onUpdate, onPress }) {
           <Text style={{ fontWeight: "bold", color: "#222", marginVertical: 2 }}>
             {(item.price_at_time || 0).toLocaleString()} đ
           </Text>
+          {(() => {
+            const hasVariant = item.product_variant_id || item.size || item.color || item.product?.variants?.length;
+            if (!hasVariant) return null;
+            const colorText = item.color || item.product?.color;
+            const sizeText = item.size || item.product?.size;
+            return (
+              <Text style={{ fontSize: 12, color: '#666' }}>
+                {sizeText ? `Size: ${sizeText}` : ''}
+                {sizeText && colorText ? ' • ' : ''}
+                {colorText ? `Màu: ${colorText}` : ''}
+              </Text>
+            );
+          })()}
           <Text style={{ fontSize: 11, color: "#888" }}>
             Nhấn để xem chi tiết sản phẩm
           </Text>
@@ -268,7 +281,13 @@ const CartScreen = () => {
         <View style={styles.customHeader}>
           <TouchableOpacity
             style={styles.backBtn}
-            onPress={() => navigation.goBack()}
+            onPress={() => {
+              if (navigation.canGoBack && navigation.canGoBack()) {
+                navigation.goBack();
+              } else {
+                navigation.navigate('Home', { screen: 'HomeScreen' });
+              }
+            }}
           >
             <View style={styles.backIconWrap}>
               <Ionicons name="arrow-back" size={22} color="#222" />
@@ -300,7 +319,13 @@ const CartScreen = () => {
   return (
     <View style={styles.container}>
       <View style={styles.customHeader}>
-          <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
+          <TouchableOpacity style={styles.backBtn} onPress={() => {
+            if (navigation.canGoBack && navigation.canGoBack()) {
+              navigation.goBack();
+            } else {
+              navigation.navigate('Home', { screen: 'HomeScreen' });
+            }
+          }}>
             <View style={styles.backIconWrap}>
               <Ionicons name="arrow-back" size={22} color="#222" />
             </View>
@@ -327,7 +352,17 @@ const CartScreen = () => {
             onRemove={() => handleRemoveItem(item._id)}
             onUpdate={(newQty) => handleUpdateQuantity(item._id, newQty)}
             onPress={() =>
-              navigation.navigate("ProductDetail", { product: item.product })
+              navigation.navigate("ProductDetail", { 
+                product: {
+                  ...item.product,
+                  _id: item.product._id || item.product_id,
+                  name: item.product.name || item.product_name,
+                  price: item.price_at_time || item.product.price,
+                  image_url: item.product.image_url || item.product_image,
+                  size: item.size || item.product?.size,
+                  color: item.color || item.product?.color,
+                }
+              })
             }
           />
         )}

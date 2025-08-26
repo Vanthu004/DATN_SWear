@@ -1,8 +1,8 @@
+import { WEBSOCKET_URL } from '@env'; // Import từ .env
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { io } from 'socket.io-client';
 import { store } from '../reudx/store';
 import { chatAPI } from './chatService';
-import { WEBSOCKET_URL } from '@env';  // Import từ .env
 
 
 class SocketService {

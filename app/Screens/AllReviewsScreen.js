@@ -1,14 +1,13 @@
 // screens/AllReviewsScreen.js
 import React, { useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
-  Image,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Image,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View
 } from 'react-native';
 import api from '../utils/api';
 import { renderStars } from '../utils/renderStars';
@@ -28,7 +27,14 @@ export default function AllReviewsScreen({ route }) {
     const fetchReviews = async () => {
       try {
         const res = await api.get(`/reviews/product/${productId}`);
-        const data = res.data || [];
+        const raw = res.data || [];
+        // Chuẩn hoá images: server có thể trả image_url hoặc uploads
+        const data = raw.map(r => {
+          const images = Array.isArray(r.images) ? r.images :
+            r.uploads ? r.uploads.map(u => u.url || u.path) :
+            r.image_url ? [r.image_url] : [];
+          return { ...r, images };
+        });
 
         setReviews(data);
 
@@ -130,6 +136,16 @@ export default function AllReviewsScreen({ route }) {
             <Text style={styles.name}>{review.user_id?.name || 'Người dùng'}</Text>
             {renderStars(review.rating)}
             <Text style={styles.comment}>{review.comment}</Text>
+            {Array.isArray(review.images) && review.images.length > 0 && (
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 }}>
+                {review.images.map((img, i2) => (
+                  <Image key={i2} source={{ uri: img.url || img }} style={{ width: 80, height: 80, borderRadius: 8 }} />
+                ))}
+              </View>
+            )}
+            {!review.images && review.image_url && (
+              <Image source={{ uri: review.image_url }} style={{ width: 120, height: 120, borderRadius: 8, marginTop: 8 }} />
+            )}
             <Text style={styles.date}>
               {new Date(review.create_date).toLocaleDateString('vi-VN')}
             </Text>

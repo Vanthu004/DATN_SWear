@@ -6,10 +6,8 @@ import QRCode from "react-native-qrcode-svg";
 import { ROUTES } from '../constants/routes';
 import { useCart } from '../hooks/useCart';
 import { api } from '../utils/api';
-
 const { width } = Dimensions.get("window");
 const CARD_WIDTH = Math.min(width * 0.92, 380);
-
 const ZaloPayQRScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();

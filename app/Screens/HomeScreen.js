@@ -15,6 +15,7 @@ import {
 import Swiper from 'react-native-swiper';
 import { useDispatch, useSelector } from "react-redux";
 import ProductCard from "../components/ProductCard";
+import RelatedProducts from "../components/RelatedProducts";
 import { useAuth } from "../context/AuthContext";
 import { useCart } from "../hooks/useCart";
 import {
@@ -23,9 +24,20 @@ import {
   fetchNewest,
   fetchPopular
 } from "../reudx/homeSlice";
-import { addFavorite, getCategoriesById, getFavoritesByUser, removeFavorite } from "../utils/api";
+import {
+  addFavorite,
+  getCategoriesById,
+  getFavoritesByUser,
+  getPersonalizedProducts,
+  getTrendingProducts,
+  removeFavorite
+} from "../utils/api";
 
 const { width } = Dimensions.get("window");
+
+const CATEGORY_COLUMNS = 4;
+const CATEGORY_ROWS = 2;    
+const MAX_CATEGORIES_HOME = 16;
 const bannerImg = require("../../assets/images/LogoSwear.png");
 const defaultAvatar = require("../../assets/images/default-avatar.png");
 const HOTCATEGORY_TYPE_ID = '6864066dc14992d3a8d28826';
@@ -44,11 +56,16 @@ export default function HomeScreen() {
   const { cartCount, refreshCart } = useCart();
 
   const scrollY = useRef(new Animated.Value(0)).current;
-  const translateY = scrollY.interpolate({
-  inputRange: [0, 50],
-  outputRange: [0, -40], // Dịch lên để nằm cùng hàng Header
-  extrapolate: "clamp",
-});
+  const searchBarOpacity = scrollY.interpolate({
+    inputRange: [0, 50],
+    outputRange: [1, 0], // Giảm opacity khi cuộn
+    extrapolate: "clamp",
+  });
+  const searchBarScale = scrollY.interpolate({
+    inputRange: [0, 50],
+    outputRange: [1, 0.8], // Giảm scale khi cuộn
+    extrapolate: "clamp",
+  });
   const userId = userInfo?._id;
   const [bannersCategories, setbannersCategories] = useState([]);
   const [favoriteIds, setFavoriteIds] = useState([]);
@@ -56,12 +73,31 @@ export default function HomeScreen() {
   const [popularSportsCategories, setPopularSportsCategories] = useState([]);
   const [dailyEssentialsCategories, setDailyEssentialsCategories] = useState([]);
   const [shoseMoutainCategories, setShoseMoutainCategories] = useState([]);
+
+  // Trending and personalized products state
+  const [trendingProducts, setTrendingProducts] = useState([]);
+  const [personalizedProducts, setPersonalizedProducts] = useState([]);
+  const [trendingLoading, setTrendingLoading] = useState(false);
+  const [personalizedLoading, setPersonalizedLoading] = useState(false);
   useEffect(() => {
     dispatch(fetchCategories());
     dispatch(fetchBestSellers());
     dispatch(fetchPopular());
     dispatch(fetchNewest());
   }, [dispatch]);
+
+  // Reload khi nhận tham số refresh từ navigation
+  useFocusEffect(
+    React.useCallback(() => {
+      // Nếu có params.refresh, re-fetch các danh sách
+      const unsubscribe = navigation.addListener('state', () => {});
+      dispatch(fetchCategories());
+      dispatch(fetchBestSellers());
+      dispatch(fetchPopular());
+      dispatch(fetchNewest());
+      return () => unsubscribe();
+    }, [dispatch])
+  );
 
   // Lấy danh sách sản phẩm yêu thích khi vào Home
   useEffect(() => {
@@ -92,8 +128,69 @@ export default function HomeScreen() {
         fetchFavorites();
       }
        refreshCart(); // ✅ Gọi đúng tên function
+       
+       // Debug cart data
+       console.log('🔍 Debug: refreshCart called, userId:', userId);
     }, [userId])
   );
+
+  // Fetch trending and personalized products
+  useEffect(() => {
+    const fetchTrendingProducts = async () => {
+      setTrendingLoading(true);
+      try {
+        const response = await getTrendingProducts(8, 'week');
+        // Chuẩn hoá các dạng response khác nhau
+        let products = [];
+        if (response?.success && Array.isArray(response?.trendingProducts)) {
+          products = response.trendingProducts;
+        } else if (Array.isArray(response)) {
+          products = response;
+        } else if (Array.isArray(response?.data)) {
+          products = response.data;
+        } else if (Array.isArray(response?.items)) {
+          products = response.items;
+        } else if (response?.data?.items && Array.isArray(response.data.items)) {
+          products = response.data.items;
+        }
+        setTrendingProducts(products.map(p => ({ ...p, _id: p?._id || p?.id || p?.product_id })));
+      } catch (error) {
+        console.error('Error fetching trending products:', error);
+        setTrendingProducts([]);
+      } finally {
+        setTrendingLoading(false);
+      }
+    };
+
+    const fetchPersonalizedProducts = async () => {
+      if (!userId) return;
+      setPersonalizedLoading(true);
+      try {
+        const response = await getPersonalizedProducts(userId, 6);
+        let products = [];
+        if (response?.success && Array.isArray(response?.personalizedProducts)) {
+          products = response.personalizedProducts;
+        } else if (Array.isArray(response)) {
+          products = response;
+        } else if (Array.isArray(response?.data)) {
+          products = response.data;
+        } else if (Array.isArray(response?.items)) {
+          products = response.items;
+        } else if (response?.data?.items && Array.isArray(response.data.items)) {
+          products = response.data.items;
+        }
+        setPersonalizedProducts(products.map(p => ({ ...p, _id: p?._id || p?.id || p?.product_id })));
+      } catch (error) {
+        console.error('Error fetching personalized products:', error);
+        setPersonalizedProducts([]);
+      } finally {
+        setPersonalizedLoading(false);
+      }
+    };
+
+    fetchTrendingProducts();
+    fetchPersonalizedProducts();
+  }, [userId]);
 
   // Xử lý toggle yêu thích
   const handleToggleFavorite = async (product) => {
@@ -130,8 +227,15 @@ export default function HomeScreen() {
       .catch(() => setbannersCategories([]));
   }, []);
 
-  // Hiển thị số lượng danh mục đầu tiên
-  const displayedCategories = categories.slice(0, 18);
+  // Cấu hình lưới danh mục 2 hàng, vuốt ngang, có thể giới hạn tổng danh mục
+  const homeCategories = Array.isArray(categories)
+    ? (MAX_CATEGORIES_HOME ? categories.slice(0, MAX_CATEGORIES_HOME) : categories)
+    : [];
+  const ITEMS_PER_PAGE = CATEGORY_COLUMNS * CATEGORY_ROWS;
+  const categoryPages = [];
+  for (let i = 0; i < homeCategories.length; i += ITEMS_PER_PAGE) {
+    categoryPages.push(homeCategories.slice(i, i + ITEMS_PER_PAGE));
+  }
 // hiển thị danh mục hot
   const HotCategoryList = ({ categories }) => (
     <View style={{ marginTop: 15, marginBottom: 24 }}>
@@ -276,7 +380,7 @@ const ShoseMoutainCategoryList = ({ categories }) => (
             style={styles.avatarWrap}
           >
             <Image
-              source={userInfo?.avata_url ? { uri: userInfo.avata_url } : defaultAvatar}
+              source={userInfo?.avatar_url ? { uri: userInfo.avatar_url } : defaultAvatar}
               style={styles.avatar}
             />
           </TouchableOpacity>
@@ -294,77 +398,96 @@ const ShoseMoutainCategoryList = ({ categories }) => (
         </View>
 
         {/* Search Bar */}
-       <Animated.View
-        style={[
-          styles.searchBarContainer,
-          {
-            transform: [{ translateY }],
-          },
-        ]}
-      >
-        <TouchableOpacity
-          style={styles.searchBar}
-          onPress={() => navigation.navigate("SearchSc")}
+        <Animated.View
+          style={[
+            styles.searchBarContainer,
+            {
+              opacity: searchBarOpacity,
+              transform: [{ scale: searchBarScale }],
+            },
+          ]}
         >
-          <Ionicons name="search" size={20} color="#666" />
-          <Text style={{ marginLeft: 8, color: "#666" }}>
-            Tìm kiếm sản phẩm...
-          </Text>
-        </TouchableOpacity>
-      </Animated.View>
-
-       <View style={styles.bannerWrap}>
-        {bannersCategories && bannersCategories.length > 0 ? (
-          <Swiper
-            loop
-            autoplay={true} 
-            showsPagination={false}
-            dotStyle={{ backgroundColor: '#ccc', width: 8, height: 8 }}
-            activeDotStyle={{ backgroundColor: '#000', width: 10, height: 10 }}
-            style={{ height: 160 }}
+          <TouchableOpacity
+            style={styles.searchBar}
+            onPress={() => navigation.navigate("SearchSc")}
           >
-             {bannersCategories.map((item) => (
-              <View key={item._id}>
-                <TouchableOpacity onPress={() => navigation.navigate('CategoryScreen', { category: item })} activeOpacity={0.8}>
-                  <Image
-                    source={item.image_url ? { uri: item.image_url } : bannerImg}
-                    style={styles.bannerImg}
-                  />
-                </TouchableOpacity>
-              </View>
-  ))}
-          </Swiper>
-        ) : (
-          <Image source={bannerImg} style={styles.bannerImg} />
-        )}
-      </View>
+            <Ionicons name="search" size={20} color="#666" />
+            <Text style={{ marginLeft: 8, color: "#666" }}>
+              Tìm kiếm sản phẩm...
+            </Text>
+          </TouchableOpacity>
+        </Animated.View>
+
+        <View style={styles.bannerWrap}>
+          {bannersCategories && bannersCategories.length > 0 ? (
+            <Swiper
+              loop
+              autoplay={true} 
+              showsPagination={false}
+              dotStyle={{ backgroundColor: '#ccc', width: 8, height: 8 }}
+              activeDotStyle={{ backgroundColor: '#000', width: 10, height: 10 }}
+              style={{ height: 160 }}
+            >
+               {bannersCategories.map((item) => (
+                <View key={item._id}>
+                  <TouchableOpacity onPress={() => navigation.navigate('CategoryScreen', { category: item })} activeOpacity={0.8}>
+                    <Image
+                      source={item.image_url ? { uri: item.image_url } : bannerImg}
+                      style={styles.bannerImg}
+                    />
+                  </TouchableOpacity>
+                </View>
+    ))}
+            </Swiper>
+          ) : (
+            <Image source={bannerImg} style={styles.bannerImg} />
+          )}
+        </View>
 
         {/* Categories */}
         <View style={styles.categoryRow}>
-          <Text style={styles.sectionTitle}>Danh mục</Text>
-          <TouchableOpacity onPress={() => navigation.navigate("CategoryScreen")}> 
-            <Text style={styles.seeAll}>Xem tất cả</Text>
-          </TouchableOpacity>
+          <View style={styles.categoryTitleRow}>
+            <Text style={styles.sectionTitle}>Danh mục</Text>
+          </View>
         </View>
+        {/* 2 hàng, vuốt ngang qua các trang danh mục */}
         <FlatList
-          data={displayedCategories}
-          keyExtractor={(item) => String(item._id || item.id)}
+          data={categoryPages}
+          keyExtractor={(_, index) => `cat-page-${index}`}
           horizontal
+          pagingEnabled={false}
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ paddingHorizontal: 8, marginBottom: 8 }}
-          renderItem={({ item }) => (
-            <TouchableOpacity
-              style={styles.categoryItem}
-              onPress={() => navigation.navigate("CategoryScreen", { category: item })}
-            >
-              <Image
-                source={item.image_url ? { uri: item.image_url } : require("../../assets/images/box-icon.png")}
-                style={styles.categoryIcon}
-              />
-              <Text style={styles.categoryName} numberOfLines={1}>{item.name}</Text>
-            </TouchableOpacity>
+          contentContainerStyle={{ paddingHorizontal: 16, marginBottom: 8 }}
+          renderItem={({ item: page }) => (
+            <View style={styles.categoriesTwoRowContainer}>
+              {[0, 1].map((rowIndex) => (
+                <View key={`row-${rowIndex}`} style={styles.categoryRowWrap}>
+                  {page
+                    .slice(rowIndex * CATEGORY_COLUMNS, (rowIndex + 1) * CATEGORY_COLUMNS)
+                    .map((cat) => (
+                      <TouchableOpacity
+                        key={String(cat._id || cat.id)}
+                        style={styles.categoryTwoRowItem}
+                        onPress={() => navigation.navigate("CategoryScreen", { category: cat })}
+                      >
+                        <Image
+                          source={cat.image_url ? { uri: cat.image_url } : require("../../assets/images/box-icon.png")}
+                          style={styles.categoryTwoRowIcon}
+                        />
+                        <Text style={styles.categoryTwoRowName} numberOfLines={2}>
+                          {cat.name}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                </View>
+              ))}
+            </View>
           )}
+          ListEmptyComponent={loading ? (
+            <Text style={{ color: '#888', marginLeft: 16 }}>Đang tải...</Text>
+          ) : null}
         />
+
 
         <View style={styles.sectionRow}>
           <Text style={styles.sectionTitle}>Sản phẩm bán chạy nhất </Text>
@@ -402,7 +525,7 @@ const ShoseMoutainCategoryList = ({ categories }) => (
           keyExtractor={(item) => String(item._id || item.id)}
           horizontal
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{paddingBottom: 12, }}
+          contentContainerStyle={{paddingBottom: 12,paddingHorizontal: 18 }}
           renderItem={({ item }) => (
             <ProductCard
               product={item}
@@ -422,7 +545,7 @@ const ShoseMoutainCategoryList = ({ categories }) => (
         <PopularCategoryList categories={popularSportsCategories} />
         {/* danh mục daily essentials */}
         
-        < ShoseMoutainCategoryList categories={shoseMoutainCategories} />
+        <ShoseMoutainCategoryList categories={shoseMoutainCategories} />
 
 
         {/* sản phẩm mới nhất */}
@@ -434,7 +557,7 @@ const ShoseMoutainCategoryList = ({ categories }) => (
           keyExtractor={(item) => String(item._id || item.id)}
           horizontal
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{paddingBottom: 12, }}
+          contentContainerStyle={{paddingBottom: 12,paddingHorizontal: 18 }}
           renderItem={({ item }) => (
             <ProductCard
               product={item}
@@ -449,7 +572,33 @@ const ShoseMoutainCategoryList = ({ categories }) => (
             <Text style={{ color: '#888', marginLeft: 16 }}>Đang tải...</Text>
           ) : null}
         />
-              <View style={{height: 50}}></View>
+
+
+        {/* Personalized Products */}
+        {userId && (
+          <RelatedProducts
+            products={personalizedProducts}
+            loading={personalizedLoading}
+            title="Gợi ý dành cho bạn"
+            navigation={navigation}
+            // isFavorite={favoriteIds.includes(item._id)}
+            // onToggleFavorite={handleToggleFavorite}
+            // showFavoriteIcon={true}
+            // onViewAll={() => navigation.navigate('SearchSc', { keyword: 'personalized' })}
+          />
+        )}
+        {/* <View style={styles.sectionRow}>
+          <Text style={styles.sectionTitle}>Các dịch vụ khác của cửa hàng</Text>
+        </View> */}
+         <View style={{marginHorizontal: 16, marginBottom: 16,marginTop: 16}}>
+          <Text style={{fontSize:20, color:'#3b82f6', fontWeight:'500'}}>Store Swear | Cửa Hàng Thể Thao Chính Hãng Đến Từ Việt Nam</Text>
+          <Text style={{fontSize:15}}>Swear là cửa hàng chuyên cung cấp các sản phẩm thể thao chất lượng cao, từ quần áo, giày dép đến phụ kiện tập luyện. Với phong cách hiện đại, trẻ trung và đa dạng mẫu mã, Swear mang đến cho bạn trải nghiệm mua sắm tiện lợi cùng những sản phẩm bền đẹp, giúp bạn tự tin thể hiện phong cách và nâng cao hiệu suất tập luyện.</Text>
+          <Text style={{fontSize:20, fontWeight:'500', marginTop:10}}>Cửa hàng mua sắm đồ thể thao Swear</Text>
+          <Text style={{fontSize:15}}>Địa chỉ cửa hàng: Số 1, Đường Độc Lập, phường Quán Thánh, quận Ba Đình</Text>
+          <Text style={{fontSize:15}}>Điện thoại: 0123456789</Text>
+          <Text style={{fontSize:15}}>Giấy chứng nhận ĐKDN:0324982234 | Ngày cấp: 20/11/2004 | Nơi cấp: Thành phố Hà Hội</Text>
+        </View>
+              <View style={{height: 100}}></View>
       </Animated.ScrollView>
 
     </SafeAreaView>
@@ -513,7 +662,18 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    marginBottom: 12,
+    height: 40,
+  },
+  searchBarContainer: {
+    backgroundColor: '#fff',
+    paddingTop: 8,
+    paddingBottom: 8,
+    marginBottom: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 4,
   },
   bannerWrap: {
     marginHorizontal: 1,
@@ -528,12 +688,16 @@ const styles = StyleSheet.create({
   resizeMode: "contain",
 },
   categoryRow: {
+    flexDirection: "column",
+    marginHorizontal: 16,
+    marginBottom: 10,
+    marginTop: 8,
+  },
+  categoryTitleRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginHorizontal: 16,
-    marginBottom: 10,
-
+    marginBottom: 8,
   },
   sectionTitle: {
     fontSize: 20,
@@ -569,7 +733,113 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     marginHorizontal: 16,
-    marginTop: 8,
+    marginTop: 16,
     marginBottom: 4,
+  },
+  categoriesGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    marginBottom: 8,
+    marginTop: 8,
+  },
+  categoriesTwoRowContainer: {
+    flexDirection: 'column',
+    width: width - 32, // 16 padding mỗi bên
+    marginRight: 12,
+  },
+  categoryRowWrap: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+  },
+  categoryTwoRowItem: {
+    width: (width - 32 - (CATEGORY_COLUMNS - 1) * 8) / CATEGORY_COLUMNS, // cột theo config, gap 8
+    alignItems: 'center',
+    backgroundColor: '#f8f8f8',
+    borderRadius: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 6,
+  },
+  categoryTwoRowIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    marginBottom: 6,
+    backgroundColor: '#f3f3f3',
+  },
+  categoryTwoRowName: {
+    fontSize: 11,
+    textAlign: 'center',
+    color: '#333',
+    fontWeight: '500',
+    lineHeight: 14,
+  },
+  categoryGridItem: {
+    width: '23%', // 4 cột với khoảng cách nhỏ
+    marginVertical: 8,
+    alignItems: 'center',
+    backgroundColor: '#f8f8f8',
+    borderRadius: 12,
+    padding: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  categoryGridIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    marginBottom: 6,
+    backgroundColor: '#f3f3f3',
+  },
+  categoryGridName: {
+    fontSize: 11,
+    textAlign: 'center',
+    color: '#333',
+    fontWeight: '500',
+    lineHeight: 14,
+  },
+  categoryControls: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    marginBottom: 8,
+  },
+  controlsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  controlLabel: {
+    fontSize: 12,
+    color: '#666',
+    marginRight: 8,
+    fontWeight: '500',
+  },
+  controlBtn: {
+    backgroundColor: '#f0f0f0',
+    borderRadius: 12,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    marginHorizontal: 2,
+    minWidth: 30,
+    alignItems: 'center',
+  },
+  controlBtnActive: {
+    backgroundColor: '#2979FF',
+    borderWidth: 1,
+    borderColor: '#2979FF',
+  },
+  controlBtnText: {
+    fontSize: 11,
+    color: '#666',
+    fontWeight: '500',
+  },
+  controlBtnTextActive: {
+    color: '#fff',
+    fontWeight: '600',
   },
 });

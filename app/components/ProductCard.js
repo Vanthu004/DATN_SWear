@@ -45,7 +45,12 @@ export default function ProductCard({
     e.stopPropagation();
     // TODO: Implement product variant selection logic
     // For now, we'll pass null as productVariantId
-    await addToCart(product, 1, null);
+    if (Array.isArray(product.variants) && product.variants.length > 0) {
+      setVariantActionType('cart');
+      setShowVariantModal(true);
+    } else {
+      await addToCart({ ...product, _id: productId }, 1, null);
+    }
   };
 
   const imageSource = product.image_url
@@ -69,12 +74,20 @@ export default function ProductCard({
             onPress(product);
           } else if (navigation && navigation.navigate) {
             try {
+              // Kiểm tra product._id có hợp lệ không
+              if (!product._id || typeof product._id !== 'string') {
+                console.error('❌ Product ID không hợp lệ:', product._id);
+                return;
+              }
+              
               const res = await api.get(`/products/${product._id}`);
               // ⚠️ Gộp lại image_url từ sản phẩm gốc nếu API không trả về
               const fullProduct = { ...res.data, image_url: product.image_url };
               navigation.navigate("ProductDetail", { product: fullProduct });
             } catch (error) {
               console.error("❌ Lỗi khi lấy chi tiết sản phẩm:", error);
+              // Fallback: navigate với dữ liệu hiện có
+              navigation.navigate("ProductDetail", { product });
             }
           }
         }}

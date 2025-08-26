@@ -3,6 +3,7 @@ import React, { createContext, useContext, useEffect, useState } from "react";
 import { Alert } from "react-native";
 import { io } from "socket.io-client";
 import { navigationRef } from "../navigation/TabNavigator";
+import { cleanupNotifications, initializeNotifications } from "../services/notificationService";
 import { api, WEBSOCKET_URL } from "../utils/api";
 
 const socket = io(WEBSOCKET_URL, {
@@ -175,6 +176,19 @@ export const AuthProvider = ({ children }) => {
       setUserInfo(user);
       setIsEmailVerified(verified);
       //console.log("Logged in with user:", user);
+
+      // Khởi tạo notifications sau khi login
+      if (user._id) {
+        console.log("AuthContext: Initializing notifications for user:", user._id);
+        try {
+          await initializeNotifications(user._id);
+          console.log("AuthContext: Notifications initialized successfully");
+        } catch (error) {
+          console.error("AuthContext: Error initializing notifications:", error);
+        }
+      } else {
+        console.log("AuthContext: No user._id found, skipping notification initialization");
+      }
     } catch (error) {
       console.log("Error storing auth data:", error);
     }
@@ -182,6 +196,11 @@ export const AuthProvider = ({ children }) => {
 
   const logout = async () => {
     try {
+      // Cleanup notifications trước khi logout
+      if (userInfo?._id) {
+        await cleanupNotifications(userInfo._id);
+      }
+
       await AsyncStorage.multiRemove(["userToken", "userInfo", "isEmailVerified"]);
       setUserToken(null);
       setUserInfo(null);
@@ -309,6 +328,11 @@ export const AuthProvider = ({ children }) => {
 
   const clearAllData = async () => {
     try {
+      // Cleanup notifications trước khi clear data
+      if (userInfo?._id) {
+        await cleanupNotifications(userInfo._id);
+      }
+
       await AsyncStorage.multiRemove(["userToken", "userInfo", "isEmailVerified"]);
       setUserToken(null);
       setUserInfo(null);

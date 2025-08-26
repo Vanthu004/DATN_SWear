@@ -30,6 +30,7 @@ import ProductScreen from "../Screens/ProductScreen";
 import ProfileScreen from "../Screens/ProfileScreen";
 import SearchSc from '../Screens/SearchSc';
 import SupportScreen from "../Screens/SupportScreen";
+import SupportScreen from "../Screens/SupportScreen";
 import TermsScreen from "../Screens/TermsScreen";
 import UserInfoScreen from "../Screens/UserInfoScreen";
 import WishlistScreen from "../Screens/WishlistScreen.js";
@@ -95,14 +96,9 @@ function HomeStack() {
         options={{ headerShown: false }}
       />
       <Stack.Screen
-        name="AddressList"
-        component={AddressListScreen}
-        options={{ title: "Địa chỉ" }}
-      />
-      <Stack.Screen
         name="AddAddress"
         component={AddAddressScreen}
-        options={{ title: "Thêm địa chỉ" }}
+        options={{headerShown: false }}
       />
       <Stack.Screen
         name="Payment"
@@ -251,7 +247,7 @@ function ProfileStack() {
       <Stack.Screen
         name="Help"
         component={HelpScreen}
-        options={{ title: "Trợ giúp" }}
+        options={{headerShown: false }}
       />
       <Stack.Screen
         name="ChatScreen"
