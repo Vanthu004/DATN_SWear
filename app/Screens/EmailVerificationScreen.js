@@ -32,7 +32,7 @@ const EmailVerificationScreen = ({ route, navigation }) => {
 
   // Chỉ tự động gửi email xác nhận khi vào từ Login (không phải từ Register)
   useEffect(() => {
-    console.log('EmailVerificationScreen mounted with email:', email, 'fromRegister:', fromRegister);
+    //console.log('EmailVerificationScreen mounted with email:', email, 'fromRegister:', fromRegister);
     // Không auto-send khi vào từ Register vì server đã gửi email rồi
     if (!fromRegister && !emailSent) {
       // Delay một chút để tránh gửi trùng với email từ server
@@ -56,13 +56,13 @@ const EmailVerificationScreen = ({ route, navigation }) => {
 
     setIsLoading(true);
     try {
-      console.log('Verifying email with OTP:', otp);
+      //console.log('Verifying email with OTP:', otp);
       const response = await api.post('/users/verify-email', {
         email,
         otp,
       });
 
-      console.log('Verify email response:', response.data);
+      //console.log('Verify email response:', response.data);
 
       // Sau khi xác nhận thành công, luôn chuyển về Login
       Alert.alert(
@@ -82,8 +82,8 @@ const EmailVerificationScreen = ({ route, navigation }) => {
         ]
       );
     } catch (error) {
-      console.log('Verification error:', error);
-      console.log('Error response:', error.response?.data);
+      //console.log('Verification error:', error);
+      //console.log('Error response:', error.response?.data);
       
       let message = 'Xác nhận email thất bại';
       

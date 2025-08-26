@@ -63,8 +63,8 @@ export default function ProductCard({
       const name = product.name || "";
       const rating = product.rating || 5.0;
       const stock = product.stock_quantity || 0;
-      // console.log("🔍 product.stock_quantity", product.stock_quantity);
-      // console.log("🔍 full product", product);
+      //console.log("🔍 product.stock_quantity", product.stock_quantity);
+      //console.log("🔍 full product", product);
   return (
     <Animated.View style={[styles.card, fixedHeight && styles.fixedCard, { transform: [{ scale: scaleAnim }] }]}>
       <TouchableOpacity

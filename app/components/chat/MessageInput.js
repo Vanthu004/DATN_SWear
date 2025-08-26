@@ -98,7 +98,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
     minHeight: 50,
-    paddingBottom: 60 // Tăng lên 20px
+    paddingBottom: 10 
   },
   imageButton: {
     padding: 8,

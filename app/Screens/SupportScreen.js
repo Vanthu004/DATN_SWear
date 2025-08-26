@@ -27,8 +27,8 @@ const SupportScreen = () => {
 
   // Redux state
   const { isConnected, chatRooms, isLoadingRooms, error } = useSelector(state => state.chat);
-  console.log('💬 Chat State:', { chatRooms, isLoadingRooms, error, isConnected });
-  
+  //console.log('💬 Chat State:', { chatRooms, isLoadingRooms, error, isConnected });
+
   // Local state
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -45,73 +45,73 @@ const SupportScreen = () => {
 
 
   // Initialize socket connection
- useEffect(() => {
-  const initializeSocket = async () => {
-    try {
-      await socketService.connect(dispatch);
-    } catch (error) {
-      console.error('Failed to connect socket:', error);
-    }
-  };
-  initializeSocket();
-  return () => {
-    socketService.disconnect();
-  };
-}, [dispatch]);
+  useEffect(() => {
+    const initializeSocket = async () => {
+      try {
+        await socketService.connect(dispatch);
+      } catch (error) {
+        console.error('Failed to connect socket:', error);
+      }
+    };
+    initializeSocket();
+    return () => {
+      socketService.disconnect();
+    };
+  }, [dispatch]);
 
   // Handle refresh
-const handleRefresh = useCallback(async () => {
-  setRefreshing(true);
-  try {
-    const result = await dispatch(fetchChatRooms()).unwrap();
-    console.log('Refresh result:', result.chatRooms.map(r => ({ roomId: r.roomId, status: r.status, updatedAt: r.updatedAt })));
-  } catch (error) {
-    console.error('Refresh error:', error);
-    Alert.alert('Lỗi', 'Không thể làm mới danh sách. Vui lòng thử lại.');
-  } finally {
-    setRefreshing(false);
-  }
-}, [dispatch]);
-
-const handleCreateRoom = useCallback(
-  async (roomData, retryCount = 0) => {
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
     try {
-      const resultAction = await dispatch(createChatRoom(roomData));
-      const result = await unwrapResult(resultAction);
-      console.log('✅ Create room result:', result);
-
-      const newRoom = result?.chatRoom || result?.room || result;
-      if (!newRoom || !newRoom.roomId) {
-        throw new Error('Invalid room data');
-      }
-
-      setShowCreateModal(false);
-      navigation.goToChat(newRoom);
-
-      setTimeout(() => {
-        dispatch(fetchChatRooms());
-      }, 1000);
-
-      Alert.alert('Thành công!', 'Phòng chat đã được tạo.');
+      const result = await dispatch(fetchChatRooms()).unwrap();
+      //console.log('Refresh result:', result.chatRooms.map(r => ({ roomId: r.roomId, status: r.status, updatedAt: r.updatedAt })));
     } catch (error) {
-      const errorMessage = error.message || 'Không thể tạo phòng chat';
-      console.error('❌ Create room error:', {
-        message: errorMessage,
-        response: error.response?.data || {}
-      });
-      setShowCreateModal(false);
-
-      Alert.alert('Lỗi', errorMessage, [
-        { text: 'OK', style: 'cancel' }
-      ]);
-
-      setTimeout(() => {
-        dispatch(fetchChatRooms());
-      }, 1000);
+      console.error('Refresh error:', error);
+      Alert.alert('Lỗi', 'Không thể làm mới danh sách. Vui lòng thử lại.');
+    } finally {
+      setRefreshing(false);
     }
-  },
-  [dispatch, navigation]
-);
+  }, [dispatch]);
+
+  const handleCreateRoom = useCallback(
+    async (roomData, retryCount = 0) => {
+      try {
+        const resultAction = await dispatch(createChatRoom(roomData));
+        const result = await unwrapResult(resultAction);
+        //console.log('✅ Create room result:', result);
+
+        const newRoom = result?.chatRoom || result?.room || result;
+        if (!newRoom || !newRoom.roomId) {
+          throw new Error('Invalid room data');
+        }
+
+        setShowCreateModal(false);
+        navigation.goToChat(newRoom);
+
+        setTimeout(() => {
+          dispatch(fetchChatRooms());
+        }, 1000);
+
+        Alert.alert('Thành công!', 'Phòng chat đã được tạo.');
+      } catch (error) {
+        const errorMessage = error.message || 'Không thể tạo phòng chat';
+        console.error('❌ Create room error:', {
+          message: errorMessage,
+          response: error.response?.data || {}
+        });
+        setShowCreateModal(false);
+
+        Alert.alert('Lỗi', errorMessage, [
+          { text: 'OK', style: 'cancel' }
+        ]);
+
+        setTimeout(() => {
+          dispatch(fetchChatRooms());
+        }, 1000);
+      }
+    },
+    [dispatch, navigation]
+  );
 
   // Handle room press
   const handleRoomPress = useCallback((room) => {
@@ -181,10 +181,10 @@ const handleCreateRoom = useCallback(
       {renderConnectionStatus()}
 
       {/* Error Message - Only show non-API errors */}
-      {error && !error.includes('đã có phòng chat đang mở') && (
+      {error && error.message && !error.message.includes('đã có phòng chat đang mở') && (
         <View style={styles.errorBanner}>
           <Ionicons name="alert-circle-outline" size={16} color="#F44336" />
-          <Text style={styles.errorText}>Lỗi: {error}</Text>
+          <Text style={styles.errorText}>Lỗi: {error.message}</Text>
         </View>
       )}
 
@@ -243,7 +243,7 @@ const handleCreateRoom = useCallback(
             }
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.listContent}
-           
+
           />
         )}
       </View>

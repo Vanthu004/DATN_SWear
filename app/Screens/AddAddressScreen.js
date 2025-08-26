@@ -417,7 +417,7 @@ const AddAddressScreen = ({ navigation, route }) => {
           {isEdit ? "Cập nhật địa chỉ" : "Lưu địa chỉ"}
         </Text>
       </TouchableOpacity>
-      <View style={{height: 70}}></View>
+      <View style={{height: 20}}></View>
     </SafeAreaView>
   );
 };

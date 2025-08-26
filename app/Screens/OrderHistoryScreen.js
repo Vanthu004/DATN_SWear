@@ -95,7 +95,7 @@ const [showCancelDialog, setShowCancelDialog] = useState(false);
 
       // Hoàn kho sản phẩm
       await increaseProductStock(stockItems);
-      console.log("✅ Stock increased successfully after order cancellation");
+      //console.log("✅ Stock increased successfully after order cancellation");
     }
       Alert.alert("Thành công", "Đơn hàng đã được hủy.");
       setShowCancelDialog(false);
@@ -117,7 +117,7 @@ const [showCancelDialog, setShowCancelDialog] = useState(false);
         let details = await getOrderDetailsByOrderId(order._id);
         if (!Array.isArray(details)) details = [];
         // Log để kiểm tra dữ liệu
-        console.log("Order:", order.order_code, "Details:", details);
+        //console.log("Order:", order.order_code, "Details:", details);
         return {
           ...order,
           orderDetails: details

@@ -1,8 +1,7 @@
-// app/services/chatService.js
+//app/services/chatService.js
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
-
-const API_BASE_URL = "http://192.168.1.9:3000/api";
+import { API_BASE_URL } from '@env';  // Import từ .env
 
 // Axios instance for chat API
 const chatAPIClient = axios.create({
@@ -50,18 +49,23 @@ chatAPIClient.interceptors.response.use(
 
 export const chatAPI = {
   // Chat Rooms
-  createChatRoom: async (roomData) => {
+ createChatRoom: async (roomData) => {
     try {
-      console.log('Sending create room payload:', roomData);
+      //console.log('Sending create room payload:', roomData);
       const response = await chatAPIClient.post('/chat/rooms', roomData);
-      console.log('API response:', response.data);
+      //console.log('API response:', response.data);
       if (!response.data) {
         throw new Error('No data in API response');
       }
       return response.data;
     } catch (error) {
       const errorMessage = error.response?.data?.message || error.message || 'Lỗi API không xác định';
-      console.error('API createChatRoom error:', errorMessage);
+      console.error('API createChatRoom error:', {
+        message: errorMessage,
+        status: error.response?.status,
+        data: error.response?.data,
+        originalError: error,
+      });
       throw error;
     }
   },
@@ -69,7 +73,7 @@ export const chatAPI = {
   getMyChatRooms: async (params = {}) => {
     try {
       const response = await chatAPIClient.get('/chat/rooms/my-rooms', { params });
-      console.log('🌐 getMyChatRooms Response:', JSON.stringify(response, null, 2)); // Ghi log toàn bộ phản hồi
+      //console.log('🌐 getMyChatRooms Response:', JSON.stringify(response, null, 2)); // Ghi log toàn bộ phản hồi
       if (!response.data) {
         throw new Error('No data returned from getMyChatRooms');
       }
@@ -87,7 +91,7 @@ export const chatAPI = {
   getChatRoomById: async (roomId) => {
     try {
       const response = await chatAPIClient.get(`/chat/rooms/${roomId}`);
-      console.log('🌐 getChatRoomById Response:', JSON.stringify(response, null, 2));
+      //console.log('🌐 getChatRoomById Response:', JSON.stringify(response, null, 2));
       const roomData = response.data.room || response.data;
       if (!roomData.roomId) {
         throw new Error(`Invalid room data for roomId: ${roomId}`);
@@ -125,10 +129,8 @@ export const chatAPI = {
 
   getMessages: async (roomId, page = 1, limit = 50) => {
     try {
-      const response = await chatAPIClient.get(`/chat/rooms/${roomId}/messages`, {
-        params: { page, limit }
-      });
-      console.log('🌐 getMessages Response:', JSON.stringify(response.data, null, 2));
+      const response = await chatAPIClient.get(`/chat/rooms/${roomId}/messages`, { params: { page, limit } });
+      //console.log('🌐 getMessages Response:', JSON.stringify(response.data, null, 2));
       return response.data || { messages: [], pagination: { hasMore: false } };
     } catch (error) {
       console.error('getMessages Error:', {
@@ -297,7 +299,7 @@ export const chatUtils = {
   getUserProfile: async () => {
     try {
       const response = await chatAPIClient.get('/users/me');
-      console.log('🌐 getUserProfile Response:', JSON.stringify(response, null, 2));
+      //console.log('🌐 getUserProfile Response:', JSON.stringify(response, null, 2));
       return response.data;
     } catch (error) {
       console.error('getUserProfile Error:', {
@@ -312,6 +314,6 @@ export const chatUtils = {
 
 export const fetchChatRooms = async () => {
   const response = await chatAPIClient.get('/chat/rooms/my-rooms?t=' + new Date().getTime());
-  console.log('Fetch chat rooms response:', response.data.chatRooms.map(r => ({ roomId: r.roomId, status: r.status, updatedAt: r.updatedAt })));
+  //console.log('Fetch chat rooms response:', response.data.chatRooms.map(r => ({ roomId: r.roomId, status: r.status, updatedAt: r.updatedAt })));
   return response.data;
 };

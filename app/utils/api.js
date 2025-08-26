@@ -1,15 +1,11 @@
-
-// app/utils/api.js
+import { API_BASE_URL, WEBSOCKET_URL as ENV_WEBSOCKET_URL } from '@env'; // Đổi tên import để tránh xung đột
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import { Alert } from "react-native";
 import { logoutGlobal } from "../context/AuthContext";
-// Base URL for the API
-const API_BASE_URL = "http://192.168.1.9:3000/api";
 
-const WEBSOCKET_URL = "http://192.168.1.9:3000";
-
-
+// Gán WEBSOCKET_URL vào một hằng số
+const WEBSOCKET_URL = ENV_WEBSOCKET_URL;
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -100,7 +96,6 @@ api.interceptors.response.use(
       }
     }
 
-
     console.log("API Response Error:", {
       status,
       url: error.config?.url,
@@ -111,7 +106,6 @@ api.interceptors.response.use(
     return Promise.reject(error);
   }
 );
-
 
 // Upload functions
 export const uploadImage = async (
@@ -555,6 +549,7 @@ export const deleteOrderDetail = async (orderDetailId) => {
     throw error;
   }
 };
+
 export const cancelOrder = async (orderId, reason) => {
   try {
     const response = await api.put(`/orders/${orderId}/cancel`, {
@@ -567,8 +562,6 @@ export const cancelOrder = async (orderId, reason) => {
   }
 };
 
-
-
 // Address APIs
 export const createAddress = async (addressData) => {
   try {
@@ -579,6 +572,7 @@ export const createAddress = async (addressData) => {
     throw error;
   }
 };
+
 // Không cần truyền userId vì đã lấy từ token
 export const getAddressList = async () => {
   try {
@@ -599,6 +593,7 @@ export const updateAddress = async (id, addressData) => {
     throw error;
   }
 };
+
 export const deleteAddress = async (id) => {
   try {
     const response = await api.delete(`/addresses/${id}`);
@@ -652,6 +647,7 @@ export const requestRefund = async (orderId, reason) => {
     throw error;
   }
 };
+
 export const getAllReviews = async () => {
   try {
     const response = await api.get("/reviews");
@@ -672,6 +668,7 @@ export const applyVoucherApi = async (voucherId) => {
   return res.data;
 
 };
+
 // ===== SHIPPING METHODS APIs =====
 
 export const createShippingMethod = async (shippingData) => {
@@ -725,6 +722,7 @@ export const getProductDetail = async (productId) => {
     throw error;
   }
 };
+
 // Giảm tồn kho
 export const decreaseProductStock = async (items) => {
   try {
@@ -941,3 +939,4 @@ export const getSearchStats = async (timeRange = 'all') => {
 export default api;
 export { api, WEBSOCKET_URL };
 
+export { api, WEBSOCKET_URL }; // Xuất hằng số WEBSOCKET_URL
