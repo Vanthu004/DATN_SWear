@@ -4,7 +4,10 @@ import React, { createContext, useContext, useEffect, useState } from "react";
 import { Alert } from "react-native";
 import { io } from "socket.io-client";
 import { navigationRef } from "../navigation/TabNavigator";
+import { cleanupNotifications, initializeNotifications } from "../services/notificationService";
 import { api, WEBSOCKET_URL } from "../utils/api";
+
+
 
 const socket = io(WEBSOCKET_URL, {
   reconnection: true,
@@ -12,6 +15,7 @@ const socket = io(WEBSOCKET_URL, {
   reconnectionDelay: 1000,
 });
 
+export let logoutGlobal = async () => {};
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
@@ -22,6 +26,7 @@ export const AuthProvider = ({ children }) => {
   const [isBanned, setIsBanned] = useState(false);
 
   useEffect(() => {
+    logoutGlobal = logout;
     checkLoginState();
 
     socket.on("connect", () => {
@@ -156,6 +161,8 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (token, user, verified = true) => {
     try {
+      console.log("AuthContext: Login called with user:", user);
+      
       await AsyncStorage.setItem("userToken", token);
       await AsyncStorage.setItem("userInfo", JSON.stringify(user));
       await AsyncStorage.setItem("isEmailVerified", verified.toString());
@@ -163,6 +170,19 @@ export const AuthProvider = ({ children }) => {
       setUserToken(token);
       setUserInfo(user);
       setIsEmailVerified(verified);
+
+      // Khởi tạo notifications sau khi login
+      if (user._id) {
+        console.log("AuthContext: Initializing notifications for user:", user._id);
+        try {
+          await initializeNotifications(user._id);
+          console.log("AuthContext: Notifications initialized successfully");
+        } catch (error) {
+          console.error("AuthContext: Error initializing notifications:", error);
+        }
+      } else {
+        console.log("AuthContext: No user._id found, skipping notification initialization");
+      }
     } catch (error) {
       console.log("Error storing auth data:", error);
     }
@@ -170,6 +190,11 @@ export const AuthProvider = ({ children }) => {
 
   const logout = async () => {
     try {
+      // Cleanup notifications trước khi logout
+      if (userInfo?._id) {
+        await cleanupNotifications(userInfo._id);
+      }
+
       await AsyncStorage.multiRemove(["userToken", "userInfo", "isEmailVerified"]);
       setUserToken(null);
       setUserInfo(null);
@@ -258,6 +283,11 @@ export const AuthProvider = ({ children }) => {
       }
     } catch (error) {
       console.log("Error refreshing user data:", error.message);
+      if (error.response?.status === 401 && error.response?.data?.message === 'Token đã hết hạn') {
+        await logout();
+        Alert.alert('Phiên hết hạn', 'Vui lòng đăng nhập lại.');
+        return;
+      }
       if (error.response?.status === 403 && error.response?.data?.message?.includes("bị khóa")) {
         console.log("Handling 403 ban error in refreshUserData");
         if (!isBanned) {
@@ -281,6 +311,11 @@ export const AuthProvider = ({ children }) => {
 
   const clearAllData = async () => {
     try {
+      // Cleanup notifications trước khi clear data
+      if (userInfo?._id) {
+        await cleanupNotifications(userInfo._id);
+      }
+
       await AsyncStorage.multiRemove(["userToken", "userInfo", "isEmailVerified"]);
       setUserToken(null);
       setUserInfo(null);

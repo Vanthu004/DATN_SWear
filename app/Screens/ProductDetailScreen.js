@@ -39,6 +39,7 @@ const renderStars = (rating) => (
 
 export default function ProductDetailScreen({ route, navigation }) {
   const { product } = route.params || {};
+  const productId = product?._id || product?.id || product?.product_id;
   const { userInfo } = useAuth();
   const [variantActionType, setVariantActionType] = useState(null);
   const [isFavorite, setIsFavorite] = useState(false);
@@ -48,21 +49,20 @@ export default function ProductDetailScreen({ route, navigation }) {
   const [fullProduct, setFullProduct] = useState(product);
   const [selectedVariant, setSelectedVariant] = useState(null);
   const [showVariantModal, setShowVariantModal] = useState(false);
-  const { reviews, avgRating, addReview } = useReview(product?._id);
+  const { reviews, avgRating, addReview, canReview, checkCanReview } = useReview(productId);
   const [selectedColor, setSelectedColor] = useState(null);
 
     useEffect(() => {
     const fetchProductDetail = async () => {
       try {
-        // Kiểm tra product._id có hợp lệ không
-        if (!product?._id || typeof product._id !== 'string' || product._id.length !== 24) {
-          console.error('❌ Product ID không hợp lệ:', product?._id);
-          console.log('❌ Product object:', product);
-          return;
-        }
+        // Kiểm tra productId có hợp lệ không
+    if (!productId) {
+  console.warn('⚠️ Product ID không hợp lệ, bỏ qua gọi API. ID:', productId);
+  return;
+}
         
-        console.log('🔍 Fetching product detail for ID:', product._id);
-        const res = await api.get(`/products/${product._id}/frontend`);
+        console.log('🔍 Fetching product detail for ID:', productId);
+        const res = await api.get(`/products/${productId}/frontend`);
         console.log('✅ API response:', res.data);
         setFullProduct(res.data);
       } catch (error) {
@@ -73,12 +73,12 @@ export default function ProductDetailScreen({ route, navigation }) {
       }
     };
 
-    if (product?._id) {
+    if (productId) {
       fetchProductDetail();
     } else {
       console.log('⚠️ Không có product._id, product object:', product);
     }
-  }, [product]);
+  }, [productId]);
 
   // Load first variant when product loads
   useEffect(() => {
@@ -154,8 +154,10 @@ const handleAddToCart = async ({ product, variant, quantity }) => {
     // Nếu có variant thì thêm các thông tin biến thể
     if (variant && variant._id) {
       payload.product_variant_id = variant._id;
-      payload.size = variant.size;
-      payload.color = variant.color;
+      const sizeName = variant.size || variant.attributes?.size?.name;
+      const colorName = variant.color || variant.attributes?.color?.name;
+      if (sizeName) payload.size = sizeName;
+      if (colorName) payload.color = colorName;
     }
 
     const addItemRes = await api.post('/cart-items', payload);
@@ -268,12 +270,12 @@ const handleShowVariantModal = (type) => {
     return fallbackUrl ? [fallbackUrl] : [];
   })();
 
-  console.log("🔍 fullProduct.images:", fullProduct.images);
-  console.log("🔍 fullProduct.image_url:", fullProduct.image_url);
-  console.log("🔍 product.image_url:", product.image_url);
-  console.log("🔍 final imageUrls:", imageUrls);
-  console.log("🔍 fullProduct:", JSON.stringify(fullProduct, null, 2));
-  console.log("🔍 product:", JSON.stringify(product, null, 2));
+  // console.log("🔍 fullProduct.images:", fullProduct.images);
+  // console.log("🔍 fullProduct.image_url:", fullProduct.image_url);
+  // console.log("🔍 product.image_url:", product.image_url);
+  // console.log("🔍 final imageUrls:", imageUrls);
+  // console.log("🔍 fullProduct:", JSON.stringify(fullProduct, null, 2));
+  // console.log("🔍 product:", JSON.stringify(product, null, 2));
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
@@ -332,9 +334,12 @@ const handleShowVariantModal = (type) => {
         {/* Tên, giá, danh mục */}
         <Text style={styles.title}>{fullProduct.name || product.name}</Text>
         <Text style={styles.price}>{(fullProduct.price || product.price)?.toLocaleString('vi-VN')} VND</Text>
-        {(fullProduct.category || product.category) && (
-          <Text style={styles.category}>Danh mục: {(fullProduct.category?.name || fullProduct.category) || (product.category?.name || product.category)}</Text>
-        )}
+       {(fullProduct.stock_quantity || fullProduct.quantity || product.stock_quantity || product.quantity) && (
+  <Text style={styles.category}>
+    Số lượng: {(fullProduct.stock_quantity || fullProduct.quantity || product.stock_quantity || product.quantity)}
+  </Text>
+)}
+
         
         {/* Thông báo hết hàng */}
         {outOfStock && (
@@ -397,7 +402,22 @@ const handleShowVariantModal = (type) => {
                       <Text key={i} style={{ color: '#facc15' }}>★</Text>
                     ))}
                   </View>
+                  {!!(review.product_variant_id || review.variant_text || review.size || review.color) && (
+                    <Text style={{ color: '#555', marginBottom: 4 }}>
+                      Phân loại: {[review.variant_text, review.size, review.color].filter(Boolean).join(' - ')}
+                    </Text>
+                  )}
                   <Text>{review.comment}</Text>
+                  {!!review.images && Array.isArray(review.images) && review.images.length > 0 && (
+                    <View style={{ flexDirection: 'row', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
+                      {review.images.map((img, i2) => (
+                        <Image key={i2} source={{ uri: img.url || img }} style={{ width: 80, height: 80, borderRadius: 8 }} />
+                      ))}
+                    </View>
+                  )}
+                  {!review.images && review.image_url && (
+                    <Image source={{ uri: review.image_url }} style={{ width: 120, height: 120, borderRadius: 8, marginTop: 8 }} />
+                  )}
                 </View>
               </View>
             ))}
@@ -424,7 +444,7 @@ const handleShowVariantModal = (type) => {
             <Text style={{ color: '#888', marginTop: 8 }}>Chưa có đánh giá nào.</Text>
           )}
 
-      </ScrollView>                {/* Footer */}
+      </ScrollView>{/* Footer */}
         <View style={styles.footer}>
           <Text style={styles.footerPrice}>
             {selectedVariant?.price?.toLocaleString('vi-VN') || (fullProduct.price || product.price)?.toLocaleString('vi-VN')} VND

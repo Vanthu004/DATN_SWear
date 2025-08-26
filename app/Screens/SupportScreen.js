@@ -1,5 +1,7 @@
 // app/Screens/SupportScreen.js
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
+import { unwrapResult } from '@reduxjs/toolkit';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -15,86 +17,106 @@ import {
 import { useDispatch, useSelector } from 'react-redux';
 import ChatRoomItem from '../components/chat/ChatRoomItem';
 import CreateChatModal from '../components/chat/CreateChatModal';
-
 import { useAppNavigation } from '../hooks/useAppNavigation';
 import { createChatRoom, fetchChatRooms } from '../reudx/chatSlice';
 import socketService from '../services/socketService';
 
 const SupportScreen = () => {
-
-
-
-
   const navigation = useAppNavigation();
   const dispatch = useDispatch();
 
   // Redux state
   const { isConnected, chatRooms, isLoadingRooms, error } = useSelector(state => state.chat);
   console.log('💬 Chat State:', { chatRooms, isLoadingRooms, error, isConnected });
+  
   // Local state
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
- useEffect(() => {
-    if (isConnected) {
-      dispatch(fetchChatRooms());
-    }
-  }, [isConnected, dispatch]);
-  // Initialize socket connection
-  useEffect(() => {
-    const initializeSocket = async () => {
-      try {
-        await socketService.connect(dispatch);
-      } catch (error) {
-        console.error('Failed to connect socket:', error);
+  // Refresh data when screen focuses - tự động reload khi quay lại
+  useFocusEffect(
+    useCallback(() => {
+      if (isConnected) {
+        dispatch(fetchChatRooms());
       }
-    };
+    }, [isConnected, dispatch])
+  );
 
-    initializeSocket();
-    dispatch(fetchChatRooms());
 
-    return () => {
-      socketService.disconnect();
-    };
-  }, [dispatch]);
+
+  // Initialize socket connection
+ useEffect(() => {
+  const initializeSocket = async () => {
+    try {
+      await socketService.connect(dispatch);
+    } catch (error) {
+      console.error('Failed to connect socket:', error);
+    }
+  };
+  initializeSocket();
+  return () => {
+    socketService.disconnect();
+  };
+}, [dispatch]);
 
   // Handle refresh
-  const handleRefresh = useCallback(async () => {
-    setRefreshing(true);
-    try {
-      await dispatch(fetchChatRooms()).unwrap();
-    } catch (error) {
-      console.error('Refresh error:', error);
-    } finally {
-      setRefreshing(false);
-    }
-  }, [dispatch]);
+const handleRefresh = useCallback(async () => {
+  setRefreshing(true);
+  try {
+    const result = await dispatch(fetchChatRooms()).unwrap();
+    console.log('Refresh result:', result.chatRooms.map(r => ({ roomId: r.roomId, status: r.status, updatedAt: r.updatedAt })));
+  } catch (error) {
+    console.error('Refresh error:', error);
+    Alert.alert('Lỗi', 'Không thể làm mới danh sách. Vui lòng thử lại.');
+  } finally {
+    setRefreshing(false);
+  }
+}, [dispatch]);
 
-  // Handle create new chat room
-  const handleCreateRoom = useCallback(async (roomData) => {
+const handleCreateRoom = useCallback(
+  async (roomData, retryCount = 0) => {
     try {
-      const result = await dispatch(createChatRoom(roomData)).unwrap();
+      const resultAction = await dispatch(createChatRoom(roomData));
+      const result = await unwrapResult(resultAction);
+      console.log('✅ Create room result:', result);
 
-      Alert.alert(
-        'Thành công',
-        'Phòng chat đã được tạo. Bạn có muốn vào chat ngay không?',
-        [
-          { text: 'Để sau', style: 'cancel' },
-          {
-            text: 'Vào chat',
-           onPress: () => navigation.goToChat(result.chatRoom)
-          }
-        ]
-      );
+      const newRoom = result?.chatRoom || result?.room || result;
+      if (!newRoom || !newRoom.roomId) {
+        throw new Error('Invalid room data');
+      }
+
+      setShowCreateModal(false);
+      navigation.goToChat(newRoom);
+
+      setTimeout(() => {
+        dispatch(fetchChatRooms());
+      }, 1000);
+
+      Alert.alert('Thành công!', 'Phòng chat đã được tạo.');
     } catch (error) {
-      throw error; // Let CreateChatModal handle the error
+      const errorMessage = error.message || 'Không thể tạo phòng chat';
+      console.error('❌ Create room error:', {
+        message: errorMessage,
+        response: error.response?.data || {}
+      });
+      setShowCreateModal(false);
+
+      Alert.alert('Lỗi', errorMessage, [
+        { text: 'OK', style: 'cancel' }
+      ]);
+
+      setTimeout(() => {
+        dispatch(fetchChatRooms());
+      }, 1000);
     }
-  }, [dispatch, navigation]);
+  },
+  [dispatch, navigation]
+);
 
   // Handle room press
- const handleRoomPress = useCallback((room) => {
-  navigation.goToChat(room); // Thay vì navigation.navigate('Chat', { room })
-}, [navigation]);
+  const handleRoomPress = useCallback((room) => {
+    navigation.goToChat(room);
+  }, [navigation]);
 
   // Render empty state
   const renderEmptyState = () => (
@@ -158,8 +180,8 @@ const SupportScreen = () => {
       {/* Connection Status */}
       {renderConnectionStatus()}
 
-      {/* Error Message */}
-      {error && (
+      {/* Error Message - Only show non-API errors */}
+      {error && !error.includes('đã có phòng chat đang mở') && (
         <View style={styles.errorBanner}>
           <Ionicons name="alert-circle-outline" size={16} color="#F44336" />
           <Text style={styles.errorText}>Lỗi: {error}</Text>
@@ -210,6 +232,7 @@ const SupportScreen = () => {
           <FlatList
             data={chatRooms}
             keyExtractor={(item) => item.roomId}
+            extraData={chatRooms}
             renderItem={renderChatRoom}
             refreshControl={
               <RefreshControl
@@ -220,6 +243,7 @@ const SupportScreen = () => {
             }
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.listContent}
+           
           />
         )}
       </View>
@@ -248,6 +272,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderBottomWidth: 1,
     borderBottomColor: '#e0e0e0',
+    marginTop: 20,
   },
   backButton: {
     padding: 8,

@@ -16,7 +16,6 @@ import Swiper from 'react-native-swiper';
 import { useDispatch, useSelector } from "react-redux";
 import ProductCard from "../components/ProductCard";
 import RelatedProducts from "../components/RelatedProducts";
-import TrendingProducts from "../components/TrendingProducts";
 import { useAuth } from "../context/AuthContext";
 import { useCart } from "../hooks/useCart";
 import {
@@ -35,6 +34,10 @@ import {
 } from "../utils/api";
 
 const { width } = Dimensions.get("window");
+
+const CATEGORY_COLUMNS = 4;
+const CATEGORY_ROWS = 2;    
+const MAX_CATEGORIES_HOME = 16;
 const bannerImg = require("../../assets/images/LogoSwear.png");
 const defaultAvatar = require("../../assets/images/default-avatar.png");
 const HOTCATEGORY_TYPE_ID = '6864066dc14992d3a8d28826';
@@ -76,15 +79,25 @@ export default function HomeScreen() {
   const [personalizedProducts, setPersonalizedProducts] = useState([]);
   const [trendingLoading, setTrendingLoading] = useState(false);
   const [personalizedLoading, setPersonalizedLoading] = useState(false);
-  const [showAllCategories, setShowAllCategories] = useState(false); // Thêm state mới
-  const [categoriesPerRow, setCategoriesPerRow] = useState(4); // Số danh mục trên một hàng
-  const [maxCategoriesToShow, setMaxCategoriesToShow] = useState(20); // Số danh mục tối đa hiển thị
   useEffect(() => {
     dispatch(fetchCategories());
     dispatch(fetchBestSellers());
     dispatch(fetchPopular());
     dispatch(fetchNewest());
   }, [dispatch]);
+
+  // Reload khi nhận tham số refresh từ navigation
+  useFocusEffect(
+    React.useCallback(() => {
+      // Nếu có params.refresh, re-fetch các danh sách
+      const unsubscribe = navigation.addListener('state', () => {});
+      dispatch(fetchCategories());
+      dispatch(fetchBestSellers());
+      dispatch(fetchPopular());
+      dispatch(fetchNewest());
+      return () => unsubscribe();
+    }, [dispatch])
+  );
 
   // Lấy danh sách sản phẩm yêu thích khi vào Home
   useEffect(() => {
@@ -127,11 +140,23 @@ export default function HomeScreen() {
       setTrendingLoading(true);
       try {
         const response = await getTrendingProducts(8, 'week');
-        if (response.success) {
-          setTrendingProducts(response.trendingProducts || []);
+        // Chuẩn hoá các dạng response khác nhau
+        let products = [];
+        if (response?.success && Array.isArray(response?.trendingProducts)) {
+          products = response.trendingProducts;
+        } else if (Array.isArray(response)) {
+          products = response;
+        } else if (Array.isArray(response?.data)) {
+          products = response.data;
+        } else if (Array.isArray(response?.items)) {
+          products = response.items;
+        } else if (response?.data?.items && Array.isArray(response.data.items)) {
+          products = response.data.items;
         }
+        setTrendingProducts(products.map(p => ({ ...p, _id: p?._id || p?.id || p?.product_id })));
       } catch (error) {
         console.error('Error fetching trending products:', error);
+        setTrendingProducts([]);
       } finally {
         setTrendingLoading(false);
       }
@@ -142,11 +167,22 @@ export default function HomeScreen() {
       setPersonalizedLoading(true);
       try {
         const response = await getPersonalizedProducts(userId, 6);
-        if (response.success) {
-          setPersonalizedProducts(response.personalizedProducts || []);
+        let products = [];
+        if (response?.success && Array.isArray(response?.personalizedProducts)) {
+          products = response.personalizedProducts;
+        } else if (Array.isArray(response)) {
+          products = response;
+        } else if (Array.isArray(response?.data)) {
+          products = response.data;
+        } else if (Array.isArray(response?.items)) {
+          products = response.items;
+        } else if (response?.data?.items && Array.isArray(response.data.items)) {
+          products = response.data.items;
         }
+        setPersonalizedProducts(products.map(p => ({ ...p, _id: p?._id || p?.id || p?.product_id })));
       } catch (error) {
         console.error('Error fetching personalized products:', error);
+        setPersonalizedProducts([]);
       } finally {
         setPersonalizedLoading(false);
       }
@@ -191,11 +227,15 @@ export default function HomeScreen() {
       .catch(() => setbannersCategories([]));
   }, []);
 
-  // Hiển thị số lượng danh mục đầu tiên
-  const displayedCategories = showAllCategories ? categories.slice(0, maxCategoriesToShow) : categories.slice(0, 10);
-  
-  // Tính toán width cho mỗi item trong grid
-  const gridItemWidth = (width - 32 - (categoriesPerRow - 1) * 8) / categoriesPerRow; // 32 là paddingHorizontal, 8 là margin giữa các item
+  // Cấu hình lưới danh mục 2 hàng, vuốt ngang, có thể giới hạn tổng danh mục
+  const homeCategories = Array.isArray(categories)
+    ? (MAX_CATEGORIES_HOME ? categories.slice(0, MAX_CATEGORIES_HOME) : categories)
+    : [];
+  const ITEMS_PER_PAGE = CATEGORY_COLUMNS * CATEGORY_ROWS;
+  const categoryPages = [];
+  for (let i = 0; i < homeCategories.length; i += ITEMS_PER_PAGE) {
+    categoryPages.push(homeCategories.slice(i, i + ITEMS_PER_PAGE));
+  }
 // hiển thị danh mục hot
   const HotCategoryList = ({ categories }) => (
     <View style={{ marginTop: 15, marginBottom: 24 }}>
@@ -408,76 +448,46 @@ const ShoseMoutainCategoryList = ({ categories }) => (
         <View style={styles.categoryRow}>
           <View style={styles.categoryTitleRow}>
             <Text style={styles.sectionTitle}>Danh mục</Text>
-            <TouchableOpacity onPress={() => setShowAllCategories(!showAllCategories)}>
-              <Text style={styles.seeAll}>{showAllCategories ? 'Ẩn bớt' : 'Xem tất cả'}</Text>
-            </TouchableOpacity>
           </View>
-          {showAllCategories && (
-            <View style={styles.categoryControls}>
-              <View style={styles.controlsRow}>
-                <Text style={styles.controlLabel}>Hiển thị:</Text>
-                <TouchableOpacity 
-                  style={[styles.controlBtn, maxCategoriesToShow === 20 && styles.controlBtnActive]}
-                  onPress={() => setMaxCategoriesToShow(20)}
-                >
-                  <Text style={[styles.controlBtnText, maxCategoriesToShow === 20 && styles.controlBtnTextActive]}>20</Text>
-                </TouchableOpacity>
-                <TouchableOpacity 
-                  style={[styles.controlBtn, maxCategoriesToShow === 40 && styles.controlBtnActive]}
-                  onPress={() => setMaxCategoriesToShow(40)}
-                >
-                  <Text style={[styles.controlBtnText, maxCategoriesToShow === 40 && styles.controlBtnTextActive]}>40</Text>
-                </TouchableOpacity>
-                <TouchableOpacity 
-                  style={[styles.controlBtn, maxCategoriesToShow === categories.length && styles.controlBtnActive]}
-                  onPress={() => setMaxCategoriesToShow(categories.length)}
-                >
-                  <Text style={[styles.controlBtnText, maxCategoriesToShow === categories.length && styles.controlBtnTextActive]}>Tất cả</Text>
-                </TouchableOpacity>
-              </View>
+        </View>
+        {/* 2 hàng, vuốt ngang qua các trang danh mục */}
+        <FlatList
+          data={categoryPages}
+          keyExtractor={(_, index) => `cat-page-${index}`}
+          horizontal
+          pagingEnabled={false}
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ paddingHorizontal: 16, marginBottom: 8 }}
+          renderItem={({ item: page }) => (
+            <View style={styles.categoriesTwoRowContainer}>
+              {[0, 1].map((rowIndex) => (
+                <View key={`row-${rowIndex}`} style={styles.categoryRowWrap}>
+                  {page
+                    .slice(rowIndex * CATEGORY_COLUMNS, (rowIndex + 1) * CATEGORY_COLUMNS)
+                    .map((cat) => (
+                      <TouchableOpacity
+                        key={String(cat._id || cat.id)}
+                        style={styles.categoryTwoRowItem}
+                        onPress={() => navigation.navigate("CategoryScreen", { category: cat })}
+                      >
+                        <Image
+                          source={cat.image_url ? { uri: cat.image_url } : require("../../assets/images/box-icon.png")}
+                          style={styles.categoryTwoRowIcon}
+                        />
+                        <Text style={styles.categoryTwoRowName} numberOfLines={2}>
+                          {cat.name}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                </View>
+              ))}
             </View>
           )}
-        </View>
-        
-        {showAllCategories ? (
-          // Hiển thị tất cả danh mục theo dạng lưới
-          <View style={styles.categoriesGrid}>
-            {categories.map((item) => (
-              <TouchableOpacity
-                key={item._id || item.id}
-                style={styles.categoryGridItem}
-                onPress={() => navigation.navigate("CategoryScreen", { category: item })}
-              >
-                <Image
-                  source={item.image_url ? { uri: item.image_url } : require("../../assets/images/box-icon.png")}
-                  style={styles.categoryGridIcon}
-                />
-                <Text style={styles.categoryGridName} numberOfLines={2}>{item.name}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        ) : (
-          // Hiển thị danh mục theo hàng ngang như cũ
-          <FlatList
-            data={displayedCategories}
-            keyExtractor={(item) => String(item._id || item.id)}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{ paddingHorizontal: 8, marginBottom: 8 }}
-            renderItem={({ item }) => (
-              <TouchableOpacity
-                style={styles.categoryItem}
-                onPress={() => navigation.navigate("CategoryScreen", { category: item })}
-              >
-                <Image
-                  source={item.image_url ? { uri: item.image_url } : require("../../assets/images/box-icon.png")}
-                  style={styles.categoryIcon}
-                />
-                <Text style={styles.categoryName} numberOfLines={1}>{item.name}</Text>
-              </TouchableOpacity>
-            )}
-          />
-        )}
+          ListEmptyComponent={loading ? (
+            <Text style={{ color: '#888', marginLeft: 16 }}>Đang tải...</Text>
+          ) : null}
+        />
+
 
         <View style={styles.sectionRow}>
           <Text style={styles.sectionTitle}>Sản phẩm bán chạy nhất </Text>
@@ -515,7 +525,7 @@ const ShoseMoutainCategoryList = ({ categories }) => (
           keyExtractor={(item) => String(item._id || item.id)}
           horizontal
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{paddingBottom: 12, }}
+          contentContainerStyle={{paddingBottom: 12,paddingHorizontal: 18 }}
           renderItem={({ item }) => (
             <ProductCard
               product={item}
@@ -547,7 +557,7 @@ const ShoseMoutainCategoryList = ({ categories }) => (
           keyExtractor={(item) => String(item._id || item.id)}
           horizontal
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{paddingBottom: 12, }}
+          contentContainerStyle={{paddingBottom: 12,paddingHorizontal: 18 }}
           renderItem={({ item }) => (
             <ProductCard
               product={item}
@@ -563,15 +573,6 @@ const ShoseMoutainCategoryList = ({ categories }) => (
           ) : null}
         />
 
-        {/* Trending Products */}
-        <TrendingProducts
-          products={trendingProducts}
-          loading={trendingLoading}
-          title="Sản phẩm phổ biến tuần này"
-          timeRange="week"
-          navigation={navigation}
-          onViewAll={() => navigation.navigate('SearchSc', { keyword: 'trending' })}
-        />
 
         {/* Personalized Products */}
         {userId && (
@@ -580,13 +581,15 @@ const ShoseMoutainCategoryList = ({ categories }) => (
             loading={personalizedLoading}
             title="Gợi ý dành cho bạn"
             navigation={navigation}
-            onViewAll={() => navigation.navigate('SearchSc', { keyword: 'personalized' })}
+            // isFavorite={favoriteIds.includes(item._id)}
+            // onToggleFavorite={handleToggleFavorite}
+            // showFavoriteIcon={true}
+            // onViewAll={() => navigation.navigate('SearchSc', { keyword: 'personalized' })}
           />
         )}
-        <View style={styles.sectionRow}>
+        {/* <View style={styles.sectionRow}>
           <Text style={styles.sectionTitle}>Các dịch vụ khác của cửa hàng</Text>
-
-        </View>
+        </View> */}
          <View style={{marginHorizontal: 16, marginBottom: 16,marginTop: 16}}>
           <Text style={{fontSize:20, color:'#3b82f6', fontWeight:'500'}}>Store Swear | Cửa Hàng Thể Thao Chính Hãng Đến Từ Việt Nam</Text>
           <Text style={{fontSize:15}}>Swear là cửa hàng chuyên cung cấp các sản phẩm thể thao chất lượng cao, từ quần áo, giày dép đến phụ kiện tập luyện. Với phong cách hiện đại, trẻ trung và đa dạng mẫu mã, Swear mang đến cho bạn trải nghiệm mua sắm tiện lợi cùng những sản phẩm bền đẹp, giúp bạn tự tin thể hiện phong cách và nâng cao hiệu suất tập luyện.</Text>
@@ -740,6 +743,38 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     marginBottom: 8,
     marginTop: 8,
+  },
+  categoriesTwoRowContainer: {
+    flexDirection: 'column',
+    width: width - 32, // 16 padding mỗi bên
+    marginRight: 12,
+  },
+  categoryRowWrap: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+  },
+  categoryTwoRowItem: {
+    width: (width - 32 - (CATEGORY_COLUMNS - 1) * 8) / CATEGORY_COLUMNS, // cột theo config, gap 8
+    alignItems: 'center',
+    backgroundColor: '#f8f8f8',
+    borderRadius: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 6,
+  },
+  categoryTwoRowIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    marginBottom: 6,
+    backgroundColor: '#f3f3f3',
+  },
+  categoryTwoRowName: {
+    fontSize: 11,
+    textAlign: 'center',
+    color: '#333',
+    fontWeight: '500',
+    lineHeight: 14,
   },
   categoryGridItem: {
     width: '23%', // 4 cột với khoảng cách nhỏ

@@ -23,18 +23,24 @@
       "edgeToEdgeEnabled": true,
       "permissions": [
         "NOTIFICATIONS",
-        "RECEIVE_NOTIFICATIONS",
-        "NOTIFICATIONS",
         "RECEIVE_NOTIFICATIONS"
       ],
       "googleServicesFile": "./google-services.json",
-      "package": "com.vanthu.DATN_SWear"
+      "package": "com.vanthu.datnswear"
     },
     "web": {
       "bundler": "metro"
     },
     "plugins": [
       "expo-splash-screen",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#ffffff",
+          "sounds": ["./assets/notification-sound.wav"]
+        }
+      ],
       [
         "@react-native-firebase/app",
         {
@@ -47,11 +53,10 @@
         "expo-build-properties",
         {
           "android": {
-            "compileSdkVersion": 34,
+            "compileSdkVersion": 35,
             "targetSdkVersion": 34,
-            "minSdkVersion": 23,
-            "gradleVersion": "8.5.0",
-            "kotlinVersion": "1.9.23"
+            "minSdkVersion": 24,
+            "gradleVersion": "8.5.0"
           },
           "ios": {
             "deploymentTarget": "15.1"

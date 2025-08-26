@@ -2,19 +2,19 @@ import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import React, { useEffect, useRef, useState } from "react";
 import {
-  ActivityIndicator,
-  Alert,
-  Dimensions,
-  FlatList,
-  Image,
-  Modal,
-  Pressable,
-  SafeAreaView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View
+    ActivityIndicator,
+    Alert,
+    Dimensions,
+    FlatList,
+    Image,
+    Modal,
+    Pressable,
+    SafeAreaView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View
 } from "react-native";
 import Dialog from "react-native-dialog";
 import { TabBar, TabView } from 'react-native-tab-view';
@@ -215,7 +215,7 @@ const [showCancelDialog, setShowCancelDialog] = useState(false);
               <Text style={styles.cancelBtnText}>Hủy đơn hàng</Text>
             </TouchableOpacity>
           )}
-          {getTabKeyFromStatus(item.status) === "delivered" && (
+          {(getTabKeyFromStatus(item.status) === "delivered" || getTabKeyFromStatus(item.status) === "completed") && (
             <>
              <TouchableOpacity 
               style={styles.refundBtn}

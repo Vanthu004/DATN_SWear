@@ -61,46 +61,40 @@ const ProductVariantModal = ({
     }
   }, [selectedColor, selectedSize]);
 
-  const currentPrice = selectedVariant?.price || product?.price || 0;
-  
-  // Kiểm tra sản phẩm có hết hàng không
-  const isOutOfStock = () => {
-    // Kiểm tra stock từ nhiều nguồn khác nhau
-    const getStockQuantity = (productData) => {
-      const possibleStockFields = [
-        productData?.stock_quantity,
-        productData?.stock,
-        productData?.quantity,
-        productData?.available_quantity,
-        productData?.inventory
-      ];
-      
-      for (const stock of possibleStockFields) {
-        if (stock !== undefined && stock !== null && stock > 0) {
-          return stock;
-        }
-      }
-      
-      return 0;
-    };
-    
-    const mainStock = getStockQuantity(product) || 0;
-    if (mainStock > 0) return false;
-    
-    // Kiểm tra variants nếu có
-    if (productVariants && productVariants.length > 0) {
-      const totalStock = productVariants.reduce((sum, variant) => {
-        const variantStock = variant.stock_quantity || variant.stock || variant.quantity || 0;
-        return sum + variantStock;
-      }, 0);
-      return totalStock <= 0;
+  const handleBuyNow = () => {
+    if (!userInfo?._id) {
+      Alert.alert('Lỗi', 'Vui lòng đăng nhập để mua sản phẩm');
+      return;
     }
-    
-    return mainStock <= 0;
+    if (!selectedVariant) {
+      Alert.alert('Lỗi', 'Vui lòng chọn biến thể sản phẩm');
+      return;
+    }
+    onBuyNow({ product, variant: selectedVariant, quantity });
+    onClose();
   };
 
-  const outOfStock = isOutOfStock();
+  const handleAddToCart = async () => {
+    if (!userInfo?._id) {
+      Alert.alert('Lỗi', 'Vui lòng đăng nhập để thêm sản phẩm vào giỏ hàng');
+      return;
+    }
+    if (!selectedVariant) {
+      Alert.alert('Lỗi', 'Vui lòng chọn biến thể sản phẩm');
+      return;
+    }
+    setLoading(true);
+    try {
+      await onAddToCart({ product, variant: selectedVariant, quantity });
+      onClose();
+    } catch (error) {
+      console.error('Lỗi thêm vào giỏ hàng:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  const currentPrice = selectedVariant?.price || product?.price || 0;
   const allSizes = Array.from(
     new Set(productVariants.map(v => JSON.stringify(v.attributes.size)))
   ).map(s => JSON.parse(s));
@@ -120,7 +114,6 @@ const ProductVariantModal = ({
 
     const getWeightRange = (size) => {
     const weightRanges = {
-
       'M': '40kg đến 53kg',
       'L': '54kg đến 63kg',
       'XL': '64kg đến 80kg',
@@ -130,49 +123,6 @@ const ProductVariantModal = ({
     };
     return weightRanges[size] || '';
   };
-  const handleBuyNow = () => {
-    if (!userInfo?._id) {
-      Alert.alert('Lỗi', 'Vui lòng đăng nhập để mua sản phẩm');
-      return;
-    }
-    if (!selectedVariant) {
-      Alert.alert('Lỗi', 'Vui lòng chọn biến thể sản phẩm');
-      return;
-    }
-    // Kiểm tra nếu sản phẩm hết hàng thì không cho mua
-    if (outOfStock) {
-      Alert.alert('Thông báo', 'Sản phẩm này đã hết hàng!');
-      return;
-    }
-    onBuyNow({ product, variant: selectedVariant, quantity });
-    onClose();
-  };
-
-  const handleAddToCart = async () => {
-    if (!userInfo?._id) {
-      Alert.alert('Lỗi', 'Vui lòng đăng nhập để thêm sản phẩm vào giỏ hàng');
-      return;
-    }
-    if (!selectedVariant) {
-      Alert.alert('Lỗi', 'Vui lòng chọn biến thể sản phẩm');
-      return;
-    }
-    // Kiểm tra nếu sản phẩm hết hàng thì không cho thêm vào giỏ
-    if (outOfStock) {
-      Alert.alert('Thông báo', 'Sản phẩm này đã hết hàng!');
-      return;
-    }
-    setLoading(true);
-    try {
-      await onAddToCart({ product, variant: selectedVariant, quantity });
-      onClose();
-    } catch (error) {
-      console.error('Lỗi thêm vào giỏ hàng:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   return (
     <Modal
       visible={visible}
@@ -209,7 +159,7 @@ const ProductVariantModal = ({
               )}
                {selectedVariant?.stock !== undefined && (
                  <View style={styles.stockInfo}>
-                   <Text style={styles}>
+                   <Text style={styles.stockText}>
                      {selectedVariant.stock > 0 
                        ? `Còn ${selectedVariant.stock} sản phẩm` 
                        : 'Hết hàng'
@@ -277,13 +227,11 @@ const ProductVariantModal = ({
               <Text style={styles.sectionTitle}>Gợi ý cân nặng phù hợp</Text>
               <View style={styles.sizeContainer}>
                 <Text style={styles.sizeText}>
-
                   Size {selectedVariant.size}: {getWeightRange(selectedVariant.size)}
                 </Text>
               </View>
             </View>
           )}
-
             {/* Quantity */}
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Số lượng</Text>
@@ -304,25 +252,15 @@ const ProductVariantModal = ({
               </View>
             </View>
           </ScrollView>
+
           {/* Footer */}
           <View style={styles.footer}>
-            {/* Thông báo hết hàng */}
-            {outOfStock && (
-              <View style={styles.outOfStockMessage}>
-                <Ionicons name="alert-circle" size={20} color="#dc2626" />
-                <Text style={styles.outOfStockMessageText}>Sản phẩm này đã hết hàng</Text>
-              </View>
-            )}
-            
-            {/* Nút mua - ẩn khi hết hàng */}
-            {!outOfStock && actionType === 'buy' && (
+            {actionType === 'buy' && (
               <TouchableOpacity style={styles.buyNowButton} onPress={handleBuyNow}>
                 <Text style={styles.buyNowText}>Mua ngay</Text>
               </TouchableOpacity>
             )}
-            
-            {/* Nút thêm vào giỏ hàng - ẩn khi hết hàng */}
-            {!outOfStock && actionType === 'cart' && (
+            {actionType === 'cart' && (
               <TouchableOpacity style={styles.buyNowButton} onPress={handleAddToCart}>
                 <Text style={styles.buyNowText}>{loading ? 'Đang thêm...' : 'Thêm vào giỏ hàng'}</Text>
               </TouchableOpacity>
@@ -434,6 +372,13 @@ const styles = StyleSheet.create({
   sizeText: {
     fontSize: 14,
   },
+  stockInfo: {
+    marginTop: 6,
+  },
+  stockText: {
+    fontSize: 13,
+    color: '#555',
+  },
   quantityRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -470,21 +415,6 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
-  },
-  outOfStockMessage: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 10,
-    backgroundColor: '#fef3f2',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#fca5a5',
-  },
-  outOfStockMessageText: {
-    color: '#dc2626',
-    fontSize: 14,
-    marginLeft: 8,
   },
 });
 

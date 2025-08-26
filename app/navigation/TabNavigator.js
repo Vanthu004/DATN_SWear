@@ -15,7 +15,6 @@ import ChangePasswordScreen from "../Screens/ChangePasswordScreen";
 
 import ChatListScreen from "../Screens/ChatListScreen";
 import ChatScreen from "../Screens/ChatScreen";
-import SupportScreen from "../Screens/SupportScreen";
 import CheckoutScreen from "../Screens/CheckoutScreen";
 import EditProfileScreen from "../Screens/EditProfileScreen";
 import HelpScreen from "../Screens/HelpScreen";
@@ -32,6 +31,7 @@ import ProductDetailScreen from "../Screens/ProductDetailScreen";
 import ProductScreen from "../Screens/ProductScreen";
 import ProfileScreen from "../Screens/ProfileScreen";
 import SearchSc from '../Screens/SearchSc';
+import SupportScreen from "../Screens/SupportScreen";
 import TermsScreen from "../Screens/TermsScreen";
 import UserInfoScreen from "../Screens/UserInfoScreen";
 import WishlistScreen from "../Screens/WishlistScreen.js";
@@ -267,7 +267,7 @@ function ProfileStack() {
       <Stack.Screen
         name="Help"
         component={HelpScreen}
-        options={{ title: "Trợ giúp" }}
+        options={{headerShown: false }}
       />
 
       <Stack.Screen
