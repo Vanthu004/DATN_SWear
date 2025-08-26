@@ -40,7 +40,8 @@ export const useOrder = () => {
 
     try {
       setLoading(true);
-      //console.log("🛒 Tạo đơn hàng từ cart:", cartItems.length, "items");
+
+      // console.log("🛒 Tạo đơn hàng từ cart:", cartItems.length, "items");
 
       // Chuẩn bị order details từ cart items
       const orderDetails = cartItems.map((item) => ({

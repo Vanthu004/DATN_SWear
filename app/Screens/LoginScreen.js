@@ -25,7 +25,7 @@ export default function LoginScreen({ navigation }) {
       const response = await api.get(`/users/check-email-verification?email=${email}`);
       return response.data.isEmailVerified;
     } catch (error) {
-      console.log('Error checking email verification from server:', error);
+    //  console.log('Error checking email verification from server:', error);
       return false;
     }
   };
@@ -35,7 +35,7 @@ export default function LoginScreen({ navigation }) {
       const response = await api.get(`/users/check-email-exists?email=${email}`);
       return response.data.exists;
     } catch (error) {
-      console.log('Error checking email exists:', error);
+     // console.log('Error checking email exists:', error);
       return false;
     }
   };
@@ -49,7 +49,7 @@ export default function LoginScreen({ navigation }) {
     setIsLoading(true);
 
     try {
-      //console.log('🔐 Đăng nhập với email:', email);
+     // console.log('🔐 Đăng nhập với email:', email);
       const res = await api.post("/users/login", { email, password });
       const { token, user, isEmailVerified: serverEmailVerified } = res.data;
 
@@ -57,12 +57,12 @@ export default function LoginScreen({ navigation }) {
 
       // Kiểm tra xác minh email nếu server trả về rõ ràng là chưa xác minh
       if (serverEmailVerified === false) {
-        console.log("❗ Email chưa xác minh, kiểm tra lại từ API phụ...");
+      //  console.log("❗ Email chưa xác minh, kiểm tra lại từ API phụ...");
         try {
           const checkVerified = await checkEmailVerificationFromServer(email);
           isEmailVerified = checkVerified;
         } catch (e) {
-          console.log("⚠️ Không thể xác minh email từ API phụ:", e.message);
+       //   console.log("⚠️ Không thể xác minh email từ API phụ:", e.message);
           isEmailVerified = true; // giả sử email đã xác minh nếu API phụ lỗi
         }
       }
@@ -95,7 +95,7 @@ export default function LoginScreen({ navigation }) {
           fullUser = { ...fullUser, ...profileRes.data.user };
         }
       } catch (profileError) {
-        console.log("⚠️ Không lấy được thông tin user profile:", profileError?.message);
+    //    console.log("⚠️ Không lấy được thông tin user profile:", profileError?.message);
       }
 
       await login(token, fullUser, true);
@@ -109,24 +109,25 @@ export default function LoginScreen({ navigation }) {
           const createCartRes = await api.post("/cart", { user_id: userId });
           //console.log("🛒 Đã tạo giỏ hàng:", createCartRes.data);
         } else {
-          console.log("✅ Giỏ hàng đã tồn tại:", cartRes.data);
+          //console.log("✅ Giỏ hàng đã tồn tại:", cartRes.data);
         }
       } catch (cartError) {
         if (cartError?.response?.status === 404) {
           try {
             const userId = user._id || user.id;
             const createCartRes = await api.post("/cart", { user_id: userId });
-            //console.log("🛒 Đã tạo giỏ hàng mới sau lỗi 404:", createCartRes.data);
+
+          //  console.log("🛒 Đã tạo giỏ hàng mới sau lỗi 404:", createCartRes.data);
           } catch (createErr) {
-            console.log("❌ Lỗi khi tạo giỏ hàng:", createErr?.response?.data || createErr.message);
+           // console.log("❌ Lỗi khi tạo giỏ hàng:", createErr?.response?.data || createErr.message);
           }
         } else {
-          console.log("❌ Lỗi kiểm tra giỏ hàng:", cartError?.response?.data || cartError.message);
+         // console.log("❌ Lỗi kiểm tra giỏ hàng:", cartError?.response?.data || cartError.message);
         }
       }
 
     } catch (error) {
-      console.log("❌ Lỗi đăng nhập:", error);
+    //  console.log("❌ Lỗi đăng nhập:", error);
       const res = error.response;
 
       // 🛑 Trường hợp bị cấm đăng nhập (403 với lý do khóa)

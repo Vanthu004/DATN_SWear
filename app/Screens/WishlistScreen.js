@@ -40,7 +40,8 @@ export default function WishlistScreen() {
 
         try {
           const res = await getFavoritesByUser(userId);
-          //console.log("📦 Full API response:", res);
+
+          // console.log("📦 Full API response:", res);
 
           // Tùy vào cấu trúc res bạn có thể chỉnh lại đoạn dưới
           const favoriteList = Array.isArray(res?.data)

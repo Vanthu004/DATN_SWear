@@ -53,7 +53,8 @@ export const chatAPI = {
     try {
       //console.log('Sending create room payload:', roomData);
       const response = await chatAPIClient.post('/chat/rooms', roomData);
-      //console.log('API response:', response.data);
+
+      // console.log('API response:', response.data);
       if (!response.data) {
         throw new Error('No data in API response');
       }

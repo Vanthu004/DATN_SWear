@@ -63,7 +63,7 @@ export default function ProductDetailScreen({ route, navigation }) {
         
         console.log('🔍 Fetching product detail for ID:', productId);
         const res = await api.get(`/products/${productId}/frontend`);
-        console.log('✅ API response:', res.data);
+        // console.log('✅ API response:', res.data);
         setFullProduct(res.data);
       } catch (error) {
         console.error('❌ Lỗi lấy sản phẩm:', error.message);

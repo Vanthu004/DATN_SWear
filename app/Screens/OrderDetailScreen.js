@@ -26,13 +26,13 @@ const OrderDetailScreen = () => {
       setLoading(true);
       try {
         const orderData = await getOrderById(orderId);
-        //console.log("🔍 Order data:", orderData);
-        //console.log("🔍 Order data structure:", JSON.stringify(orderData, null, 2));
+      //  console.log("🔍 Order data:", orderData);
+       // console.log("🔍 Order data structure:", JSON.stringify(orderData, null, 2));
         setOrder(orderData);
         const details = await getOrderDetailsByOrderId(orderId);
         setOrderDetails(details);
       } catch (error) {
-        //console.log("Error fetching order:", error);
+      //  console.log("Error fetching order:", error);
       } finally {
         setLoading(false);
       }

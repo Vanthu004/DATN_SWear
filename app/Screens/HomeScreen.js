@@ -130,7 +130,7 @@ export default function HomeScreen() {
        refreshCart(); // ✅ Gọi đúng tên function
        
        // Debug cart data
-       console.log('🔍 Debug: refreshCart called, userId:', userId);
+      // console.log('🔍 Debug: refreshCart called, userId:', userId);
     }, [userId])
   );
 

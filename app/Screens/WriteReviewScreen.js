@@ -3,15 +3,15 @@ import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import React, { useEffect, useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    FlatList,
-    Image,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  Image,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { useAuth } from "../context/AuthContext";
 import { api } from "../utils/api";
@@ -160,7 +160,7 @@ export default function WriteReviewScreen({ navigation, route }) {
         // Upload ảnh trước nếu có
         if (item.image) {
           try {
-            console.log("📤 Uploading image for review...");
+           // console.log("📤 Uploading image for review...");
             const fileName = item.image.split("/").pop() || `review_${Date.now()}.jpg`;
             const fileType = (fileName.split(".").pop() || 'jpg').toLowerCase();
             
