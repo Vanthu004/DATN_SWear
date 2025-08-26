@@ -10,9 +10,7 @@
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
-        "UIBackgroundModes": [
-          "remote-notification"
-        ],
+        "UIBackgroundModes": ["remote-notification"],
         "NSUserNotificationUsageDescription": "Ứng dụng cần quyền gửi thông báo để cập nhật thông tin."
       }
     },
@@ -21,11 +19,7 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "permissions": [
-        "NOTIFICATIONS",
-        "RECEIVE_NOTIFICATIONS"
-      ],
-      "googleServicesFile": "./google-services.json",
+      "permissions": ["NOTIFICATIONS", "RECEIVE_NOTIFICATIONS"],
       "package": "com.vanthu.datnswear"
     },
     "web": {

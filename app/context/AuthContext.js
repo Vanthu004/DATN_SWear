@@ -1,10 +1,13 @@
+// app/context/AuthContext.js
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { Alert } from "react-native";
 import { io } from "socket.io-client";
-import { navigationRef } from "../navigation/TabNavigator";
+import { navigationRef } from '../navigation/navigationRef';
 import { cleanupNotifications, initializeNotifications } from "../services/notificationService";
 import { api, WEBSOCKET_URL } from "../utils/api";
+import { eventEmitter } from "../utils/eventEmitter";
+
 
 const socket = io(WEBSOCKET_URL, {
   reconnection: true,
@@ -34,10 +37,28 @@ export const AuthProvider = ({ children }) => {
       //console.log("WebSocket disconnected");
     });
 
+    const handleLogout = async ({ reason, message }) => {
+      if (!isBanned || reason !== 'Tài khoản bị khóa') {
+        setIsBanned(reason === 'Tài khoản bị khóa');
+        await logout();
+        Alert.alert(reason, message, [
+          {
+            text: "OK",
+            onPress: () => {
+              console.log("AuthContext: Alert OK pressed, navigation handled by logout");
+            },
+          },
+        ]);
+      }
+    };
+
+    eventEmitter.on('logout', handleLogout);
+
     return () => {
       socket.off("connect");
       socket.off("disconnect");
       socket.off("banned");
+      eventEmitter.off('logout', handleLogout);
     };
   }, []);
 
@@ -353,7 +374,7 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  return (
+ return (
     <AuthContext.Provider
       value={{
         isLoading,

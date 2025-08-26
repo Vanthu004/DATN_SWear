@@ -462,7 +462,7 @@ const styles = StyleSheet.create({
     borderColor: "#ddd",
     borderRadius: 8,
     padding: 12,
-    fontSize: 16,
+    fontSize: 13,
     backgroundColor: "#f8f8f8",
   },
   selectInput: {
@@ -472,11 +472,11 @@ const styles = StyleSheet.create({
   },
   selectText: {
     color: "#222",
-    fontSize: 16,
+    fontSize: 13,
   },
   placeholderText: {
     color: "#999",
-    fontSize: 16,
+    fontSize: 13,
   },
   row: {
     flexDirection: "row",

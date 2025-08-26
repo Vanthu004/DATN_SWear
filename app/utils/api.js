@@ -1,10 +1,10 @@
-import { API_BASE_URL, WEBSOCKET_URL as ENV_WEBSOCKET_URL } from '@env'; // Đổi tên import để tránh xung đột
+// app/utils/api.js
+// eslint-disable-next-line import/no-unresolved
+import { API_BASE_URL, WEBSOCKET_URL as ENV_WEBSOCKET_URL } from '@env';
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
-import { Alert } from "react-native";
-import { logoutGlobal } from "../context/AuthContext";
+import { eventEmitter } from './eventEmitter';
 
-// Gán WEBSOCKET_URL vào một hằng số
 const WEBSOCKET_URL = ENV_WEBSOCKET_URL;
 
 const api = axios.create({
@@ -14,10 +14,6 @@ const api = axios.create({
   },
 });
 
-// Xuất cả named và default để tương thích mọi nơi (import { api } hoặc import api)
-
-
-// Interceptors
 api.interceptors.request.use(
   async (config) => {
     try {
@@ -29,7 +25,6 @@ api.interceptors.request.use(
       console.log("Error getting token for request:", error);
     }
 
-    // Nếu gửi FormData, loại bỏ Content-Type mặc định để RN tự thêm boundary
     try {
       const isRNFormData = config?.data && typeof config.data === 'object' && typeof config.data._parts !== 'undefined';
       const isFormData = (typeof FormData !== 'undefined' && config.data instanceof FormData) || isRNFormData;
@@ -41,15 +36,8 @@ api.interceptors.request.use(
       }
     } catch (e) {
       // noop
+      console.log("Error in FormData check:", e);
     }
-
-    // console.log("API Request:", {
-    //   method: config.method?.toUpperCase(),
-    //   url: config.url,
-    //   data: config.data,
-    //   params: config.params,
-    //   headers: config.headers,
-    // });
 
     return config;
   },
@@ -59,14 +47,8 @@ api.interceptors.request.use(
   }
 );
 
-// Response interceptor for logging and handling errors
 api.interceptors.response.use(
   (response) => {
-    // console.log("API Response:", {
-    //   status: response.status,
-    //   url: response.config.url,
-    //   data: response.data,
-    // });
     return response;
   },
   async (error) => {
@@ -74,23 +56,20 @@ api.interceptors.response.use(
     const message = error.response?.data?.message || "Lỗi không xác định";
 
     if (status === 401 && message === 'Token đã hết hạn') {
-      // Xử lý token expired: logout và alert
-      await logoutGlobal();
-      Alert.alert('Phiên hết hạn', 'Vui lòng đăng nhập lại.');
+      eventEmitter.emit('logout', { reason: 'Phiên hết hạn', message: 'Vui lòng đăng nhập lại.' });
       return Promise.reject(error);
     }
 
     if (status === 403 && message === 'Token không hợp lệ') {
-      // Xử lý invalid token: tương tự expired
-      await logoutGlobal();
-      Alert.alert('Token không hợp lệ', 'Vui lòng đăng nhập lại.');
+      eventEmitter.emit('logout', { reason: 'Token không hợp lệ', message: 'Vui lòng đăng nhập lại.' });
       return Promise.reject(error);
     }
+
     if (status === 403 && message.includes("bị khóa")) {
       try {
         await AsyncStorage.setItem("banMessage", message);
-        console.log("api.js: Ban detected, stored banMessage, relying on AuthContext for logout");
-        await logoutGlobal();
+        console.log("api.js: Ban detected, stored banMessage, emitting logout event");
+        eventEmitter.emit('logout', { reason: 'Tài khoản bị khóa', message });
       } catch (err) {
         console.error("Error handling 403:", err);
       }
@@ -937,6 +916,7 @@ export const getSearchStats = async (timeRange = 'all') => {
   }
 };
 export default api;
-export { api, WEBSOCKET_URL };
+
 
 export { api, WEBSOCKET_URL }; // Xuất hằng số WEBSOCKET_URL
+
