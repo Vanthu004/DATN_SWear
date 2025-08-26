@@ -20,7 +20,7 @@ const ProfileScreen = ({ navigation }) => {
   // Debug logging
   useEffect(() => {
     console.log('ProfileScreen: Current userInfo:', userInfo);
-    console.log('ProfileScreen: Avatar URL:', userInfo?.avata_url);
+    console.log('ProfileScreen: Avatar URL:', userInfo?.avatar_url);
   }, [userInfo]);
 
   // Refresh dữ liệu khi quay lại màn hình này

@@ -379,7 +379,7 @@ const handleShowVariantModal = (type) => {
                 {/* Avatar */}
                 <Image
                   source={{
-                  uri: review.user_id?.avata_url || 'https://cdn-icons-png.flaticon.com/512/149/149071.png',
+                  uri: review.user_id?.avatar_url || 'https://cdn-icons-png.flaticon.com/512/149/149071.png',
                   }}
                   style={{
                     width: 36,
