@@ -8,7 +8,6 @@ import { cleanupNotifications, initializeNotifications } from "../services/notif
 import { api, WEBSOCKET_URL } from "../utils/api";
 
 
-
 const socket = io(WEBSOCKET_URL, {
   reconnection: true,
   reconnectionAttempts: 5,
@@ -30,11 +29,11 @@ export const AuthProvider = ({ children }) => {
     checkLoginState();
 
     socket.on("connect", () => {
-      console.log("WebSocket connected");
+      // console.log("WebSocket connected");
     });
 
     socket.on("disconnect", () => {
-      console.log("WebSocket disconnected");
+      //console.log("WebSocket disconnected");
     });
 
     return () => {
@@ -48,10 +47,10 @@ export const AuthProvider = ({ children }) => {
     if (!userInfo) return;
 
     socket.emit("join", userInfo._id);
-    console.log("WebSocket: Joined room", userInfo._id);
+   // console.log("WebSocket: Joined room", userInfo._id);
 
     socket.on("banned", async (data) => {
-      console.log("WebSocket: Received banned event", data);
+    //  console.log("WebSocket: Received banned event", data);
       if (!isBanned) {
         setIsBanned(true);
         await logout();
@@ -59,7 +58,7 @@ export const AuthProvider = ({ children }) => {
           {
             text: "OK",
             onPress: () => {
-              console.log("WebSocket: Alert OK pressed, navigation handled by logout");
+             // console.log("WebSocket: Alert OK pressed, navigation handled by logout");
             },
           },
         ]);
@@ -78,7 +77,7 @@ export const AuthProvider = ({ children }) => {
       try {
         await refreshUserData();
       } catch (error) {
-        console.log("Ban check error:", error.message);
+       // console.log("Ban check error:", error.message);
       }
     };
 
@@ -94,22 +93,16 @@ export const AuthProvider = ({ children }) => {
       const emailVerified = await AsyncStorage.getItem("isEmailVerified");
       const banMessage = await AsyncStorage.getItem("banMessage");
 
-      console.log("Checking login state:", {
-        hasToken: !!token,
-        hasUser: !!user,
-        emailVerified: emailVerified,
-        banMessage: banMessage,
-      });
 
       if (banMessage && !isBanned) {
-        console.log("Ban message found in AsyncStorage:", banMessage);
+       // console.log("Ban message found in AsyncStorage:", banMessage);
         setIsBanned(true);
         await logout();
         Alert.alert("Tài khoản bị khóa", banMessage, [
           {
             text: "OK",
             onPress: () => {
-              console.log("AuthContext: Alert OK pressed, navigation handled by logout");
+              // console.log("AuthContext: Alert OK pressed, navigation handled by logout");
             },
           },
         ]);
@@ -121,8 +114,8 @@ export const AuthProvider = ({ children }) => {
         const userData = JSON.parse(user);
         const isVerified = emailVerified === "true" || userData.email_verified === true;
 
-        console.log("User data:", userData);
-        console.log("Email verified status:", isVerified);
+       // console.log("User data:", userData);
+       // console.log("Email verified status:", isVerified);
 
         const now = new Date();
         const bannedUntil = userData.ban?.bannedUntil ? new Date(userData.ban.bannedUntil) : null;
@@ -140,7 +133,7 @@ export const AuthProvider = ({ children }) => {
               {
                 text: "OK",
                 onPress: () => {
-                  console.log("AuthContext: Alert OK pressed, navigation handled by logout");
+                  // console.log("AuthContext: Alert OK pressed, navigation handled by logout");
                 },
               },
             ]
@@ -161,7 +154,7 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (token, user, verified = true) => {
     try {
-      console.log("AuthContext: Login called with user:", user);
+      // console.log("AuthContext: Login called with user:", user);
       
       await AsyncStorage.setItem("userToken", token);
       await AsyncStorage.setItem("userInfo", JSON.stringify(user));
@@ -173,18 +166,18 @@ export const AuthProvider = ({ children }) => {
 
       // Khởi tạo notifications sau khi login
       if (user._id) {
-        console.log("AuthContext: Initializing notifications for user:", user._id);
+        // console.log("AuthContext: Initializing notifications for user:", user._id);
         try {
           await initializeNotifications(user._id);
-          console.log("AuthContext: Notifications initialized successfully");
+          // console.log("AuthContext: Notifications initialized successfully");
         } catch (error) {
-          console.error("AuthContext: Error initializing notifications:", error);
+          // console.error("AuthContext: Error initializing notifications:", error);
         }
       } else {
-        console.log("AuthContext: No user._id found, skipping notification initialization");
+        // console.log("AuthContext: No user._id found, skipping notification initialization");
       }
     } catch (error) {
-      console.log("Error storing auth data:", error);
+      // console.log("Error storing auth data:", error);
     }
   };
 
@@ -200,18 +193,18 @@ export const AuthProvider = ({ children }) => {
       setUserInfo(null);
       setIsEmailVerified(false);
       setIsBanned(false);
-      console.log("Logged out successfully");
+     // console.log("Logged out successfully");
       if (navigationRef.current) {
-        console.log("Resetting to Auth/Login");
+      //  console.log("Resetting to Auth/Login");
         navigationRef.current.resetRoot({
           index: 0,
           routes: [{ name: "Auth", params: { screen: "Login" } }],
         });
       } else {
-        console.warn("navigationRef is not initialized in logout");
+      //  console.warn("navigationRef is not initialized in logout");
       }
     } catch (error) {
-      console.log("Error removing auth data:", error);
+   //   console.log("Error removing auth data:", error);
     }
   };
 
@@ -226,22 +219,22 @@ export const AuthProvider = ({ children }) => {
         setUserInfo(updatedUserInfo);
       }
 
-      console.log("Email verification status updated:", verified);
+      //console.log("Email verification status updated:", verified);
     } catch (error) {
-      console.log("Error updating email verification status:", error);
+    //  console.log("Error updating email verification status:", error);
     }
   };
 
   const updateUserInfo = async (newUserInfo) => {
     try {
-      console.log("AuthContext: Updating user info from:", userInfo);
-      console.log("AuthContext: Updating user info to:", newUserInfo);
+      // console.log("AuthContext: Updating user info from:", userInfo);
+      // console.log("AuthContext: Updating user info to:", newUserInfo);
 
       await AsyncStorage.setItem("userInfo", JSON.stringify(newUserInfo));
       setUserInfo(newUserInfo);
-      console.log("User info updated successfully:", newUserInfo);
+      //console.log("User info updated successfully:", newUserInfo);
     } catch (error) {
-      console.log("Error updating user info:", error);
+      //console.log("Error updating user info:", error);
     }
   };
 
@@ -249,11 +242,11 @@ export const AuthProvider = ({ children }) => {
     if (!userToken) return;
 
     try {
-      console.log("Refreshing user data from server...");
+     // console.log("Refreshing user data from server...");
       const response = await api.get("/users/me");
       if (response.data) {
         const freshUser = response.data;
-        console.log("Fresh user data from server:", freshUser);
+       // console.log("Fresh user data from server:", freshUser);
 
         const now = new Date();
         const bannedUntil = freshUser.ban?.bannedUntil ? new Date(freshUser.ban.bannedUntil) : null;
@@ -270,7 +263,7 @@ export const AuthProvider = ({ children }) => {
             {
               text: "OK",
               onPress: () => {
-                console.log("AuthContext: Alert OK pressed, navigation handled by logout");
+                // console.log("AuthContext: Alert OK pressed, navigation handled by logout");
               },
             },
           ]);
@@ -298,7 +291,7 @@ export const AuthProvider = ({ children }) => {
             {
               text: "OK",
               onPress: () => {
-                console.log("AuthContext: Alert OK pressed, navigation handled by logout");
+                // console.log("AuthContext: Alert OK pressed, navigation handled by logout");
               },
             },
           ]);
@@ -321,9 +314,9 @@ export const AuthProvider = ({ children }) => {
       setUserInfo(null);
       setIsEmailVerified(false);
       setIsBanned(false);
-      console.log("All auth data cleared");
+     // console.log("All auth data cleared");
       if (navigationRef.current) {
-        console.log("Resetting to Auth/Login from clearAllData");
+       // console.log("Resetting to Auth/Login from clearAllData");
         navigationRef.current.resetRoot({
           index: 0,
           routes: [{ name: "Auth", params: { screen: "Login" } }],
@@ -332,7 +325,7 @@ export const AuthProvider = ({ children }) => {
         console.warn("navigationRef is not initialized in clearAllData");
       }
     } catch (error) {
-      console.log("Error clearing auth data:", error);
+     // console.log("Error clearing auth data:", error);
     }
   };
 

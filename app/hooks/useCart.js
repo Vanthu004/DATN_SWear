@@ -26,13 +26,13 @@ export const useCart = () => {
 
     try {
       setLoading(true);
-      console.log("🧪 Gọi API cart của user:", USER_ID);
+      // console.log("🧪 Gọi API cart của user:", USER_ID);
 
       let cart;
       try {
         const response = await getCartByUser(USER_ID);
         cart = response.data; // Access the actual cart object from the 'data' field
-        console.log("Cart:", cart);
+        // console.log("Cart:", cart);
         setCartId(cart._id);
         setCartStatus(cart.status || "active");
       } catch (err) {
@@ -53,7 +53,7 @@ export const useCart = () => {
       }
 
       const itemsResponse = await getCartItemsByCart(cart._id);
-      console.log("ItemsResponse:", itemsResponse);
+      // console.log("ItemsResponse:", itemsResponse);
       
       // Xử lý các trường hợp khác nhau của response
       let items;
@@ -120,7 +120,7 @@ export const useCart = () => {
 
       setCartItems(processedItems);
     } catch (err) {
-      console.error("❌ Lỗi fetch cart:", err);
+      // console.error("❌ Lỗi fetch cart:", err);
       setCartItems([]);
       setCartId(null);
       setCartStatus("active");
@@ -300,9 +300,9 @@ export const useCart = () => {
     try {
       await updateCartStatus(cartId, status, note);
       setCartStatus(status);
-      console.log("✅ Đã cập nhật trạng thái cart:", status);
+      // console.log("✅ Đã cập nhật trạng thái cart:", status);
     } catch (err) {
-      console.error("❌ Lỗi cập nhật trạng thái cart:", err);
+      // console.error("❌ Lỗi cập nhật trạng thái cart:", err);
       Alert.alert("Lỗi", "Không thể cập nhật trạng thái giỏ hàng");
     }
   };

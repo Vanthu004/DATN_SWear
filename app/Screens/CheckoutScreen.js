@@ -59,7 +59,7 @@ const [selectedDiscountVoucher, setSelectedDiscountVoucher] = useState(null);
   // Fetch data on mount
   useEffect(() => {
     const fetchData = async () => {
-      console.log("📦 Fetching data...");
+      // console.log("📦 Fetching data...");
       try {
         // Addresses
         try {
