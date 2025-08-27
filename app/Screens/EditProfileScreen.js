@@ -73,7 +73,7 @@ const EditProfileScreen = ({ navigation, route }) => {
       const imageUri = newAvatar ? newAvatar.uri : null;
       const response = await updateProfileWithAvatar(profileData, imageUri);
       
-      console.log('Update profile response:', response);
+    //  console.log('Update profile response:', response);
 
       if (response && response.user) {
         // Cập nhật userInfo trong context sau khi update thành công

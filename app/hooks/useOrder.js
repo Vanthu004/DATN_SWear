@@ -61,11 +61,11 @@ export const useOrder = () => {
         orderDetails: orderDetails,
       };
 
-      console.log("📦 Order payload:", orderPayload);
+    //  console.log("📦 Order payload:", orderPayload);
 
       // Tạo đơn hàng với details
       const result = await createOrderWithDetails(orderPayload);
-      console.log("✅ Đơn hàng được tạo:", result);
+     // console.log("✅ Đơn hàng được tạo:", result);
 
       // Refresh danh sách đơn hàng
       await fetchUserOrders();

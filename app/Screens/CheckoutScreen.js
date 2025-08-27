@@ -65,17 +65,17 @@ const [selectedDiscountVoucher, setSelectedDiscountVoucher] = useState(null);
         try {
           const addrList = await getAddressList();
           setAddressList(addrList);
-          console.log("📍 Loaded addresses:", addrList);
+          //console.log("📍 Loaded addresses:", addrList);
           const defaultAddress = addrList.find((a) => a.is_default);
           setSelectedAddressId(defaultAddress?._id || addrList[0]?._id);
         } catch (err) {
-          console.error("❌ Error loading addresses:", err);
+         // console.error("❌ Error loading addresses:", err);
         }
 
         // Vouchers
         try {
           const allVouchers = userInfo?._id ? await getUserVouchers(userInfo._id) : [];
-          console.log("🔥 User vouchers:", allVouchers);
+         // console.log("🔥 User vouchers:", allVouchers);
           const uniqueVoucherMap = new Map();
           allVouchers.forEach((v) => {
             if (!uniqueVoucherMap.has(v._id)) uniqueVoucherMap.set(v._id, v);
@@ -87,14 +87,14 @@ const [selectedDiscountVoucher, setSelectedDiscountVoucher] = useState(null);
             setSelectedVoucher(uniqueVouchers[0]);
           }
         } catch (err) {
-          console.error("❌ Error loading vouchers:", err);
+        //  console.error("❌ Error loading vouchers:", err);
         }
 
         // Payment Methods
         setLoadingPaymentMethods(true);
         try {
           const data = await getPaymentMethods();
-          console.log("💳 Payment methods from API:", data);
+        //  console.log("💳 Payment methods from API:", data);
           const filtered = data
             .filter((pm) => pm.code?.toUpperCase() === "COD" || pm.code?.toUpperCase() === "ZALOPAY")
             .map((pm) => ({
@@ -112,7 +112,7 @@ const [selectedDiscountVoucher, setSelectedDiscountVoucher] = useState(null);
         // Shipping Methods
         try {
           const shipMethods = await getShippingMethods();
-          console.log("🚚 Shipping methods:", shipMethods);
+        //  console.log("🚚 Shipping methods:", shipMethods);
           setShippingMethods(shipMethods);
           if (shipMethods.length > 0) {
             setSelectedShippingMethodId(shipMethods[0]._id);
@@ -238,7 +238,7 @@ const formatExpiryDayMonth = (dateString) => {
         voucher_ids: [selectedFreeShippingVoucher?._id, selectedDiscountVoucher?._id].filter(Boolean),
 };
 
-      console.log("🚀 Voucher IDs being sent:", orderData.voucher_ids);
+      //console.log("🚀 Voucher IDs being sent:", orderData.voucher_ids);
       const result = await createOrderFromCart(selectedItems, orderData);
       if (result) {
           // --- Trừ kho ngay sau khi order thành công ---
@@ -248,7 +248,7 @@ const formatExpiryDayMonth = (dateString) => {
       quantity: item.quantity,
     }));
     await decreaseProductStock(stockItems);
-    console.log("✅ Stock decreased successfully");
+   // console.log("✅ Stock decreased successfully");
   } catch (err) {
     console.error("❌ Error decreasing stock:", err);
     // Nếu muốn rollback order, có thể thêm logic gọi API server để hủy order
@@ -256,7 +256,7 @@ const formatExpiryDayMonth = (dateString) => {
         if (selectedFreeShippingVoucher) {
   try {
     await applyVoucherApi(selectedFreeShippingVoucher.voucher_id);
-    console.log("✅ Free shipping voucher applied");
+  //  console.log("✅ Free shipping voucher applied");
   } catch (err) {
     console.error("❌ Error applying free shipping voucher:", err);
   }
@@ -265,17 +265,17 @@ const formatExpiryDayMonth = (dateString) => {
 if (selectedDiscountVoucher) {
   try {
     await applyVoucherApi(selectedDiscountVoucher.voucher_id);
-    console.log("✅ Discount voucher applied");
+  //  console.log("✅ Discount voucher applied");
   } catch (err) {
     console.error("❌ Error applying discount voucher:", err);
   }
 }
-        console.log("id đơn hàng.......", result.data.order._id);
+       // console.log("id đơn hàng.......", result.data.order._id);
         
         // Handle ZaloPay payment        
         const selectedMethod = paymentMethods.find(pm => pm._id === selectedPaymentMethod);
-        console.log("selectedPaymentMethod:", selectedPaymentMethod); // LOG 2
-        console.log("selectedMethod:", selectedMethod); // LOG 3
+       // console.log("selectedPaymentMethod:", selectedPaymentMethod); // LOG 2
+       // console.log("selectedMethod:", selectedMethod); // LOG 3
         
         if (selectedMethod && selectedMethod.code?.toUpperCase() === 'ZALOPAY') {
           setProcessingZaloPay(true);
@@ -301,7 +301,7 @@ if (selectedDiscountVoucher) {
             });
 
             const paymentData = paymentRes.data;
-            console.log("ZaloPay paymentData:", paymentData); // LOG QR RESPONSE
+          //  console.log("ZaloPay paymentData:", paymentData); // LOG QR RESPONSE
             const qrValue = paymentData.qr_url || paymentData.order_url || paymentData.paymentUrl || paymentData.payUrl;
             // Chuyển sang màn hình QR, truyền thêm orderId để polling check trạng thái
             navigation.navigate(ROUTES.ZALOPAY_QR, {

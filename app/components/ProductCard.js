@@ -65,7 +65,7 @@ export default function ProductCard({
     }
 
     // LUÔN hiển thị modal biến thể giống như ProductDetailScreen
-    console.log('��️ Hiển thị modal chọn biến thể cho sản phẩm:', product.name);
+    // console.log('��️ Hiển thị modal chọn biến thể cho sản phẩm:', product.name);
     setVariantActionType('cart');
     setShowVariantModal(true);
   };
@@ -73,7 +73,7 @@ export default function ProductCard({
   // Hàm thêm vào giỏ hàng - GIỐNG HỆT ProductDetailScreen
   const handleAddToCart = async ({ product, variant, quantity }) => {
     try {
-      console.log('��️ Thêm vào giỏ hàng:', { product: product.name, variant, quantity });
+      // console.log('��️ Thêm vào giỏ hàng:', { product: product.name, variant, quantity });
       
       // Lấy hoặc tạo giỏ hàng giống như ProductDetailScreen
       const cartRes = await api.get(`/cart/user/${userInfo._id}`);

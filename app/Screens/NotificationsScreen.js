@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import * as Notifications from 'expo-notifications';
@@ -199,6 +200,9 @@ const NotificationsScreen = () => {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerBtn}>
+          <Ionicons name="arrow-back" size={24} color="#222" />
+        </TouchableOpacity>
         <Text style={styles.headerText}>Thông báo</Text>
         {notifications.length > 0 && (
           <TouchableOpacity onPress={clearAllNotifications}>
@@ -232,10 +236,12 @@ const styles = StyleSheet.create({
     padding: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#ddd',
+    marginTop: 25,
   },
   headerText: {
     fontSize: 20,
     fontWeight: 'bold',
+    marginLeft: 45,
   },
   clearAll: {
     color: '#ff4444',

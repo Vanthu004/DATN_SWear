@@ -2,11 +2,11 @@ import { useNavigation } from '@react-navigation/native';
 import * as Notifications from 'expo-notifications';
 import { useEffect, useRef, useState } from 'react';
 import {
-    NOTIFICATION_TYPES,
-    checkNotificationPermission,
-    cleanupNotifications,
-    initializeNotifications,
-    sendOrderNotification,
+  NOTIFICATION_TYPES,
+  checkNotificationPermission,
+  cleanupNotifications,
+  initializeNotifications,
+  sendOrderNotification,
 } from '../services/notificationService';
 
 export const useNotifications = (userId) => {
@@ -17,34 +17,34 @@ export const useNotifications = (userId) => {
   const navigation = useNavigation();
 
   useEffect(() => {
-    console.log('useNotifications: Initializing with userId:', userId);
+    //console.log('useNotifications: Initializing with userId:', userId);
     
     // Khởi tạo notifications khi component mount
     if (userId) {
-      console.log('useNotifications: Initializing notifications...');
+     // console.log('useNotifications: Initializing notifications...');
       initializeNotifications(userId).then((token) => {
         if (token) {
-          console.log('useNotifications: Token received:', token);
+        //  console.log('useNotifications: Token received:', token);
           setExpoPushToken(token);
         } else {
-          console.log('useNotifications: No token received');
+         // console.log('useNotifications: No token received');
         }
       }).catch((error) => {
-        console.error('useNotifications: Error initializing:', error);
+       // console.error('useNotifications: Error initializing:', error);
       });
     } else {
-      console.log('useNotifications: No userId provided');
+    //  console.log('useNotifications: No userId provided');
     }
 
     // Lắng nghe thông báo đến
     notificationListener.current = Notifications.addNotificationReceivedListener(notification => {
       setNotification(notification);
-      console.log('Notification received:', notification);
+     // console.log('Notification received:', notification);
     });
 
     // Lắng nghe khi user tap vào thông báo
     responseListener.current = Notifications.addNotificationResponseReceivedListener(response => {
-      console.log('Notification response:', response);
+      //console.log('Notification response:', response);
       
       const data = response.notification.request.content.data;
       

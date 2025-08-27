@@ -37,7 +37,7 @@ export const useCart = () => {
         setCartStatus(cart.status || "active");
       } catch (err) {
         if (err.response?.status === 404) {
-          console.log("❌ User chưa có cart, sẽ tạo mới khi cần");
+        //  console.log("❌ User chưa có cart, sẽ tạo mới khi cần");
           setCartId(null);
           setCartStatus("active");
           return;
@@ -46,7 +46,7 @@ export const useCart = () => {
       }
 
       if (!cart) {
-        console.log("❌ Không tìm thấy cart cho user");
+        //console.log("❌ Không tìm thấy cart cho user");
         setCartId(null);
         setCartStatus("active");
         return;
@@ -67,8 +67,8 @@ export const useCart = () => {
         } else if (itemsResponse.data && Array.isArray(itemsResponse.data.data)) {
           items = itemsResponse.data.data; // Response có data.data là mảng
         } else {
-          console.log("⚠️ Không tìm thấy items trong response, đặt thành mảng rỗng");
-          console.log("Response structure:", JSON.stringify(itemsResponse, null, 2));
+        //  console.log("⚠️ Không tìm thấy items trong response, đặt thành mảng rỗng");
+        //  console.log("Response structure:", JSON.stringify(itemsResponse, null, 2));
           items = []; // Fallback thành mảng rỗng
         }
       } else {
@@ -80,7 +80,7 @@ export const useCart = () => {
 
       // Kiểm tra items có phải là mảng không
       if (!Array.isArray(items)) {
-        console.log("⚠️ Items không phải là mảng, đặt thành mảng rỗng");
+       // console.log("⚠️ Items không phải là mảng, đặt thành mảng rỗng");
         setCartItems([]);
         return;
       }
@@ -142,7 +142,7 @@ export const useCart = () => {
 
     try {
       setLoading(true);
-      console.log("🛒 Thêm sản phẩm vào giỏ hàng:", product.name);
+      //console.log("🛒 Thêm sản phẩm vào giỏ hàng:", product.name);
 
       let cart;
       if (!cartId) {
@@ -153,7 +153,7 @@ export const useCart = () => {
           setCartStatus(cart.status || "active");
         } catch (err) {
           if (err.response?.status === 404) {
-            console.log("🆕 Tạo cart mới cho user");
+         //   console.log("🆕 Tạo cart mới cho user");
             const createResponse = await createCart(USER_ID);
             cart = createResponse.data;
             setCartId(cart._id);
@@ -178,7 +178,7 @@ export const useCart = () => {
       }
 
       const newItemResponse = await addCartItem(cartItemData);
-      console.log("NewItemResponse:", newItemResponse);
+     // console.log("NewItemResponse:", newItemResponse);
       
       // Xử lý response từ addCartItem
       let newItem;
@@ -195,7 +195,7 @@ export const useCart = () => {
         throw new Error("Invalid response from addCartItem");
       }
       
-      console.log("✅ Đã thêm sản phẩm vào giỏ hàng:", newItem);
+      // console.log("✅ Đã thêm sản phẩm vào giỏ hàng:", newItem);
 
       const processedItem = {
         ...newItem,
@@ -231,7 +231,7 @@ export const useCart = () => {
 
     try {
       const updatedItemResponse = await updateCartItemQuantity(itemId, newQuantity);
-      console.log("UpdatedItemResponse:", updatedItemResponse);
+      // console.log("UpdatedItemResponse:", updatedItemResponse);
       
       // Xử lý response từ updateCartItemQuantity
       let updatedItem;

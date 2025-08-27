@@ -13,7 +13,7 @@ export const useTokenExpiration = () => {
         const tokenExpiredMessage = await AsyncStorage.getItem("tokenExpiredMessage");
         
         if (shouldLogout === "true") {
-          console.log("useTokenExpiration: Token expired, showing alert and logging out");
+         // console.log("useTokenExpiration: Token expired, showing alert and logging out");
           
           // Xóa các flag
           await AsyncStorage.multiRemove(["shouldLogout", "tokenExpiredMessage"]);
@@ -26,7 +26,7 @@ export const useTokenExpiration = () => {
               {
                 text: "OK",
                 onPress: async () => {
-                  console.log("useTokenExpiration: Token expired alert OK pressed, logging out");
+              //    console.log("useTokenExpiration: Token expired alert OK pressed, logging out");
                   await logout();
                 },
               },
@@ -34,7 +34,7 @@ export const useTokenExpiration = () => {
           );
         }
       } catch (error) {
-        console.log("Error checking token expiration:", error);
+      //  console.log("Error checking token expiration:", error);
       }
     };
 
