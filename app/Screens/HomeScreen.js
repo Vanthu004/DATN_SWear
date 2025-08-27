@@ -130,7 +130,7 @@ export default function HomeScreen() {
        refreshCart(); // ✅ Gọi đúng tên function
        
        // Debug cart data
-       console.log('🔍 Debug: refreshCart called, userId:', userId);
+      // console.log('🔍 Debug: refreshCart called, userId:', userId);
     }, [userId])
   );
 
@@ -380,7 +380,7 @@ const ShoseMoutainCategoryList = ({ categories }) => (
             style={styles.avatarWrap}
           >
             <Image
-              source={userInfo?.avata_url ? { uri: userInfo.avata_url } : defaultAvatar}
+              source={userInfo?.avatar_url ? { uri: userInfo.avatar_url } : defaultAvatar}
               style={styles.avatar}
             />
           </TouchableOpacity>

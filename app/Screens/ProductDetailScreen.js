@@ -56,14 +56,14 @@ export default function ProductDetailScreen({ route, navigation }) {
     const fetchProductDetail = async () => {
       try {
         // Kiểm tra productId có hợp lệ không
-        if (!productId || typeof productId !== 'string' || productId.length !== 24) {
-          console.warn('⚠️ Product ID không hợp lệ, bỏ qua gọi API. ID:', productId);
-          return;
-        }
+    if (!productId) {
+  console.warn('⚠️ Product ID không hợp lệ, bỏ qua gọi API. ID:', productId);
+  return;
+}
         
         console.log('🔍 Fetching product detail for ID:', productId);
         const res = await api.get(`/products/${productId}/frontend`);
-        console.log('✅ API response:', res.data);
+        // console.log('✅ API response:', res.data);
         setFullProduct(res.data);
       } catch (error) {
         console.error('❌ Lỗi lấy sản phẩm:', error.message);
@@ -334,9 +334,12 @@ const handleShowVariantModal = (type) => {
         {/* Tên, giá, danh mục */}
         <Text style={styles.title}>{fullProduct.name || product.name}</Text>
         <Text style={styles.price}>{(fullProduct.price || product.price)?.toLocaleString('vi-VN')} VND</Text>
-        {(fullProduct.stock_quantity || product.stock_quantity) && (
-          <Text style={styles.category}>Số lượng: {(fullProduct.stock_quantity || fullProduct.quantity) || (product.stock_quantity || product.category)}</Text>
-        )}
+       {(fullProduct.stock_quantity || fullProduct.quantity || product.stock_quantity || product.quantity) && (
+  <Text style={styles.category}>
+    Số lượng: {(fullProduct.stock_quantity || fullProduct.quantity || product.stock_quantity || product.quantity)}
+  </Text>
+)}
+
         
         {/* Thông báo hết hàng */}
         {outOfStock && (
@@ -357,7 +360,23 @@ const handleShowVariantModal = (type) => {
         )}
 
         {/* Rating */}
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 16 }}>
         <Text style={styles.label}>Đánh giá</Text>
+          {reviews?.length > 0 && (
+            <TouchableOpacity
+            onPress={() => {
+              navigation.navigate('AllReviews', {
+                productId: fullProduct._id || product._id,  // ưu tiên fullProduct._id
+              });
+            }}
+          >
+            <Text style={{ color: '#3b82f6', fontWeight: 'bold',marginTop:15 }}>
+              Xem tất cả
+            </Text>
+          </TouchableOpacity>
+
+          )}
+          </View>
           <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
             {renderStars(fullProduct.rating || product.rating || 5)}
             <Text style={{ marginLeft: 8, color: '#888' }}>
@@ -381,7 +400,7 @@ const handleShowVariantModal = (type) => {
                 {/* Avatar */}
                 <Image
                   source={{
-                  uri: review.user_id?.avata_url || 'https://cdn-icons-png.flaticon.com/512/149/149071.png',
+                  uri: review.user_id?.avatar_url || 'https://cdn-icons-png.flaticon.com/512/149/149071.png',
                   }}
                   style={{
                     width: 36,
@@ -418,30 +437,12 @@ const handleShowVariantModal = (type) => {
                 </View>
               </View>
             ))}
-
-    {/* 👉 Thêm nút Xem tất cả đánh giá */}
-          {/* 👉 Thêm nút Xem tất cả đánh giá */}
-          {reviews?.length > 0 && (
-            <TouchableOpacity
-            onPress={() => {
-              navigation.navigate('AllReviews', {
-                productId: fullProduct._id || product._id,  // ưu tiên fullProduct._id
-              });
-            }}
-          >
-            <Text style={{ color: '#3b82f6', fontWeight: 'bold', marginBottom: 12 }}>
-              Xem tất cả đánh giá sản phẩm này
-            </Text>
-          </TouchableOpacity>
-
-          )}
-
             </>
           ) : (
             <Text style={{ color: '#888', marginTop: 8 }}>Chưa có đánh giá nào.</Text>
           )}
 
-      </ScrollView>                {/* Footer */}
+      </ScrollView>{/* Footer */}
         <View style={styles.footer}>
           <Text style={styles.footerPrice}>
             {selectedVariant?.price?.toLocaleString('vi-VN') || (fullProduct.price || product.price)?.toLocaleString('vi-VN')} VND

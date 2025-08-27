@@ -4,14 +4,37 @@ import React, { useEffect } from "react";
 import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import Toast from "react-native-toast-message";
 import { ROUTES } from "../constants/routes";
+import { useAuth } from "../context/AuthContext";
+import { useNotifications } from "../hooks/useNotifications";
 
 const OrderSuccessScreen = () => {
   const route = useRoute();
   const navigation = useNavigation();
   const { orderId } = route.params || {};
+  const { userInfo } = useAuth();
+  const { sendOrderSuccessNotification } = useNotifications(userInfo?._id);
 
   useEffect(() => {
-    console.log("id đơn hàng.......",orderId);
+    //console.log("id đơn hàng.......",orderId);
+    //console.log("userInfo:", userInfo);
+    
+    // Gửi thông báo đặt hàng thành công
+    if (orderId) {
+      //console.log("Sending order success notification...");
+      try {
+        sendOrderSuccessNotification({
+          orderId: orderId,
+          userId: userInfo?._id,
+          timestamp: new Date().toISOString(),
+        });
+        console.log("Order success notification sent successfully");
+      } catch (error) {
+        console.error("Error sending order success notification:", error);
+      }
+    } else {
+      console.log("No orderId provided, skipping notification");
+    }
+
     Toast.show({
       type: "success",
       text1: "Đặt hàng thành công!",
@@ -19,7 +42,7 @@ const OrderSuccessScreen = () => {
       position: "top",
       visibilityTime: 2500,
     });
-  }, []);
+  }, [orderId, userInfo?._id]);
 
   return (
     <View style={styles.container}>
@@ -49,6 +72,10 @@ const OrderSuccessScreen = () => {
         >
           <Text style={styles.detailBtnText}>Xem chi tiết đơn hàng</Text>
         </TouchableOpacity>
+        
+        {/* Test notification buttons */}
+        {/* <TestNotificationButton />
+        <SimpleNotificationTest /> */}
       </View>
     </View>
   );

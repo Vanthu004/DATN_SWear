@@ -26,13 +26,13 @@ const OrderDetailScreen = () => {
       setLoading(true);
       try {
         const orderData = await getOrderById(orderId);
-        console.log("🔍 Order data:", orderData);
-        console.log("🔍 Order data structure:", JSON.stringify(orderData, null, 2));
+      //  console.log("🔍 Order data:", orderData);
+       // console.log("🔍 Order data structure:", JSON.stringify(orderData, null, 2));
         setOrder(orderData);
         const details = await getOrderDetailsByOrderId(orderId);
         setOrderDetails(details);
       } catch (error) {
-        console.log("Error fetching order:", error);
+      //  console.log("Error fetching order:", error);
       } finally {
         setLoading(false);
       }
@@ -113,6 +113,7 @@ const productTotal = orderDetails.reduce((sum, item) => {
         <Text style={styles.infoValue}>{order.data.shippingmethod_id.fee.toLocaleString()} VND</Text>
       </View>
             <View style={styles.infoBox}>
+
         <Text style={styles.infoText}>Voucher</Text>
       {order.data.voucher_id && (
         <>

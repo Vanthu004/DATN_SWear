@@ -107,9 +107,9 @@ export const useImageUpload = () => {
         type: `image/${fileType}`,
       };
 
-      console.log('Uploading image file:', imageFile);
+     // console.log('Uploading image file:', imageFile);
       const response = await uploadImage(imageFile, relatedModel, relatedId);
-      console.log('Upload response:', response);
+    //  console.log('Upload response:', response);
 
       setUploadProgress(100);
 

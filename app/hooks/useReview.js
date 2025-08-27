@@ -105,23 +105,23 @@ export const useReview = (productId) => {
               name: fileName,
             };
             
-            console.log("📤 Uploading image for review:", fileName);
-            console.log("📤 Image file details:", imageFile);
+           // console.log("📤 Uploading image for review:", fileName);
+          //  console.log("📤 Image file details:", imageFile);
             
             const formData = new FormData();
             formData.append("image", imageFile);
             
-            console.log("📤 FormData created for upload");
+           // console.log("📤 FormData created for upload");
             
             const uploadResponse = await api.post("/upload", formData);
             
-            console.log("📤 Upload response:", uploadResponse.data);
+          //  console.log("📤 Upload response:", uploadResponse.data);
             
             if (uploadResponse.data && uploadResponse.data._id) {
               uploadIds.push(uploadResponse.data._id);
-              console.log("✅ Image uploaded successfully, uploadId:", uploadResponse.data._id);
+          //    console.log("✅ Image uploaded successfully, uploadId:", uploadResponse.data._id);
             } else {
-              console.warn("⚠️ Upload response doesn't contain _id:", uploadResponse.data);
+           //   console.warn("⚠️ Upload response doesn't contain _id:", uploadResponse.data);
             }
           } catch (uploadError) {
             console.error("❌ Image upload failed:", uploadError);
@@ -159,11 +159,11 @@ export const useReview = (productId) => {
         reviewData.upload_ids = uploadIds;
       }
 
-      console.log("📤 Sending review data:", reviewData);
+     // console.log("📤 Sending review data:", reviewData);
       const res = await api.post("/reviews", reviewData);
       const created = res?.data || res;
       
-      console.log("✅ Đánh giá thành công:", created);
+     // console.log("✅ Đánh giá thành công:", created);
       
       setReviews((prev) => [created, ...prev]);
       setCanReview(false); // Cập nhật trạng thái sau khi đánh giá thành công

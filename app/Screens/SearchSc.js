@@ -14,8 +14,6 @@ import { useDispatch, useSelector } from "react-redux";
 import PopularKeywords from "../components/PopularKeywords";
 import ProductCard from "../components/ProductCard";
 import ProductSuggestions from "../components/ProductSuggestions";
-import SearchHistory from "../components/SearchHistory";
-import SmartSearchSuggestions from "../components/SmartSearchSuggestions";
 import { useAuth } from "../context/AuthContext";
 import { useCart } from "../hooks/useCart";
 import { useSearchHistory } from "../hooks/useSearchHistory";
@@ -311,14 +309,14 @@ export default function SearchSc({ route, navigation }) {
         onClose={handleCloseSuggestions}
       />
       {/* Smart Search Suggestions */}
-      <SmartSearchSuggestions
+      {/* <SmartSearchSuggestions
         suggestions={searchSuggestions}
         loading={searchHistoryLoading}
         visible={showSmartSuggestions}
         currentKeyword={input}
         onSelectSuggestion={handleSelectSmartSuggestion}
         onClose={() => setShowSmartSuggestions(false)}
-      />
+      /> */}
       {/* Search History and Popular Keywords */}
       {showSearchHistory && !input.trim() && (
         <View style={styles.searchHistoryContainer}>
@@ -331,7 +329,7 @@ export default function SearchSc({ route, navigation }) {
             onKeywordPress={handleKeywordPress}
           />
           {/* Recent Search History */}
-          {userInfo?._id && (
+          {/* {userInfo?._id && (
             <SearchHistory
               history={recentHistory}
               loading={searchHistoryLoading}
@@ -340,7 +338,7 @@ export default function SearchSc({ route, navigation }) {
               onDeleteHistory={handleDeleteHistory}
               onClearAll={handleClearAllHistory}
             />
-          )}
+          )} */}
         </View>
       )}
       {/* Show search results UI only if a search has been performed */}

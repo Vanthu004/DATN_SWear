@@ -15,9 +15,6 @@ const api = axios.create({
   },
 });
 
-// Xuất cả named và default để tương thích mọi nơi (import { api } hoặc import api)
-
-
 // Interceptors
 api.interceptors.request.use(
   async (config) => {
@@ -30,28 +27,13 @@ api.interceptors.request.use(
       console.log("Error getting token for request:", error);
     }
 
-    // Nếu gửi FormData, loại bỏ Content-Type mặc định để RN tự thêm boundary
-    try {
-      const isRNFormData = config?.data && typeof config.data === 'object' && typeof config.data._parts !== 'undefined';
-      const isFormData = (typeof FormData !== 'undefined' && config.data instanceof FormData) || isRNFormData;
-      if (isFormData) {
-        if (config.headers && (config.headers['Content-Type'] || config.headers['content-type'])) {
-          delete config.headers['Content-Type'];
-          delete config.headers['content-type'];
-        }
-      }
-    } catch (e) {
-      // noop
-    }
-
-    // console.log("API Request:", {
-    //   method: config.method?.toUpperCase(),
-    //   url: config.url,
-    //   data: config.data,
-    //   params: config.params,
-    //   headers: config.headers,
-    // });
-
+    console.log("API Request:", {
+      method: config.method?.toUpperCase(),
+      url: config.url,
+      data: config.data,
+      params: config.params,
+      headers: config.headers,
+    });
     return config;
   },
   (error) => {
@@ -63,11 +45,11 @@ api.interceptors.request.use(
 // Response interceptor for logging and handling errors
 api.interceptors.response.use(
   (response) => {
-    // console.log("API Response:", {
-    //   status: response.status,
-    //   url: response.config.url,
-    //   data: response.data,
-    // });
+    console.log("API Response:", {
+      status: response.status,
+      url: response.config.url,
+      data: response.data,
+    });
     return response;
   },
   async (error) => {
@@ -111,8 +93,6 @@ export const uploadImage = async (
   relatedId = null
 ) => {
   try {
-    console.log("📤 uploadImage called with:", { imageFile, relatedModel, relatedId });
-    
     const formData = new FormData();
     formData.append("image", imageFile);
 
@@ -124,20 +104,15 @@ export const uploadImage = async (
       formData.append("relatedId", relatedId);
     }
 
-    console.log("📤 FormData created:", formData);
-    console.log("📤 Uploading to /upload");
+    const response = await api.post("/upload", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
 
-    const response = await api.post("/upload", formData);
-
-    console.log("📤 Upload response:", response.data);
     return response.data;
   } catch (error) {
-    console.error("❌ Upload image error:", error);
-    console.error("❌ Error details:", {
-      message: error.message,
-      response: error.response?.data,
-      status: error.response?.status
-    });
+    console.error("Upload image error:", error);
     throw error;
   }
 };
@@ -152,7 +127,11 @@ export const uploadAvatar = async (imageUri) => {
       name: "avatar.jpg",
     });
 
-    const response = await api.post("/upload", formData);
+    const response = await api.post("/upload", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
 
     return response.data;
   } catch (error) {
@@ -200,7 +179,7 @@ export const updateProfileWithAvatar = async (profileData, imageUri = null) => {
 
 export const getUploads = async () => {
   try {
-    const response = await api.get("/uploads");
+    const response = await api.get("/upload");
     return response.data;
   } catch (error) {
     console.error("Get uploads error:", error);
@@ -210,7 +189,7 @@ export const getUploads = async () => {
 
 export const deleteUpload = async (uploadId) => {
   try {
-    const response = await api.delete(`/uploads/${uploadId}`);
+    const response = await api.delete(`/upload${uploadId}`);
     return response.data;
   } catch (error) {
     console.error("Delete upload error:", error);
@@ -372,18 +351,14 @@ export const addCartItem = async (cartItemData) => {
     const response = await api.post("/cart-items", cartItemData);
     return response.data;
   } catch (error) {
-    // Chỉ log nhẹ trong dev nếu không phải lỗi đã biết (ví dụ hết hàng 400)
-    const status = error?.response?.status;
-    if (status !== 400) {
-      console.error("Add cart item error:", error);
-    }
+    console.error("Add cart item error:", error);
     throw error;
   }
 };
 
 export const getCartItemsByCart = async (cartId) => {
   try {
-    const response = await api.get(`/cart-items/cart/${cartId}?populate=product_id,product_variant_id`);
+    const response = await api.get(`/cart-items/cart/${cartId}?populate=product_id`);
     return response.data;
   } catch (error) {
     console.error("Get cart items by cart error:", error);
@@ -929,6 +904,6 @@ export const getSearchStats = async (timeRange = 'all') => {
     throw error;
   }
 };
-export default api;
+
 export { api, WEBSOCKET_URL };
 

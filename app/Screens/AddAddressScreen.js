@@ -198,18 +198,42 @@ const AddAddressScreen = ({ navigation, route }) => {
               />
             </View>
 
-            {/* Địa chỉ */}
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Địa chỉ cụ thể</Text>
-              <TextInput
-                style={styles.input}
-                value={formData.address}
-                onChangeText={(text) => setFormData({ ...formData, address: text })}
-                placeholder="Nhập địa chỉ cụ thể"
-                multiline
-              />
-            </View>
+            {/* Quận/Huyện và Tỉnh/Thành phố */}
+            <View style={styles.row}>
+            <View style={[styles.inputGroup, { flex: 1 }]}>
+                <Text style={styles.label}>Tỉnh/Thành phố</Text>
+                <TouchableOpacity
+                  style={[styles.input, styles.selectInput]}
+                  onPress={() => setShowProvinceModal(true)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={formData.city ? styles.selectText : styles.placeholderText}>
+                    {formData.city || "Chọn tỉnh/thành phố"}
+                  </Text>
+                  <Ionicons name="chevron-down" size={18} color="#666" />
+                </TouchableOpacity>
+              </View>
+              <View style={[styles.inputGroup, { flex: 1, marginLeft: 10 }]}>
+                <Text style={styles.label}>Quận/Huyện</Text>
+                <TouchableOpacity
+                  style={[styles.input, styles.selectInput]}
+                  onPress={() => {
+                    if (!selectedProvince) {
+                      Alert.alert("Thông báo", "Vui lòng chọn Tỉnh/Thành phố trước");
+                      return;
+                    }
+                    setShowDistrictModal(true);
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Text style={formData.district ? styles.selectText : styles.placeholderText}>
+                    {formData.district || "Chọn quận/huyện"}
+                  </Text>
+                  <Ionicons name="chevron-down" size={18} color="#666" />
+                </TouchableOpacity>
+              </View>
 
+            </View>
             {/* Phường/Xã */}
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Phường/Xã</Text>
@@ -230,47 +254,17 @@ const AddAddressScreen = ({ navigation, route }) => {
                 <Ionicons name="chevron-down" size={18} color="#666" />
               </TouchableOpacity>
             </View>
-
-
-            {/* Quận/Huyện và Tỉnh/Thành phố */}
-            <View style={styles.row}>
-
-              <View style={[styles.inputGroup, { flex: 1, marginRight: 10 }]}>
-                <Text style={styles.label}>Quận/Huyện</Text>
-                <TouchableOpacity
-                  style={[styles.input, styles.selectInput]}
-                  onPress={() => {
-                    if (!selectedProvince) {
-                      Alert.alert("Thông báo", "Vui lòng chọn Tỉnh/Thành phố trước");
-                      return;
-                    }
-                    setShowDistrictModal(true);
-                  }}
-                  activeOpacity={0.7}
-                >
-                  <Text style={formData.district ? styles.selectText : styles.placeholderText}>
-                    {formData.district || "Chọn quận/huyện"}
-                  </Text>
-                  <Ionicons name="chevron-down" size={18} color="#666" />
-                </TouchableOpacity>
-              </View>
-
-              <View style={[styles.inputGroup, { flex: 1 }]}>
-                <Text style={styles.label}>Tỉnh/Thành phố</Text>
-                <TouchableOpacity
-                  style={[styles.input, styles.selectInput]}
-                  onPress={() => setShowProvinceModal(true)}
-                  activeOpacity={0.7}
-                >
-                  <Text style={formData.city ? styles.selectText : styles.placeholderText}>
-                    {formData.city || "Chọn tỉnh/thành phố"}
-                  </Text>
-                  <Ionicons name="chevron-down" size={18} color="#666" />
-                </TouchableOpacity>
-              </View>
+           {/* Địa chỉ */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Địa chỉ cụ thể</Text>
+              <TextInput
+                style={styles.input}
+                value={formData.address}
+                onChangeText={(text) => setFormData({ ...formData, address: text })}
+                placeholder="Nhập địa chỉ cụ thể"
+                multiline
+              />
             </View>
-
-
           </View>
           <View style={styles.form}>
 
@@ -423,7 +417,7 @@ const AddAddressScreen = ({ navigation, route }) => {
           {isEdit ? "Cập nhật địa chỉ" : "Lưu địa chỉ"}
         </Text>
       </TouchableOpacity>
-      <View style={{height: 50}}></View>
+      <View style={{height: 70}}></View>
     </SafeAreaView>
   );
 };
