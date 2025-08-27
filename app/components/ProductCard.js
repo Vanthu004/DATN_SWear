@@ -164,7 +164,12 @@ export default function ProductCard({
                 style={styles.heartIcon}
                 onPress={(e) => {
                   e.stopPropagation && e.stopPropagation();
-                  onToggleFavorite && onToggleFavorite(product);
+                  console.log('🔍 Heart icon clicked for product:', product._id, 'isFavorite:', isFavorite);
+                  if (onToggleFavorite) {
+                    onToggleFavorite(product);
+                  } else {
+                    console.log('❌ onToggleFavorite is not provided');
+                  }
                 }}
               >
                 <Ionicons

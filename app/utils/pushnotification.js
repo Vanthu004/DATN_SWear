@@ -4,7 +4,7 @@ import * as Notifications from 'expo-notifications'; // Thêm cho Expo
 import { useEffect } from 'react';
 import { Alert, Platform } from 'react-native';
 
-const API_BASE_URL = 'http://192.168.1.9:3000/api/notifications';
+const API_BASE_URL = 'http://192.168.37.5:3000/api/notifications';
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({

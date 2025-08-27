@@ -4,7 +4,7 @@ import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 
-const API_BASE_URL = 'http://192.168.1.9:3000/api/notifications'; // Thay bằng BE real URL (từ env nếu cần)
+const API_BASE_URL = 'http://192.168.37.5:3000/api/notifications'; // Thay bằng BE real URL (từ env nếu cần)
 
 // Cấu hình notification handler
 Notifications.setNotificationHandler({

@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios'; // Giả định dùng axios cho API calls
 
-const API_BASE_URL = 'http://192.168.1.9:3000/api/notifications'; // Config chung từ BE
+const API_BASE_URL = 'http://192.168.37.5:3000/api/notifications'; // Config chung từ BE
 
 // Hàm gửi push notification qua BE (single user)
 export const sendPushNotification = async (userId, title, body, data = {}) => {
