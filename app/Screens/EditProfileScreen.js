@@ -131,7 +131,7 @@ const EditProfileScreen = ({ navigation, route }) => {
         </View>
 
         <View style={styles.inputGroup}>
-          <Text style={styles.label}>Họ và tên *</Text>
+          <Text style={styles.label}>Họ và tên</Text>
           <TextInput
             style={styles.input}
             value={formData.name}
@@ -141,15 +141,15 @@ const EditProfileScreen = ({ navigation, route }) => {
         </View>
 
         <View style={styles.inputGroup}>
-          <Text style={styles.label}>Email *</Text>
-          <TextInput
-            style={styles.input}
-            value={formData.email}
-            onChangeText={(text) => setFormData({ ...formData, email: text })}
-            placeholder="Nhập email"
-            keyboardType="email-address"
-            autoCapitalize="none"
-          />
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Email</Text>
+            <View style={styles.input}>
+              <Text style={{ fontSize: 14, color: '#333' }}>
+                {formData.email || "Chưa có email"}
+              </Text>
+            </View>
+          </View>
+
         </View>
 
         <View style={styles.inputGroup}>

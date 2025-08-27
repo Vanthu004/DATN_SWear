@@ -21,7 +21,7 @@ const ProductVariantSelector = ({ productId, onVariantChange, setSelectedColor, 
   useEffect(() => {
     setInternalSelectedSize(null);
     setInternalSelectedColor(null);
-  }, [productVariants]);
+  }, [productVariants]); 
 
   useEffect(() => {
     if (internalSelectedColor && internalSelectedSize) {

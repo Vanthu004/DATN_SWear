@@ -3,15 +3,15 @@ import { Picker } from "@react-native-picker/picker";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import React, { useEffect, useState } from "react";
 import {
-  ActivityIndicator,
-  Alert,
-  Image,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Alert,
+    Image,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import { ROUTES } from "../constants/routes";
 import { useAuth } from "../context/AuthContext";
@@ -400,6 +400,17 @@ if (selectedDiscountVoucher) {
                   <Text style={{ fontWeight: "500", fontSize: 15 }}>
                     {item.product?.name || item.product_name}
                   </Text>
+                  {/* Hiển thị biến thể nếu có */}
+                  {(item.size || item.color || item.variant_name || item.product_variant) && (
+                    <Text style={{ color: "#666", fontSize: 12, marginTop: 2 }}>
+                      {[
+                        item.size && `Kích cỡ: ${item.size}`,
+                        item.color && `Màu: ${item.color}`,
+                        item.variant_name && `Biến thể: ${item.variant_name}`,
+                        item.product_variant && `Biến thể: ${item.product_variant}`
+                      ].filter(Boolean).join(" | ")}
+                    </Text>
+                  )}
                   <Text style={{ color: "#888", fontSize: 13 }}>Số lượng: {item.quantity}</Text>
                   <Text style={{ color: "#222", fontSize: 13 }}>
                     {formatMoney(item.price_at_time || item.product?.price || 0)}

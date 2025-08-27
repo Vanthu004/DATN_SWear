@@ -2,9 +2,9 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 // Base URL for the API
 
-const API_BASE_URL = "http://192.168.37.5:3000/api";
+const API_BASE_URL = "http://192.168.1.9:3000/api";
 
-const WEBSOCKET_URL = "http://192.168.37.5:3000";
+const WEBSOCKET_URL = "http://192.168.1.9:3000";
 
 
 
@@ -43,11 +43,11 @@ api.interceptors.request.use(
 
 api.interceptors.response.use(
   (response) => {
-    console.log("API Response:", {
-      status: response.status,
-      url: response.config.url,
-      data: response.data,
-    });
+    // console.log("API Response:", {
+    //   status: response.status,
+    //   url: response.config.url,
+    //   data: response.data,
+    // });
     return response;
   },
   async (error) => {
@@ -904,6 +904,84 @@ export const getSearchStats = async (timeRange = 'all') => {
     throw error;
   }
 };
+
+// ===== ORDER CONFIRMATION API =====
+
+// Test kết nối API
+export const testApiConnection = async () => {
+  try {
+    console.log("🧪 Testing API connection...");
+    const response = await api.get("/orders");
+    console.log("✅ API connection successful:", response.status);
+    return true;
+  } catch (error) {
+    console.error("❌ API connection failed:", error.message);
+    return false;
+  }
+};
+
+// Test endpoint cụ thể
+export const testOrderEndpoint = async (orderId) => {
+  try {
+    console.log("🧪 Testing order endpoint:", `/orders/${orderId}`);
+    const response = await api.get(`/orders/${orderId}`);
+    console.log("✅ Order endpoint test successful:", response.status);
+    console.log("✅ Order data:", response.data);
+    return response.data;
+  } catch (error) {
+    console.error("❌ Order endpoint test failed:", error.message);
+    if (error.response) {
+      console.error("❌ Status:", error.response.status);
+      console.error("❌ Data:", error.response.data);
+    }
+    throw error;
+  }
+};
+
+// Xác nhận đã nhận hàng
+export const confirmOrderReceived = async (orderId, userId) => {
+  try {
+    console.log("🌐 Gọi API confirmOrderReceived với orderId:", orderId);
+    console.log("🌐 User ID:", userId);
+    console.log("🌐 Endpoint đúng: /orders/${orderId}/confirm-received");
+    
+    // Test kết nối trước
+    const isConnected = await testApiConnection();
+    if (!isConnected) {
+      throw new Error("Không thể kết nối đến API server");
+    }
+    
+    // Gọi đúng endpoint confirm-received với user_id
+    const requestData = {
+      user_id: userId
+    };
+    
+    console.log("📤 Gửi dữ liệu đúng:", requestData);
+    console.log("📤 API URL:", `/orders/${orderId}/confirm-received`);
+    console.log("📤 Method: PUT");
+    
+    const response = await api.put(`/orders/${orderId}/confirm-received`, requestData);
+    console.log("✅ API response:", response);
+    return response.data;
+    
+  } catch (error) {
+    console.error("❌ Confirm order received error:", error);
+    console.error("❌ Error status:", error.response?.status);
+    console.error("❌ Error data:", error.response?.data);
+    
+    // Log chi tiết hơn để debug
+    if (error.response) {
+      console.error("❌ Response headers:", error.response.headers);
+      console.error("❌ Response config:", error.response.config);
+      console.error("❌ Request URL:", error.response.config?.url);
+      console.error("❌ Request method:", error.response.config?.method);
+      console.error("❌ Request data:", error.response.config?.data);
+    }
+    
+    throw error;
+  }
+};
+
 export default api;
 export { api, WEBSOCKET_URL }; // Xuất hằng số WEBSOCKET_URL
 

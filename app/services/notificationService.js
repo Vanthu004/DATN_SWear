@@ -1,10 +1,11 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import messaging from '@react-native-firebase/messaging';
 import axios from 'axios'; // Thêm axios cho calls sạch hơn (hoặc giữ fetch)
 import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 
-const API_BASE_URL = 'http://192.168.37.5:3000/api/notifications'; // Thay bằng BE real URL (từ env nếu cần)
+const API_BASE_URL = 'http://192.168.1.9:3000/api/notifications'; // Thay bằng BE real URL (từ env nếu cần)
 
 // Cấu hình notification handler
 Notifications.setNotificationHandler({
@@ -27,9 +28,10 @@ export const NOTIFICATION_TYPES = {
 };
 
 // Hàm đăng ký push notification (giữ nguyên, nhưng thêm log)
-export async function registerForPushNotificationsAsync() {
+export async function registerForPushNotificationsAsync(sendTokenToServer = null) {
   console.log('registerForPushNotificationsAsync: Starting registration...');
   let token;
+  let tokenType = null;
 
   if (Platform.OS === 'android') {
     console.log('registerForPushNotificationsAsync: Setting up Android notification channel...');
@@ -50,64 +52,106 @@ export async function registerForPushNotificationsAsync() {
   }
 
   if (Device.isDevice) {
-    console.log('registerForPushNotificationsAsync: Device detected, checking permissions...');
-    const { status: existingStatus } = await Notifications.getPermissionsAsync();
-    let finalStatus = existingStatus;
-    
-    console.log('registerForPushNotificationsAsync: Current permission status:', existingStatus);
-    
-    if (existingStatus !== 'granted') {
-      console.log('registerForPushNotificationsAsync: Requesting permissions...');
-      const { status } = await Notifications.requestPermissionsAsync();
-      finalStatus = status;
-      console.log('registerForPushNotificationsAsync: Permission request result:', status);
-    }
-    
-    if (finalStatus !== 'granted') {
-      console.log('Failed to get push token for push notification!');
-      return null;
-    }
-    
+    // Try Expo first
     try {
-      console.log('registerForPushNotificationsAsync: Getting Expo push token...');
-      token = (await Notifications.getExpoPushTokenAsync({
-        projectId: 'a2cea276-0297-4d80-b5bd-d4f21792a83a', // Your Expo project ID
-      })).data;
-      
-      console.log('Push token:', token);
-      return token;
-    } catch (error) {
-      console.error('Error getting push token:', error);
+      const { status: existingStatus } = await Notifications.getPermissionsAsync();
+      let finalStatus = existingStatus;
+      if (existingStatus !== 'granted') {
+        const { status } = await Notifications.requestPermissionsAsync();
+        finalStatus = status;
+      }
+      if (finalStatus === 'granted') {
+        try {
+          const expoRes = await Notifications.getExpoPushTokenAsync({ projectId: 'a2cea276-0297-4d80-b5bd-d4f21792a83a' });
+          const expoToken = expoRes?.data ?? expoRes?.token ?? expoRes;
+          if (expoToken) {
+            token = expoToken;
+            tokenType = 'expo';
+            console.log('Expo push token:', token);
+            // If caller provided a handler, let them send the token to server
+            if (typeof sendTokenToServer === 'function') {
+              try { await sendTokenToServer(token, tokenType); } catch (e) { console.warn('sendTokenToServer callback failed:', e); }
+            }
+          } else {
+            console.warn('Expo returned no token value, will try FCM fallback');
+          }
+        } catch (expoErr) {
+          console.warn('Expo token fetch failed, will try FCM fallback:', expoErr?.message ?? expoErr);
+        }
+      }
+    } catch (err) {
+      console.warn('Permission check for notifications failed, continuing to fallback if possible:', err?.message ?? err);
+    }
+
+    // Fallback to FCM (for bare RN / emulator with firebase)
+    if (!token) {
+      try {
+        const authStatus = await messaging().requestPermission();
+        const enabled = authStatus === messaging.AuthorizationStatus.AUTHORIZED || authStatus === messaging.AuthorizationStatus.PROVISIONAL;
+        if (enabled) {
+          const fcmToken = await messaging().getToken();
+          console.log('[FCM] FCM Token:', fcmToken);
+          if (fcmToken) {
+            token = fcmToken;
+            tokenType = 'fcm';
+            if (typeof sendTokenToServer === 'function') {
+              try { await sendTokenToServer(token, tokenType); } catch (e) { console.warn('sendTokenToServer callback failed:', e); }
+            }
+          }
+        } else {
+          console.log('FCM permission denied');
+        }
+      } catch (fcmErr) {
+        console.error('FCM fallback failed:', fcmErr);
+      }
+    }
+
+    if (!token) {
+      console.log('No push token available');
       return null;
     }
+
+    await AsyncStorage.setItem('pushToken', JSON.stringify({ token, tokenType }));
+    return { token, tokenType };
   } else {
     console.log('Must use physical device for Push Notifications');
     return null;
   }
 }
 
-// Hàm lưu token lên server (sửa: dùng axios, id thay userId, retry nếu fail)
-export async function saveTokenToServer(id, token) {
+// Hàm lưu token lên server (sửa: dùng axios, id thay userId, nhận tokenType)
+export async function saveTokenToServer(id, token, tokenType = 'expo') {
   try {
+    // Guard: nếu không có id thì không gọi server
+    if (!id) {
+      console.warn('saveTokenToServer: missing id, aborting saveTokenToServer call. token:', token, 'tokenType:', tokenType);
+      return false;
+    }
+
     const userToken = await AsyncStorage.getItem('userToken');
-    
-    const response = await axios.post(`${API_BASE_URL}/save-token`, {
+
+    const payload = {
       id, // Sửa: dùng id thay userId để khớp BE
       token_device: token,
-      token_type: 'expo',
+      token_type: tokenType,
       platform: Platform.OS,
-    }, {
+    };
+
+    console.log('saveTokenToServer: sending payload to', `${API_BASE_URL}/save-token`, payload);
+
+    const response = await axios.post(`${API_BASE_URL}/save-token`, payload, {
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${userToken}`,
       },
+      timeout: 10000,
     });
-    
+
     console.log('Token saved successfully:', response.data);
     return true;
   } catch (error) {
     console.error('Error saving token:', error.response ? error.response.data : error.message);
-    // Retry logic nếu cần (ví dụ: sau 5s)
+    // Retry logic nếu cần (ví dụ: sau 5s) - không tự động ở đây
     return false;
   }
 }
@@ -117,7 +161,7 @@ export async function removeTokenFromServer(id, token) {
   try {
     const userToken = await AsyncStorage.getItem('userToken');
     
-    const response = await axios.delete(`${API_BASE_URL}/remove-token`, { // Giả định BE add endpoint
+    const response = await axios.delete(`${API_BASE_URL}/remove-token`, {
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${userToken}`,
@@ -181,25 +225,39 @@ export async function saveNotificationToStorage(title, body, data = {}) {
   try {
     const newNotification = {
       id: Date.now().toString(),
-      text: body,
+      title: title || '',
+      text: body || '',
       type: data.type || 'general',
       orderId: data.orderId,
       timestamp: new Date().toISOString(),
       isRead: false,
     };
 
-    const existingNotifications = await AsyncStorage.getItem('userNotifications');
-    let notifications = existingNotifications ? JSON.parse(existingNotifications) : [];
-    
+    const existingNotificationsRaw = await AsyncStorage.getItem('userNotifications');
+    let notifications = existingNotificationsRaw ? JSON.parse(existingNotificationsRaw) : [];
+
+    // Dedup: nếu notification cùng orderId hoặc cùng title+text xuất hiện trong 10s => skip
+    if (notifications.length > 0) {
+      const last = notifications[0];
+      const lastTime = new Date(last.timestamp).getTime();
+      const now = Date.now();
+      const sameOrder = newNotification.orderId && last.orderId && newNotification.orderId === last.orderId;
+      const sameContent = last.title === newNotification.title && last.text === newNotification.text;
+      if ((sameOrder || sameContent) && (now - lastTime) < 10000) {
+        console.log('Duplicate notification detected, skipping save:', newNotification);
+        return;
+      }
+    }
+
     notifications.unshift(newNotification);
-    
+
     if (notifications.length > 50) {
       notifications = notifications.slice(0, 50);
     }
-    
+
     await AsyncStorage.setItem('userNotifications', JSON.stringify(notifications));
     console.log('Notification saved to storage:', newNotification);
-    
+
   } catch (error) {
     console.error('Error saving notification to storage:', error);
   }
@@ -254,55 +312,48 @@ export async function sendOrderNotification(type, orderData, isRemote = false, t
 // Hàm khởi tạo notifications (sửa: thêm listeners cho remote)
 export async function initializeNotifications(userId) {
   console.log('initializeNotifications: Called with userId:', userId);
-  
+
   try {
-    console.log('initializeNotifications: Registering for push notifications...');
-    const token = await registerForPushNotificationsAsync();
-    
-    if (token) {
-      console.log('initializeNotifications: Token received, saving to AsyncStorage...');
-      await AsyncStorage.setItem('pushToken', token);
-      
+    const tokenObj = await registerForPushNotificationsAsync();
+    if (tokenObj && tokenObj.token) {
+      const { token, tokenType } = tokenObj;
       if (userId) {
-        console.log('initializeNotifications: Saving token to server...');
-        await saveTokenToServer(userId, token); // Sửa: dùng userId làm id
+        await saveTokenToServer(userId, token, tokenType); // pass tokenType now
       }
-      
-      // Thêm listeners cho remote push
-      const foregroundSub = Notifications.addNotificationReceivedListener(notification => {
-        console.log('[Expo] Nhận thông báo foreground:', notification);
-        sendLocalNotification( // Hiển thị local nếu cần
-          notification.request.content.title,
-          notification.request.content.body,
-          notification.request.content.data
-        );
-      });
-
-      const responseSub = Notifications.addNotificationResponseReceivedListener(response => {
-        console.log('[Expo] User click vào thông báo:', response);
-        // Handle navigation hoặc action
-      });
-
-      console.log('Notifications initialized successfully with listeners');
-      return { token, unsub: () => { foregroundSub.remove(); responseSub.remove(); } };
-    } else {
-      console.log('initializeNotifications: No token received');
     }
-    
-    return null;
+
+    // listeners: do NOT schedule another local notification when remote arrives.
+    const foregroundSub = Notifications.addNotificationReceivedListener(notification => {
+      console.log('[Expo] Notification received (foreground):', notification);
+      try {
+        // Save directly to storage (no re-scheduling) to avoid duplicate notifications
+        saveNotificationToStorage(notification.request.content.title || '', notification.request.content.body || '', notification.request.content.data || {});
+      } catch (e) {
+        console.error('Error saving incoming notification:', e);
+      }
+    });
+
+    const responseSub = Notifications.addNotificationResponseReceivedListener(response => {
+      console.log('[Expo] Notification response received:', response);
+      // handle actions/navigation here if needed
+    });
+
+    console.log('Notifications initialized successfully with listeners');
+    return { unsub: () => { foregroundSub.remove(); responseSub.remove(); } };
   } catch (error) {
     console.error('Error initializing notifications:', error);
     return null;
   }
 }
 
-// Hàm cleanup khi logout (giữ nguyên, nhưng thêm remove listeners nếu có)
+// Hàm cleanup khi logout (gửi xóa token lên server nếu cần)
 export async function cleanupNotifications(userId) {
   try {
-    const token = await AsyncStorage.getItem('pushToken');
+    const raw = await AsyncStorage.getItem('pushToken');
+    const parsed = raw ? JSON.parse(raw) : null;
     
-    if (token && userId) {
-      await removeTokenFromServer(userId, token);
+    if (parsed && parsed.token && userId) {
+      await removeTokenFromServer(userId, parsed.token);
     }
     
     await AsyncStorage.removeItem('pushToken');

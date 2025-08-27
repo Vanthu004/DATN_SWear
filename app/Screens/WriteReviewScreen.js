@@ -318,14 +318,14 @@ export default function WriteReviewScreen({ navigation, route }) {
               </View>
             )}
 
-            <TouchableOpacity
+            {/* <TouchableOpacity
               onPress={() => handlePickImage(index)}
               style={styles.cameraButton}
             >
               <Text style={styles.cameraText}>
                 {item.image ? "📷 Thay đổi ảnh" : "📷 Thêm ảnh sản phẩm"}
               </Text>
-            </TouchableOpacity>
+            </TouchableOpacity> */}
           </View>
         )}
         ListFooterComponent={
