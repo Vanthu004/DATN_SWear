@@ -359,88 +359,199 @@ const handleShowVariantModal = (type) => {
           <Text style={styles.description}>Chưa có mô tả cho sản phẩm này.</Text>
         )}
 
-        {/* Rating */}
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 16 }}>
-        <Text style={styles.label}>Đánh giá</Text>
-          {reviews?.length > 0 && (
-            <TouchableOpacity
-            onPress={() => {
-              navigation.navigate('AllReviews', {
-                productId: fullProduct._id || product._id,  // ưu tiên fullProduct._id
-              });
-            }}
-          >
-            <Text style={{ color: '#3b82f6', fontWeight: 'bold',marginTop:15 }}>
-              Xem tất cả
-            </Text>
-          </TouchableOpacity>
+{/* Rating */}
+<View style={{ marginTop: 16 }}>
+  <View
+    style={{
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+    }}
+  >
+    <Text style={styles.label}>Đánh giá</Text>
+    {reviews?.length > 0 && (
+      <TouchableOpacity
+        onPress={() => {
+          navigation.navigate('AllReviews', {
+            productId: fullProduct._id || product._id,
+          });
+        }}
+      >
+        <Text style={{ color: '#3b82f6', fontWeight: 'bold' }}>Xem tất cả</Text>
+      </TouchableOpacity>
+    )}
+  </View>
 
+  {/* Điểm trung bình */}
+  <View
+    style={{
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginVertical: 8,
+    }}
+  >
+    {renderStars(fullProduct.rating || product.rating || 5)}
+    <Text style={{ marginLeft: 8, color: '#555' }}>
+      {avgRating
+        ? `${avgRating} điểm (${reviews?.length || 0} đánh giá)`
+        : 'Chưa có đánh giá'}
+    </Text>
+  </View>
+
+  {/* Danh sách đánh giá */}
+  {reviews?.length > 0 ? (
+    reviews.map((review, idx) => (
+      <View
+        key={idx}
+        style={{
+          flexDirection: 'row',
+          alignItems: 'flex-start',
+          marginBottom: 16,
+        }}
+      >
+        {/* Avatar */}
+        <Image
+          source={{
+            uri:
+              review.user_id?.avatar_url ||
+              'https://cdn-icons-png.flaticon.com/512/149/149071.png',
+          }}
+          style={{
+            width: 40,
+            height: 40,
+            borderRadius: 20,
+            marginRight: 10,
+            backgroundColor: '#eee',
+          }}
+        />
+
+        {/* Nội dung */}
+        <View style={{ flex: 1 }}>
+          <Text style={{ fontWeight: 'bold', marginBottom: 2 }}>
+            {review.user_id?.name || 'Người dùng'}
+          </Text>
+
+          {/* Số sao */}
+          <View style={{ flexDirection: 'row', marginBottom: 4 }}>
+            {Array.from({
+              length: Math.max(0, Math.min(5, review.rating || 0)),
+            }).map((_, i) => (
+              <Text key={i} style={{ color: '#facc15' }}>
+                ★
+              </Text>
+            ))}
+          </View>
+
+          {/* Phân loại */}
+          {!!(
+            review.product_variant_id ||
+            review.variant_text ||
+            review.size ||
+            review.color
+          ) && (
+            <Text style={{ color: '#666', marginBottom: 4 }}>
+              Phân loại:{" "}
+              {[review.variant_text, review.size, review.color]
+                .filter(Boolean)
+                .join(' - ')}
+            </Text>
           )}
-          </View>
-          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
-            {renderStars(fullProduct.rating || product.rating || 5)}
-            <Text style={{ marginLeft: 8, color: '#888' }}>
-              {avgRating ? `${avgRating} điểm (${reviews?.length || 0} đánh giá)` : 'Chưa có đánh giá'}
-            </Text>
-          </View>
 
-        {/* Reviews */}
-        {reviews?.length > 0 ? (
-          <>
-            {reviews.map((review, idx) => (
-              <View
-                key={idx}
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'flex-start',
-                  marginBottom: 16,
-                
-                }}
-              >
-                {/* Avatar */}
+          {/* Nội dung bình luận */}
+          <Text style={{ marginBottom: 4 }}>{review.comment}</Text>
+
+          {/* Hình ảnh đính kèm */}
+          {!!review.images && Array.isArray(review.images) && review.images.length > 0 && (
+            <View
+              style={{
+                flexDirection: 'row',
+                flexWrap: 'wrap',
+                gap: 8,
+                marginTop: 4,
+              }}
+            >
+              {review.images.map((img, i2) => (
                 <Image
-                  source={{
-                  uri: review.user_id?.avatar_url || 'https://cdn-icons-png.flaticon.com/512/149/149071.png',
-                  }}
+                  key={i2}
+                  source={{ uri: img.url || img }}
                   style={{
-                    width: 36,
-                    height: 36,
-                    borderRadius: 18,
-                    backgroundColor: '#eee',
+                    width: 80,
+                    height: 80,
+                    borderRadius: 8,
+                    marginRight: 8,
+                    marginTop: 8,
                   }}
                 />
-                {/* Nội dung */}
-                <View style={{ flex: 1 }}>
-                  <Text style={{ fontWeight: 'bold' }}>{review.user_id?.name || 'Người dùng'}</Text>
-                  {/* Số sao */}
-                  <View style={{ flexDirection: 'row', marginVertical: 4 }}>
-                    {Array.from({ length: Math.max(0, Math.min(5, review.rating || 0)) }).map((_, i) => (
-                      <Text key={i} style={{ color: '#facc15' }}>★</Text>
-                    ))}
-                  </View>
-                  {!!(review.product_variant_id || review.variant_text || review.size || review.color) && (
-                    <Text style={{ color: '#555', marginBottom: 4 }}>
-                      Phân loại: {[review.variant_text, review.size, review.color].filter(Boolean).join(' - ')}
-                    </Text>
-                  )}
-                  <Text>{review.comment}</Text>
-                  {!!review.images && Array.isArray(review.images) && review.images.length > 0 && (
-                    <View style={{ flexDirection: 'row', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
-                      {review.images.map((img, i2) => (
-                        <Image key={i2} source={{ uri: img.url || img }} style={{ width: 80, height: 80, borderRadius: 8 }} />
-                      ))}
-                    </View>
-                  )}
-                  {!review.images && review.image_url && (
-                    <Image source={{ uri: review.image_url }} style={{ width: 120, height: 120, borderRadius: 8, marginTop: 8 }} />
-                  )}
-                </View>
-              </View>
-            ))}
-            </>
-          ) : (
-            <Text style={{ color: '#888', marginTop: 8 }}>Chưa có đánh giá nào.</Text>
+              ))}
+            </View>
           )}
+
+          {!review.images && review.image_url && (
+            <Image
+              source={{ uri: review.image_url }}
+              style={{
+                width: 120,
+                height: 120,
+                borderRadius: 8,
+                marginTop: 8,
+              }}
+            />
+          )}
+
+          {/* ✅ Phản hồi của Admin */}
+         {/* Trả lời của admin */}
+{review.replies && review.replies.length > 0 && (
+  <View style={{ marginTop: 8, paddingLeft: 20 }}>
+    {review.replies.map((reply, i3) => (
+      <View
+        key={i3}
+        style={{
+          flexDirection: 'row',
+          alignItems: 'flex-start',
+          marginTop: 8,
+          backgroundColor: '#f3f4f6',
+          padding: 8,
+          borderRadius: 8,
+        }}
+      >
+        {/* Avatar Admin */}
+        <Image
+          source={{
+            uri:
+              reply.user_id?.avatar_url ||
+              'https://cdn-icons-png.flaticon.com/512/149/149071.png',
+          }}
+          style={{
+            width: 30,
+            height: 30,
+            borderRadius: 15,
+            marginRight: 8,
+            backgroundColor: '#eee',
+          }}
+        />
+
+        {/* Nội dung trả lời */}
+        <View style={{ flex: 1 }}>
+          <Text style={{ fontWeight: 'bold', color: '#3b82f6' }}>
+            {reply.user_id?.name || 'Admin'}
+          </Text>
+          <Text style={{ color: '#333' }}>{reply.comment}</Text>
+        </View>
+      </View>
+    ))}
+  </View>
+)}
+
+
+        </View>
+      </View>
+    ))
+  ) : (
+    <Text style={{ color: '#888', marginTop: 8 }}>Chưa có đánh giá nào.</Text>
+  )}
+</View>
+
+
 
       </ScrollView>{/* Footer */}
         <View style={styles.footer}>
