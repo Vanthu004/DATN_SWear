@@ -89,7 +89,7 @@ const styles = StyleSheet.create({
     width: 160,
   },
   separator: {
-    width: 12,
+    width: 28,
   },
 });
 

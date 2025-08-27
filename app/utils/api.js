@@ -1,13 +1,12 @@
-
 // app/utils/api.js
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import { Alert } from "react-native";
 import { logoutGlobal } from "../context/AuthContext";
 // Base URL for the API
-const API_BASE_URL = "http://192.168.0.104:3000/api";
+const API_BASE_URL = "http://192.168.52.108:3000/api";
 
-const WEBSOCKET_URL = "http://192.168.0.104:3000";
+const WEBSOCKET_URL = "http://192.168.52.108:3000";
 
 
 
@@ -136,7 +135,7 @@ export const uploadImage = async (
     console.log("📤 FormData created:", formData);
     console.log("📤 Uploading to /upload");
 
-    const response = await api.post("/upload", formData);
+    const response = await api.post("/uploads/upload", formData);
 
     console.log("📤 Upload response:", response.data);
     return response.data;
@@ -161,7 +160,7 @@ export const uploadAvatar = async (imageUri) => {
       name: "avatar.jpg",
     });
 
-    const response = await api.post("/upload", formData);
+    const response = await api.post("/uploads/upload", formData);
 
     return response.data;
   } catch (error) {

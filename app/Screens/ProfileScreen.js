@@ -19,8 +19,10 @@ const ProfileScreen = ({ navigation }) => {
 
   // Debug logging
   useEffect(() => {
+
     console.log('ProfileScreen: Current userInfo:', userInfo);
     console.log('ProfileScreen: Avatar URL:', userInfo?.avatar_url);
+
   }, [userInfo]);
 
   // Refresh dữ liệu khi quay lại màn hình này
@@ -28,7 +30,7 @@ const ProfileScreen = ({ navigation }) => {
     React.useCallback(() => {
       // Refresh dữ liệu từ server khi vào màn hình
       const refreshData = async () => {
-        console.log('ProfileScreen focused, refreshing user data...');
+        //console.log('ProfileScreen focused, refreshing user data...');
         await refreshUserData();
       };
       

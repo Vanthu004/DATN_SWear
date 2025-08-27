@@ -360,7 +360,23 @@ const handleShowVariantModal = (type) => {
         )}
 
         {/* Rating */}
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 16 }}>
         <Text style={styles.label}>Đánh giá</Text>
+          {reviews?.length > 0 && (
+            <TouchableOpacity
+            onPress={() => {
+              navigation.navigate('AllReviews', {
+                productId: fullProduct._id || product._id,  // ưu tiên fullProduct._id
+              });
+            }}
+          >
+            <Text style={{ color: '#3b82f6', fontWeight: 'bold',marginTop:15 }}>
+              Xem tất cả
+            </Text>
+          </TouchableOpacity>
+
+          )}
+          </View>
           <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
             {renderStars(fullProduct.rating || product.rating || 5)}
             <Text style={{ marginLeft: 8, color: '#888' }}>
@@ -421,24 +437,6 @@ const handleShowVariantModal = (type) => {
                 </View>
               </View>
             ))}
-
-    {/* 👉 Thêm nút Xem tất cả đánh giá */}
-          {/* 👉 Thêm nút Xem tất cả đánh giá */}
-          {reviews?.length > 0 && (
-            <TouchableOpacity
-            onPress={() => {
-              navigation.navigate('AllReviews', {
-                productId: fullProduct._id || product._id,  // ưu tiên fullProduct._id
-              });
-            }}
-          >
-            <Text style={{ color: '#3b82f6', fontWeight: 'bold', marginBottom: 12 }}>
-              Xem tất cả đánh giá sản phẩm này
-            </Text>
-          </TouchableOpacity>
-
-          )}
-
             </>
           ) : (
             <Text style={{ color: '#888', marginTop: 8 }}>Chưa có đánh giá nào.</Text>

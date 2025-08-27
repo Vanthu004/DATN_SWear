@@ -35,12 +35,12 @@ export default function WishlistScreen() {
           return;
         }
 
-        console.log("🔍 Fetching favorites, userId:", userId);
+        //console.log("🔍 Fetching favorites, userId:", userId);
         setLoading(true);
 
         try {
           const res = await getFavoritesByUser(userId);
-          console.log("📦 Full API response:", res);
+          //console.log("📦 Full API response:", res);
 
           // Tùy vào cấu trúc res bạn có thể chỉnh lại đoạn dưới
           const favoriteList = Array.isArray(res?.data)
@@ -49,7 +49,7 @@ export default function WishlistScreen() {
             ? res
             : [];
 
-          console.log("✅ Dữ liệu yêu thích trả về:", favoriteList);
+          //console.log("✅ Dữ liệu yêu thích trả về:", favoriteList);
           if (!Array.isArray(favoriteList)) {
             console.warn("⚠️ Dữ liệu không phải mảng:", favoriteList);
             setFavorites([]);
@@ -83,7 +83,7 @@ export default function WishlistScreen() {
               setFavorites((prev) =>
                 prev.filter((item) => item.product_id._id !== productId)
               );
-              console.log("✅ Đã xoá sản phẩm yêu thích:", productId);
+              //console.log("✅ Đã xoá sản phẩm yêu thích:", productId);
             } catch (err) {
               console.error("❌ Lỗi khi xóa yêu thích:", err.message || err);
               Alert.alert("Lỗi", "Không thể xoá sản phẩm khỏi danh sách yêu thích");

@@ -3,15 +3,15 @@ import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import React, { useEffect, useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    FlatList,
-    Image,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  Image,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { useAuth } from "../context/AuthContext";
 import { api } from "../utils/api";
@@ -110,7 +110,7 @@ export default function WriteReviewScreen({ navigation, route }) {
               }
             } catch (error) {
               console.error("Lỗi chụp ảnh:", error);
-              Alert.alert("Lỗi", "Không thể chụp ảnh. Vui lòng thử lại.");
+              Alert.alert("Lỗi", "Không thể chụp ảnh. Vui lòng thử lại");
             }
           },
         },
@@ -177,7 +177,7 @@ export default function WriteReviewScreen({ navigation, route }) {
             
             console.log("📤 FormData created:", formData);
             
-            const uploadResponse = await api.post("/upload", formData);
+            const uploadResponse = await api.post("/uploads/upload", formData);
             
             console.log("📤 Upload response:", uploadResponse.data);
             

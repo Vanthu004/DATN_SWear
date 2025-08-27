@@ -70,7 +70,7 @@ const RegisterScreen = ({ navigation }) => {
         confirmPassword,
       });
 
-      console.log('Register response:', res.data);
+      //console.log('Register response:', res.data);
 
       // Chỉ chuyển đến màn hình xác nhận email, không lưu token
       navigation.navigate('EmailVerification', {
@@ -80,7 +80,7 @@ const RegisterScreen = ({ navigation }) => {
         tempToken: res.data.token, // Lưu token tạm thời để gửi OTP
       });
     } catch (error) {
-      console.log('Register error:', error);
+      //console.log('Register error:', error);
 
       // Xử lý trường hợp email đã tồn tại nhưng chưa xác nhận
       if (error.response?.status === 409 && error.response?.data?.message?.includes('email')) {

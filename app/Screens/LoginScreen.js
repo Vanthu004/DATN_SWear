@@ -49,7 +49,7 @@ export default function LoginScreen({ navigation }) {
     setIsLoading(true);
 
     try {
-      console.log('🔐 Đăng nhập với email:', email);
+      //console.log('🔐 Đăng nhập với email:', email);
       const res = await api.post("/users/login", { email, password });
       const { token, user, isEmailVerified: serverEmailVerified } = res.data;
 
@@ -107,7 +107,7 @@ export default function LoginScreen({ navigation }) {
 
         if (!cartRes.data || !cartRes.data._id) {
           const createCartRes = await api.post("/cart", { user_id: userId });
-          console.log("🛒 Đã tạo giỏ hàng:", createCartRes.data);
+          //console.log("🛒 Đã tạo giỏ hàng:", createCartRes.data);
         } else {
           console.log("✅ Giỏ hàng đã tồn tại:", cartRes.data);
         }
@@ -116,7 +116,7 @@ export default function LoginScreen({ navigation }) {
           try {
             const userId = user._id || user.id;
             const createCartRes = await api.post("/cart", { user_id: userId });
-            console.log("🛒 Đã tạo giỏ hàng mới sau lỗi 404:", createCartRes.data);
+            //console.log("🛒 Đã tạo giỏ hàng mới sau lỗi 404:", createCartRes.data);
           } catch (createErr) {
             console.log("❌ Lỗi khi tạo giỏ hàng:", createErr?.response?.data || createErr.message);
           }

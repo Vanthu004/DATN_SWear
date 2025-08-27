@@ -98,21 +98,21 @@ const ZaloPayQRScreen = () => {
   useEffect(() => {
     if (!backendOrderId || isExpired) return;
     
-    console.log('Bắt đầu check ZaloPay status...');
+    //console.log('Bắt đầu check ZaloPay status...');
     
     let isActive = true;
     let interval = setInterval(async () => {
       if (!isActive) return;
       
       try {
-        console.log('Đang gọi API check ZaloPay status...');
+        //console.log('Đang gọi API check ZaloPay status...');
         
         // Gọi API check ZaloPay status
         const res = await api.post('/payments/zalopay/check-status', {
           app_trans_id: orderId
         });
         
-        console.log('ZaloPay response:', res.data);
+        //console.log('ZaloPay response:', res.data);
         
         // Kiểm tra trạng thái từ ZaloPay response
         if (res.data && res.data.return_code === 1) {
@@ -121,7 +121,7 @@ const ZaloPayQRScreen = () => {
               res.data.return_message === 'Giao dịch thành công' ||
               res.data.return_message === 'Success') {
             
-            console.log('Thanh toán thành công!');
+            //console.log('Thanh toán thành công!');
             isActive = false;
             clearInterval(interval);
             

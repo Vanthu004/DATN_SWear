@@ -1,4 +1,3 @@
-// app/components/chat/MessageBubble.js
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
@@ -6,12 +5,41 @@ import { chatUtils } from '../../services/chatService';
 
 const MessageBubble = ({ message, isCurrentUser, onImagePress }) => {
   const isImage = message.type === 'image';
-  
+  const role = message.role || 'user'; // Lấy role từ message, mặc định là 'user'
+
+  // Xác định màu sắc và vị trí dựa trên role
+  const getBubbleStyle = () => {
+    if (isCurrentUser) {
+      return [styles.messageBubble, styles.currentUserBubble];
+    }
+    if (role === 'admin') {
+      return [styles.messageBubble, styles.adminBubble];
+    }
+    if (role === 'staff') {
+      return [styles.messageBubble, styles.staffBubble];
+    }
+    return [styles.messageBubble, styles.otherUserBubble];
+  };
+
+  const getTextStyle = () => {
+    if (isCurrentUser) {
+      return [styles.messageText, styles.currentUserText];
+    }
+    if (role === 'admin' || role === 'staff') {
+      return [styles.messageText, styles.otherUserText];
+    }
+    return [styles.messageText, styles.otherUserText];
+  };
+
+  const getContainerStyle = () => {
+    if (isCurrentUser) {
+      return [styles.messageContainer, styles.currentUserContainer];
+    }
+    return [styles.messageContainer, styles.otherUserContainer];
+  };
+
   return (
-    <View style={[
-      styles.messageContainer, 
-      isCurrentUser ? styles.currentUserContainer : styles.otherUserContainer
-    ]}>
+    <View style={getContainerStyle()}>
       {!isCurrentUser && (
         <View style={styles.senderInfo}>
           {message.sender_avatar ? (
@@ -21,23 +49,19 @@ const MessageBubble = ({ message, isCurrentUser, onImagePress }) => {
               <Ionicons name="person" size={16} color="#666" />
             </View>
           )}
-          <Text style={styles.senderName}>{message.sender_name}</Text>
+          <Text style={styles.senderName}>
+            {message.sender_name} {role === 'admin' ? '(Admin)' : role === 'staff' ? '(Staff)' : ''}
+          </Text>
         </View>
       )}
       
-      <View style={[
-        styles.messageBubble,
-        isCurrentUser ? styles.currentUserBubble : styles.otherUserBubble
-      ]}>
+      <View style={getBubbleStyle()}>
         {isImage ? (
           <TouchableOpacity onPress={() => onImagePress?.(message.content)}>
             <Image source={{ uri: message.content }} style={styles.messageImage} />
           </TouchableOpacity>
         ) : (
-          <Text style={[
-            styles.messageText,
-            isCurrentUser ? styles.currentUserText : styles.otherUserText
-          ]}>
+          <Text style={getTextStyle()}>
             {message.content}
           </Text>
         )}
@@ -52,8 +76,8 @@ const MessageBubble = ({ message, isCurrentUser, onImagePress }) => {
     </View>
   );
 };
+
 const styles = StyleSheet.create({
-     // MessageBubble styles
   messageContainer: {
     marginVertical: 4,
     paddingHorizontal: 16,
@@ -96,6 +120,14 @@ const styles = StyleSheet.create({
     backgroundColor: '#2196F3',
     borderBottomRightRadius: 4,
   },
+  adminBubble: {
+    backgroundColor: '#757575', // Màu xám đậm cho admin
+    borderBottomLeftRadius: 4,
+  },
+  staffBubble: {
+    backgroundColor: '#B0B0B0', // Màu xám nhạt cho staff
+    borderBottomLeftRadius: 4,
+  },
   otherUserBubble: {
     backgroundColor: '#f0f0f0',
     borderBottomLeftRadius: 4,
@@ -128,4 +160,5 @@ const styles = StyleSheet.create({
     textAlign: 'left',
   },
 });
+
 export default MessageBubble;

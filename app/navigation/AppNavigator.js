@@ -1,3 +1,4 @@
+// app/navigation/AppNavigator.js
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import React from "react";
@@ -16,7 +17,7 @@ const Stack = createNativeStackNavigator();
 export default function AppNavigator() {
   const { isLoading, userToken, isBanned } = useAuth();
 
-  console.log("AppNavigator: userToken:", userToken, "isBanned:", isBanned);
+  //console.log("AppNavigator: userToken:", userToken, "isBanned:", isBanned);
 
   if (isLoading) {
     return <LoadingScreen />;
