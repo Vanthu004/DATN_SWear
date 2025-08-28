@@ -7,9 +7,9 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:275582868309:android:1800f0ac34d9945ec6eddc",
+        "mobilesdk_app_id": "1:275582868309:android:6b48ba942d969242c6eddc",
         "android_client_info": {
-          "package_name": "com.vanthu.DATN_SWear"
+          "package_name": "com.vanthu.datnswear"
         }
       },
       "oauth_client": [],
