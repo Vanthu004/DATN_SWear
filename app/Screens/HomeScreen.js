@@ -597,7 +597,7 @@ const ShoseMoutainCategoryList = ({ categories }) => (
             navigation={navigation}
             isFavorite={(productId) => {
               const isFav = favoriteIds.includes(productId);
-              console.log('🔍 Checking favorite for product:', productId, 'favoriteIds:', favoriteIds, 'isFavorite:', isFav);
+              // console.log('🔍 Checking favorite for product:', productId, 'favoriteIds:', favoriteIds, 'isFavorite:', isFav);
               return isFav;
             }}
             onToggleFavorite={handleToggleFavorite}

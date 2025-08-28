@@ -19,7 +19,7 @@ import {
 import Dialog from "react-native-dialog";
 import { TabBar, TabView } from 'react-native-tab-view';
 import { useAuth } from "../context/AuthContext";
-import { cancelOrder, confirmOrderReceived, getOrderDetailsByOrderId, getOrdersByUser, increaseProductStock } from "../utils/api";
+import { api, cancelOrder, confirmOrderReceived, getOrderDetailsByOrderId, getOrdersByUser, increaseProductStock } from "../utils/api";
 const ORDER_TABS = [
   { key: "all", label: "Tất cả" },
   { key: "pending", label: "Chờ xử lý" },
@@ -63,10 +63,14 @@ export default function OrderHistoryScreen() {
   const [cancelReason, setCancelReason] = useState("");
   const [selectedOrderId, setSelectedOrderId] = useState(null);
   const [confirmingOrderId, setConfirmingOrderId] = useState(null);
+  const [reviewedOrders, setReviewedOrders] = useState(new Set()); // Lưu danh sách order đã đánh giá
   
   // Helper function để lấy product ID từ order detail
   const extractProductId = (orderDetail) => {
-    if (!orderDetail) return null;
+    if (!orderDetail) {
+      console.log("❌ OrderDetail is null or undefined");
+      return null;
+    }
     
     console.log("🔍 Extracting product ID from:", orderDetail);
     console.log("🔍 Available keys:", Object.keys(orderDetail));
@@ -74,27 +78,43 @@ export default function OrderHistoryScreen() {
     
     // Thử nhiều cách để lấy product ID
     if (orderDetail.product_id) {
-      console.log("🔍 Found product_id:", orderDetail.product_id);
-      return orderDetail.product_id;
+      console.log("✅ Found product_id:", orderDetail.product_id);
+      
+      // Kiểm tra nếu product_id là object thay vì string
+      if (typeof orderDetail.product_id === 'object' && orderDetail.product_id !== null) {
+        if (orderDetail.product_id._id) {
+          console.log("✅ product_id is object, using _id:", orderDetail.product_id._id);
+          return orderDetail.product_id._id;
+        }
+        if (orderDetail.product_id.id) {
+          console.log("✅ product_id is object, using id:", orderDetail.product_id.id);
+          return orderDetail.product_id.id;
+        }
+        // Nếu product_id là object nhưng không có _id hoặc id, log warning
+        console.log("⚠️ product_id is object but no _id or id found:", orderDetail.product_id);
+      } else {
+        // Nếu product_id là string, sử dụng trực tiếp
+        return orderDetail.product_id;
+      }
     }
     
     if (orderDetail.product && orderDetail.product._id) {
-      console.log("🔍 Found product._id:", orderDetail.product._id);
+      console.log("✅ Found product._id:", orderDetail.product._id);
       return orderDetail.product._id;
     }
     
     if (orderDetail.productId) {
-      console.log("🔍 Found productId:", orderDetail.productId);
+      console.log("✅ Found productId:", orderDetail.productId);
       return orderDetail.productId;
     }
     
     if (orderDetail._id) {
-      console.log("🔍 Found _id:", orderDetail._id);
+      console.log("✅ Found _id:", orderDetail._id);
       return orderDetail._id;
     }
     
     if (orderDetail.product_id_alt) {
-      console.log("🔍 Found product_id_alt:", orderDetail.product_id_alt);
+      console.log("✅ Found product_id_alt:", orderDetail.product_id_alt);
       return orderDetail.product_id_alt;
     }
     
@@ -102,17 +122,46 @@ export default function OrderHistoryScreen() {
     if (orderDetail.product && typeof orderDetail.product === 'object') {
       console.log("🔍 Product object exists:", orderDetail.product);
       if (orderDetail.product.id) {
-        console.log("🔍 Found product.id:", orderDetail.product.id);
+        console.log("✅ Found product.id:", orderDetail.product.id);
         return orderDetail.product.id;
       }
       if (orderDetail.product.product_id) {
-        console.log("🔍 Found product.product_id:", orderDetail.product.product_id);
+        console.log("✅ Found product.product_id:", orderDetail.product.product_id);
         return orderDetail.product.product_id;
+      }
+      if (orderDetail.product._id) {
+        console.log("✅ Found product._id:", orderDetail.product._id);
+        return orderDetail.product._id;
+      }
+    }
+    
+    // Kiểm tra các trường khác có thể chứa product ID
+    const possibleFields = ['id', 'productId', 'product_id', 'productId_alt'];
+    for (const field of possibleFields) {
+      if (orderDetail[field]) {
+        // Kiểm tra nếu field này là object
+        if (typeof orderDetail[field] === 'object' && orderDetail[field] !== null) {
+          if (orderDetail[field]._id) {
+            console.log(`✅ Found ${field}._id:`, orderDetail[field]._id);
+            return orderDetail[field]._id;
+          }
+          if (orderDetail[field].id) {
+            console.log(`✅ Found ${field}.id:`, orderDetail[field].id);
+            return orderDetail[field].id;
+          }
+        } else {
+          console.log(`✅ Found ${field}:`, orderDetail[field]);
+          return orderDetail[field];
+        }
       }
     }
     
     // Nếu không tìm thấy, log toàn bộ object
-    console.log("🔍 No product ID found. Full object:", JSON.stringify(orderDetail, null, 2));
+    console.log("❌ No product ID found. Full object:", JSON.stringify(orderDetail, null, 2));
+    
+    // Debug product ID extraction
+    // debugProductIdExtraction(orderDetail, null); // This function is not defined in the original file
+    
     return null;
   };
   
@@ -260,6 +309,9 @@ const handleConfirmReceived = async (orderId) => {
         return dateB - dateA;
       });
       setOrdersWithDetails(completedOrders);
+      
+      // Kiểm tra các order đã được đánh giá
+      await checkReviewedOrders(completedOrders);
     } catch (error) {
       console.error("Error fetching orders:", error);
     } finally {
@@ -267,9 +319,62 @@ const handleConfirmReceived = async (orderId) => {
     }
   };
 
+  // Kiểm tra các order đã được đánh giá
+  const checkReviewedOrders = async (orders) => {
+    try {
+      const reviewedSet = new Set();
+      
+      for (const order of orders) {
+        if (order.order_code) {
+          try {
+            console.log(`🔍 Checking order: ${order.order_code}`);
+            // Kiểm tra xem order này đã được đánh giá chưa
+            const reviewRes = await api.get(`/reviews/order/${order.order_code}`);
+            console.log(`🔍 Review response for ${order.order_code}:`, reviewRes.data);
+            console.log(`🔍 Review response length:`, reviewRes.data?.length);
+            console.log(`🔍 Review response type:`, typeof reviewRes.data);
+            
+            const existingReviews = reviewRes.data || [];
+            
+            if (existingReviews.length > 0) {
+              reviewedSet.add(order.order_code);
+              console.log(`✅ Order ${order.order_code} has ${existingReviews.length} reviews`);
+            } else {
+              console.log(`❌ Order ${order.order_code} has no reviews`);
+            }
+          } catch (error) {
+            console.error(`❌ Error checking reviews for order ${order.order_code}:`, error);
+            console.error(`❌ Error details:`, {
+              message: error.message,
+              response: error.response?.data,
+              status: error.response?.status
+            });
+            // Nếu có lỗi, coi như chưa đánh giá
+          }
+        }
+      }
+      
+      setReviewedOrders(reviewedSet);
+      console.log("📝 Orders đã đánh giá:", Array.from(reviewedSet));
+    } catch (error) {
+      console.error("Lỗi kiểm tra orders đã đánh giá:", error);
+    }
+  };
+
   useEffect(() => {
     fetchOrdersWithDetails();
   }, [userInfo]);
+
+  // Refresh khi focus vào màn hình (để cập nhật trạng thái đánh giá)
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      if (ordersWithDetails.length > 0) {
+        checkReviewedOrders(ordersWithDetails);
+      }
+    });
+
+    return unsubscribe;
+  }, [navigation, ordersWithDetails]);
 
   // Lọc đơn hàng theo tab và tìm kiếm
   const getFilteredOrders = (tabKey) => {
@@ -359,35 +464,72 @@ const handleConfirmReceived = async (orderId) => {
           
           {getTabKeyFromStatus(item.status) === "delivered" && (
             <>
-              <TouchableOpacity 
-                style={styles.reviewBtn}
-                onPress={() => navigation.navigate("WriteReview", {
-                  orderId: item._id,
-                  orderDetails: item.orderDetails,
-                  orderCode: item.order_code
-                })}
-              >
-                <Text style={styles.reviewBtnText}>Viết đánh giá</Text>
-              </TouchableOpacity>
+              {/* Chỉ hiển thị nút đánh giá nếu order chưa được đánh giá */}
+              {!reviewedOrders.has(item.order_code) && (
+                <TouchableOpacity 
+                  style={styles.reviewBtn}
+                  onPress={() => navigation.navigate("WriteReview", {
+                    orderDetails: item.orderDetails,
+                    orderCode: item.order_code
+                  })}
+                >
+                  <Text style={styles.reviewBtnText}>Viết đánh giá</Text>
+                </TouchableOpacity>
+              )}
+              
+              {/* Hiển thị thông báo nếu order đã được đánh giá */}
+              {reviewedOrders.has(item.order_code) && (
+                <View style={styles.reviewedBadge}>
+                  <Text style={styles.reviewedText}>✓ Đã đánh giá</Text>
+                </View>
+              )}
+              
               <TouchableOpacity
                 style={styles.rebuyBtn}
                 onPress={() => {
+                  console.log("🔄 Rebuy button pressed for delivered order:", item.order_code);
+                  console.log("🔄 Order details:", item.orderDetails);
+                  console.log("🔄 Order details length:", item.orderDetails?.length);
+                  
                   if (item.orderDetails && item.orderDetails.length > 0) {
                     const firstProduct = item.orderDetails[0];
                     console.log("🔍 Processing rebuy for order:", item.order_code);
+                    console.log("🔍 First product from orderDetails:", firstProduct);
                     
                     // Sử dụng helper function để lấy product ID
                     const productId = extractProductId(firstProduct);
                     
                     if (productId) {
-                      console.log("🔍 Successfully extracted product ID:", productId);
-                      navigation.navigate("ProductDetail", { productId });
+                      console.log("✅ Successfully extracted product ID:", productId);
+                      console.log("✅ Navigating to ProductDetail with product:", { _id: productId });
+                      navigation.navigate("ProductDetail", { product: { _id: productId } });
                     } else {
-                      console.log("🔍 Failed to extract product ID");
-                      Alert.alert("Lỗi", "Không thể tìm thấy thông tin sản phẩm để mua lại. Vui lòng thử lại sau.");
+                      console.log("❌ Failed to extract product ID from firstProduct");
+                      console.log("❌ First product data:", JSON.stringify(firstProduct, null, 2));
+                      
+                      // Thử tìm product ID từ các sản phẩm khác trong orderDetails
+                      let foundProductId = null;
+                      for (let i = 1; i < item.orderDetails.length; i++) {
+                        const product = item.orderDetails[i];
+                        console.log(`🔍 Trying product ${i}:`, product);
+                        foundProductId = extractProductId(product);
+                        if (foundProductId) {
+                          console.log(`✅ Found product ID from product ${i}:`, foundProductId);
+                          break;
+                        }
+                      }
+                      
+                      if (foundProductId) {
+                        console.log("✅ Using alternative product ID:", foundProductId);
+                        navigation.navigate("ProductDetail", { product: { _id: foundProductId } });
+                      } else {
+                        console.log("❌ No product ID found in any order detail");
+                        Alert.alert("Lỗi", "Không thể tìm thấy thông tin sản phẩm để mua lại. Vui lòng thử lại sau.");
+                      }
                     }
                   } else {
-                    console.log("🔍 No orderDetails found for item:", item);
+                    console.log("❌ No orderDetails found for item:", item);
+                    console.log("❌ Item structure:", JSON.stringify(item, null, 2));
                     Alert.alert("Lỗi", "Không có thông tin sản phẩm trong đơn hàng này.");
                   }
                 }}
@@ -399,15 +541,77 @@ const handleConfirmReceived = async (orderId) => {
           
           {getTabKeyFromStatus(item.status) === "completed" && (
             <>
-              <TouchableOpacity 
-                style={styles.reviewBtn}
-                onPress={() => navigation.navigate("WriteReview", {
-                  orderId: item._id,
-                  orderDetails: item.orderDetails,
-                  orderCode: item.order_code
-                })}
+              {/* Chỉ hiển thị nút đánh giá nếu order chưa được đánh giá */}
+              {!reviewedOrders.has(item.order_code) && (
+                <TouchableOpacity 
+                  style={styles.reviewBtn}
+                  onPress={() => navigation.navigate("WriteReview", {
+                    orderDetails: item.orderDetails,
+                    orderCode: item.order_code
+                  })}
+                >
+                  <Text style={styles.reviewBtnText}>Viết đánh giá</Text>
+                </TouchableOpacity>
+              )}
+              
+              {/* Hiển thị thông báo nếu order đã được đánh giá */}
+              {reviewedOrders.has(item.order_code) && (
+                <View style={styles.reviewedBadge}>
+                  <Text style={styles.reviewedText}>✓ Đã đánh giá</Text>
+                </View>
+              )}
+              
+              <TouchableOpacity
+                style={styles.rebuyBtn}
+                onPress={() => {
+                  console.log("🔄 Rebuy button pressed for completed order:", item.order_code);
+                  console.log("🔄 Order details:", item.orderDetails);
+                  console.log("🔄 Order details length:", item.orderDetails?.length);
+                  
+                  if (item.orderDetails && item.orderDetails.length > 0) {
+                    const firstProduct = item.orderDetails[0];
+                    console.log("🔍 Processing rebuy for completed order:", item.order_code);
+                    console.log("🔍 First product from orderDetails:", firstProduct);
+                    
+                    // Sử dụng helper function để lấy product ID
+                    const productId = extractProductId(firstProduct);
+                    
+                    if (productId) {
+                      console.log("✅ Successfully extracted product ID:", productId);
+                      console.log("✅ Navigating to ProductDetail with product:", { _id: productId });
+                      navigation.navigate("ProductDetail", { product: { _id: productId } });
+                    } else {
+                      console.log("❌ Failed to extract product ID from firstProduct");
+                      console.log("❌ First product data:", JSON.stringify(firstProduct, null, 2));
+                      
+                      // Thử tìm product ID từ các sản phẩm khác trong orderDetails
+                      let foundProductId = null;
+                      for (let i = 1; i < item.orderDetails.length; i++) {
+                        const product = item.orderDetails[i];
+                        console.log(`🔍 Trying product ${i}:`, product);
+                        foundProductId = extractProductId(product);
+                        if (foundProductId) {
+                          console.log(`✅ Found product ID from product ${i}:`, foundProductId);
+                          break;
+                        }
+                      }
+                      
+                      if (foundProductId) {
+                        console.log("✅ Using alternative product ID:", foundProductId);
+                        navigation.navigate("ProductDetail", { product: { _id: foundProductId } });
+                      } else {
+                        console.log("❌ No product ID found in any order detail");
+                        Alert.alert("Lỗi", "Không thể tìm thấy thông tin sản phẩm để mua lại. Vui lòng thử lại sau.");
+                      }
+                    }
+                  } else {
+                    console.log("❌ No orderDetails found for completed item:", item);
+                    console.log("❌ Item structure:", JSON.stringify(item, null, 2));
+                    Alert.alert("Lỗi", "Không có thông tin sản phẩm trong đơn hàng này.");
+                  }
+                }}
               >
-                <Text style={styles.reviewBtnText}>Viết đánh giá</Text>
+                <Text style={styles.rebuyBtnText}>Mua lại</Text>
               </TouchableOpacity>
             </>
           )}
@@ -763,5 +967,17 @@ const styles = StyleSheet.create({
   menuBtnText: {
     fontSize: 15,
     color: '#222',
+  },
+  reviewedBadge: {
+    backgroundColor: '#4CAF50',
+    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    marginRight: 8,
+  },
+  reviewedText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 12,
   },
 });

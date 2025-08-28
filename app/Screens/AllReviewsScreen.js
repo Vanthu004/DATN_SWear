@@ -127,7 +127,7 @@ export default function AllReviewsScreen({ route }) {
           <Image
             source={{
               uri:
-                review.user_id?.avatar_url ||
+                review.user_id?.avata_url || review.user_id?.avatar_url ||
                 'https://cdn-icons-png.flaticon.com/512/149/149071.png',
             }}
             style={styles.avatar}

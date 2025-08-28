@@ -500,8 +500,20 @@ export const getOrderDetailById = async (orderDetailId) => {
 export const getOrderDetailsByOrderId = async (orderId) => {
   try {
     const response = await api.get(`/order-details/order/${orderId}`);
+    console.log("🔍 API Response for order details:", {
+      orderId,
+      responseData: response.data,
+      responseDataKeys: Object.keys(response.data || {}),
+      hasData: !!response.data?.data,
+      dataKeys: response.data?.data ? Object.keys(response.data.data) : [],
+      details: response.data?.data?.details,
+      detailsLength: response.data?.data?.details?.length || 0
+    });
+    
     // Đảm bảo trả về đúng mảng details
-    return response.data?.data?.details || [];
+    const details = response.data?.data?.details || response.data?.details || response.data || [];
+    console.log("🔍 Final details to return:", details);
+    return Array.isArray(details) ? details : [details];
   } catch (error) {
     console.error("Get order details by orderId error:", error);
     return [];
@@ -983,6 +995,6 @@ export const confirmOrderReceived = async (orderId, userId) => {
 };
 
 export default api;
-export { api, WEBSOCKET_URL }; // Xuất hằng số WEBSOCKET_URL
+export { WEBSOCKET_URL, api }; // Xuất hằng số WEBSOCKET_URL
 
 

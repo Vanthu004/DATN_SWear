@@ -2,11 +2,11 @@ import { useNavigation } from '@react-navigation/native';
 import * as Notifications from 'expo-notifications';
 import { useEffect, useRef, useState } from 'react';
 import {
-  NOTIFICATION_TYPES,
-  checkNotificationPermission,
-  cleanupNotifications,
-  initializeNotifications,
-  sendOrderNotification,
+    NOTIFICATION_TYPES,
+    checkNotificationPermission,
+    cleanupNotifications,
+    initializeNotifications,
+    sendOrderNotification,
 } from '../services/notificationService';
 
 export const useNotifications = (userId) => {
@@ -19,8 +19,8 @@ export const useNotifications = (userId) => {
   useEffect(() => {
     //console.log('useNotifications: Initializing with userId:', userId);
     
-    // Khởi tạo notifications khi component mount
-    if (userId) {
+    // Khởi tạo notifications khi component mount - chỉ khi có userId hợp lệ
+    if (userId && typeof userId === 'string' && userId.trim() !== '') {
      // console.log('useNotifications: Initializing notifications...');
       initializeNotifications(userId).then((token) => {
         if (token) {
@@ -33,7 +33,7 @@ export const useNotifications = (userId) => {
        // console.error('useNotifications: Error initializing:', error);
       });
     } else {
-    //  console.log('useNotifications: No userId provided');
+      console.log('useNotifications: No valid userId provided, skipping initialization');
     }
 
     // Lắng nghe thông báo đến

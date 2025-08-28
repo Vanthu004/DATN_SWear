@@ -156,6 +156,12 @@ export const AuthProvider = ({ children }) => {
     try {
       // console.log("AuthContext: Login called with user:", user);
       
+      // Kiểm tra user object trước khi lưu
+      if (!user || !user._id) {
+        console.error("AuthContext: Invalid user object provided for login");
+        throw new Error("Invalid user data");
+      }
+      
       await AsyncStorage.setItem("userToken", token);
       await AsyncStorage.setItem("userInfo", JSON.stringify(user));
       await AsyncStorage.setItem("isEmailVerified", verified.toString());
@@ -164,8 +170,8 @@ export const AuthProvider = ({ children }) => {
       setUserInfo(user);
       setIsEmailVerified(verified);
 
-      // Khởi tạo notifications sau khi login
-      if (user._id) {
+      // Khởi tạo notifications sau khi login - chỉ khi có userId hợp lệ
+      if (user._id && typeof user._id === 'string' && user._id.trim() !== '') {
         // console.log("AuthContext: Initializing notifications for user:", user._id);
         try {
           await initializeNotifications(user._id);
@@ -174,10 +180,11 @@ export const AuthProvider = ({ children }) => {
           // console.error("AuthContext: Error initializing notifications:", error);
         }
       } else {
-        // console.log("AuthContext: No user._id found, skipping notification initialization");
+        console.warn("AuthContext: Invalid user._id found, skipping notification initialization");
       }
     } catch (error) {
-      // console.log("Error storing auth data:", error);
+      console.error("AuthContext: Error storing auth data:", error);
+      throw error;
     }
   };
 

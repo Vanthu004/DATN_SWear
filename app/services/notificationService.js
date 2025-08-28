@@ -313,12 +313,23 @@ export async function sendOrderNotification(type, orderData, isRemote = false, t
 export async function initializeNotifications(userId) {
   console.log('initializeNotifications: Called with userId:', userId);
 
+  // Kiểm tra userId trước khi tiếp tục
+  if (!userId || typeof userId !== 'string' || userId.trim() === '') {
+    console.warn('initializeNotifications: Invalid userId provided:', userId);
+    return null;
+  }
+
   try {
     const tokenObj = await registerForPushNotificationsAsync();
     if (tokenObj && tokenObj.token) {
       const { token, tokenType } = tokenObj;
-      if (userId) {
-        await saveTokenToServer(userId, token, tokenType); // pass tokenType now
+      // Chỉ gọi saveTokenToServer khi có userId hợp lệ
+      try {
+        await saveTokenToServer(userId.trim(), token, tokenType); // pass tokenType now
+        console.log('initializeNotifications: Token saved to server successfully');
+      } catch (error) {
+        console.error('initializeNotifications: Error saving token to server:', error);
+        // Không throw error để không làm crash app
       }
     }
 
@@ -350,7 +361,18 @@ export async function initializeNotifications(userId) {
 export async function cleanupNotifications(userId) {
   try {
     const raw = await AsyncStorage.getItem('pushToken');
-    const parsed = raw ? JSON.parse(raw) : null;
+    let parsed = null;
+    
+    // Sửa lỗi JSON Parse: thêm try-catch riêng cho JSON.parse
+    if (raw) {
+      try {
+        parsed = JSON.parse(raw);
+      } catch (parseError) {
+        console.warn('Error parsing pushToken from storage, removing invalid data:', parseError);
+        await AsyncStorage.removeItem('pushToken');
+        return;
+      }
+    }
     
     if (parsed && parsed.token && userId) {
       await removeTokenFromServer(userId, parsed.token);

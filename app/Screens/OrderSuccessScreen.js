@@ -21,13 +21,13 @@ const OrderSuccessScreen = () => {
     //console.log("id đơn hàng.......",orderId);
     //console.log("userInfo:", userInfo);
     
-    // Gửi thông báo đặt hàng thành công
-    if (orderId) {
+    // Gửi thông báo đặt hàng thành công - chỉ khi có đủ thông tin
+    if (orderId && userInfo?._id) {
       //console.log("Sending order success notification...");
       try {
         sendOrderSuccessNotification({
           orderId: orderId,
-          userId: userInfo?._id,
+          userId: userInfo._id,
           timestamp: new Date().toISOString(),
         });
         console.log("Order success notification sent successfully");
@@ -35,7 +35,12 @@ const OrderSuccessScreen = () => {
         console.error("Error sending order success notification:", error);
       }
     } else {
-      console.log("No orderId provided, skipping notification");
+      if (!orderId) {
+        console.log("No orderId provided, skipping notification");
+      }
+      if (!userInfo?._id) {
+        console.log("No userId available, skipping notification");
+      }
     }
 
     Toast.show({

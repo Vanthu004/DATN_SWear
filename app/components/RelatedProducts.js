@@ -17,18 +17,18 @@ const RelatedProducts = ({
   onToggleFavorite,
   showFavoriteIcon = true
 }) => {
-  console.log('🔍 RelatedProducts props:', { 
-    productsCount: products?.length, 
-    loading, 
-    hasIsFavorite: !!isFavorite, 
-    hasOnToggleFavorite: !!onToggleFavorite, 
-    showFavoriteIcon 
-  });
+  // console.log('🔍 RelatedProducts props:', { 
+  //   productsCount: products?.length, 
+  //   loading, 
+  //   hasIsFavorite: !!isFavorite, 
+  //   hasOnToggleFavorite: !!onToggleFavorite, 
+  //   showFavoriteIcon 
+  // });
   if (!products?.length && !loading) return null;
 
   const renderProductItem = ({ item, index }) => {
     const isFav = isFavorite ? isFavorite(item._id) : false;
-    console.log('🔍 Rendering product:', item._id, 'isFavorite:', isFav, 'item:', item);
+    // console.log('🔍 Rendering product:', item._id, 'isFavorite:', isFav, 'item:', item);
     return (
       <View style={styles.productItem}>
         <ProductCard 
