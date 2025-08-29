@@ -2,24 +2,24 @@ import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import React, { useEffect, useRef, useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    Dimensions,
-    FlatList,
-    Image,
-    Modal,
-    Pressable,
-    SafeAreaView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View
+  ActivityIndicator,
+  Alert,
+  Dimensions,
+  FlatList,
+  Image,
+  Modal,
+  Pressable,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
 } from "react-native";
 import Dialog from "react-native-dialog";
 import { TabBar, TabView } from 'react-native-tab-view';
 import { useAuth } from "../context/AuthContext";
-import { cancelOrder, getOrderDetailsByOrderId, getOrdersByUser, increaseProductStock } from "../utils/api";
+import { api, cancelOrder, confirmOrderReceived, getOrderDetailsByOrderId, getOrdersByUser, increaseProductStock } from "../utils/api";
 const ORDER_TABS = [
   { key: "all", label: "Tất cả" },
   { key: "pending", label: "Chờ xử lý" },
@@ -59,9 +59,112 @@ export default function OrderHistoryScreen() {
   const [routes] = useState(ORDER_TABS.map(tab => ({ key: tab.key, title: tab.label })));
   const [modalVisible, setModalVisible] = useState(false);
 
-const [showCancelDialog, setShowCancelDialog] = useState(false);
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
   const [selectedOrderId, setSelectedOrderId] = useState(null);
+  const [confirmingOrderId, setConfirmingOrderId] = useState(null);
+  const [reviewedOrders, setReviewedOrders] = useState(new Set()); // Lưu danh sách order đã đánh giá
+  
+  // Helper function để lấy product ID từ order detail
+  const extractProductId = (orderDetail) => {
+    if (!orderDetail) {
+      console.log("❌ OrderDetail is null or undefined");
+      return null;
+    }
+    
+    console.log("🔍 Extracting product ID from:", orderDetail);
+    console.log("🔍 Available keys:", Object.keys(orderDetail));
+    console.log("🔍 Full orderDetail object:", JSON.stringify(orderDetail, null, 2));
+    
+    // Thử nhiều cách để lấy product ID
+    if (orderDetail.product_id) {
+      console.log("✅ Found product_id:", orderDetail.product_id);
+      
+      // Kiểm tra nếu product_id là object thay vì string
+      if (typeof orderDetail.product_id === 'object' && orderDetail.product_id !== null) {
+        if (orderDetail.product_id._id) {
+          console.log("✅ product_id is object, using _id:", orderDetail.product_id._id);
+          return orderDetail.product_id._id;
+        }
+        if (orderDetail.product_id.id) {
+          console.log("✅ product_id is object, using id:", orderDetail.product_id.id);
+          return orderDetail.product_id.id;
+        }
+        // Nếu product_id là object nhưng không có _id hoặc id, log warning
+        console.log("⚠️ product_id is object but no _id or id found:", orderDetail.product_id);
+      } else {
+        // Nếu product_id là string, sử dụng trực tiếp
+        return orderDetail.product_id;
+      }
+    }
+    
+    if (orderDetail.product && orderDetail.product._id) {
+      console.log("✅ Found product._id:", orderDetail.product._id);
+      return orderDetail.product._id;
+    }
+    
+    if (orderDetail.productId) {
+      console.log("✅ Found productId:", orderDetail.productId);
+      return orderDetail.productId;
+    }
+    
+    if (orderDetail._id) {
+      console.log("✅ Found _id:", orderDetail._id);
+      return orderDetail._id;
+    }
+    
+    if (orderDetail.product_id_alt) {
+      console.log("✅ Found product_id_alt:", orderDetail.product_id_alt);
+      return orderDetail.product_id_alt;
+    }
+    
+    // Kiểm tra các trường nested khác
+    if (orderDetail.product && typeof orderDetail.product === 'object') {
+      console.log("🔍 Product object exists:", orderDetail.product);
+      if (orderDetail.product.id) {
+        console.log("✅ Found product.id:", orderDetail.product.id);
+        return orderDetail.product.id;
+      }
+      if (orderDetail.product.product_id) {
+        console.log("✅ Found product.product_id:", orderDetail.product.product_id);
+        return orderDetail.product.product_id;
+      }
+      if (orderDetail.product._id) {
+        console.log("✅ Found product._id:", orderDetail.product._id);
+        return orderDetail.product._id;
+      }
+    }
+    
+    // Kiểm tra các trường khác có thể chứa product ID
+    const possibleFields = ['id', 'productId', 'product_id', 'productId_alt'];
+    for (const field of possibleFields) {
+      if (orderDetail[field]) {
+        // Kiểm tra nếu field này là object
+        if (typeof orderDetail[field] === 'object' && orderDetail[field] !== null) {
+          if (orderDetail[field]._id) {
+            console.log(`✅ Found ${field}._id:`, orderDetail[field]._id);
+            return orderDetail[field]._id;
+          }
+          if (orderDetail[field].id) {
+            console.log(`✅ Found ${field}.id:`, orderDetail[field].id);
+            return orderDetail[field].id;
+          }
+        } else {
+          console.log(`✅ Found ${field}:`, orderDetail[field]);
+          return orderDetail[field];
+        }
+      }
+    }
+    
+    // Nếu không tìm thấy, log toàn bộ object
+    console.log("❌ No product ID found. Full object:", JSON.stringify(orderDetail, null, 2));
+    
+    // Debug product ID extraction
+    // debugProductIdExtraction(orderDetail, null); // This function is not defined in the original file
+    
+    return null;
+  };
+  
   // Handler cho các lựa chọn trong modal
   const handleMenuSelect = (key) => {
     setModalVisible(false);
@@ -73,7 +176,7 @@ const [showCancelDialog, setShowCancelDialog] = useState(false);
       navigation.navigate('PaymentScreen');
     } else {
       // fallback
-      console.log('Selected:', key);
+      //onsole.log('Selected:', key);
     }
   };
 
@@ -95,7 +198,7 @@ const [showCancelDialog, setShowCancelDialog] = useState(false);
 
       // Hoàn kho sản phẩm
       await increaseProductStock(stockItems);
-      console.log("✅ Stock increased successfully after order cancellation");
+     // console.log("✅ Stock increased successfully after order cancellation");
     }
       Alert.alert("Thành công", "Đơn hàng đã được hủy.");
       setShowCancelDialog(false);
@@ -106,7 +209,76 @@ const [showCancelDialog, setShowCancelDialog] = useState(false);
       Alert.alert("Lỗi", "Không thể hủy đơn hàng.");
     }
   };
-  
+// Xác nhận đã nhận hàng
+const handleConfirmReceived = async (orderId) => {
+  if (!userInfo?._id) {
+    Alert.alert("Lỗi", "Vui lòng đăng nhập để thực hiện thao tác này.");
+    return;
+  }
+
+  try {
+    console.log("🔄 Bắt đầu xác nhận nhận hàng cho orderId:", orderId);
+    console.log("🔄 User ID:", userInfo._id);
+    
+    // Tìm đơn hàng để kiểm tra thông tin
+    const order = ordersWithDetails.find(o => o._id === orderId);
+    if (order) {
+      console.log("🔍 Order data:", {
+        _id: order._id,
+        order_code: order.order_code,
+        status: order.status,
+        user_id: order.user_id,
+        total_price: order.total_price
+      });
+      console.log("🔍 Order status:", order.status);
+      console.log("🔍 Order user ID:", order.user_id);
+      console.log(" Current user ID:", userInfo._id);
+      console.log("🔍 Status match shipping:", getTabKeyFromStatus(order.status) === "shipping");
+    } else {
+      console.log("❌ Không tìm thấy đơn hàng trong danh sách");
+    }
+    
+    setConfirmingOrderId(orderId);
+    
+    console.log(" Gọi API confirm-received endpoint...");
+    
+    // SỬA: Truyền userId vào function confirmOrderReceived
+    const result = await confirmOrderReceived(orderId, userInfo._id);
+    console.log("✅ Xác nhận nhận hàng thành công:", result);
+    
+    Alert.alert("Thành công", "Đã xác nhận nhận hàng thành công!");
+    fetchOrdersWithDetails(); // Refresh đơn hàng
+    
+  } catch (error) {
+    console.error("❌ Lỗi xác nhận nhận hàng:", error);
+    console.error("❌ Error response:", error.response);
+    console.error("❌ Error message:", error.message);
+    
+    let errorMessage = "Không thể xác nhận nhận hàng. Vui lòng thử lại.";
+    
+    if (error.response?.status === 400) {
+      const serverMsg = error.response?.data?.msg || error.response?.data?.message;
+      errorMessage = serverMsg || "Dữ liệu không hợp lệ. Vui lòng thử lại.";
+      console.log("🔍 Lỗi 400 - Bad Request. Kiểm tra dữ liệu gửi đi:");
+      console.log(" OrderId:", orderId);
+      console.log(" UserId:", userInfo._id);
+    } else if (error.response?.status === 401) {
+      errorMessage = "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.";
+    } else if (error.response?.status === 403) {
+      errorMessage = "Bạn không có quyền thực hiện thao tác này.";
+    } else if (error.response?.status === 404) {
+      errorMessage = "API endpoint không tồn tại. Vui lòng liên hệ admin.";
+    } else if (error.response?.status === 500) {
+      errorMessage = "Lỗi server. Vui lòng thử lại sau.";
+    } else if (error.response?.data?.message) {
+      errorMessage = error.response.data.message;
+    }
+    
+    Alert.alert("Lỗi", errorMessage);
+  } finally {
+    setConfirmingOrderId(null);
+  }
+};
   // Fetch orders and their details
   const fetchOrdersWithDetails = async () => {
     if (!userInfo?._id) return;
@@ -117,7 +289,14 @@ const [showCancelDialog, setShowCancelDialog] = useState(false);
         let details = await getOrderDetailsByOrderId(order._id);
         if (!Array.isArray(details)) details = [];
         // Log để kiểm tra dữ liệu
-        console.log("Order:", order.order_code, "Details:", details);
+        console.log("🔍 Debug - Order:", order.order_code, "Details structure:", details);
+        if (details.length > 0) {
+          console.log("🔍 Debug - First detail item:", details[0]);
+          console.log("🔍 Debug - First detail keys:", Object.keys(details[0]));
+          console.log("🔍 Debug - First detail full object:", JSON.stringify(details[0], null, 2));
+        } else {
+          console.log("🔍 Debug - No details found for order:", order.order_code);
+        }
         return {
           ...order,
           orderDetails: details
@@ -130,6 +309,9 @@ const [showCancelDialog, setShowCancelDialog] = useState(false);
         return dateB - dateA;
       });
       setOrdersWithDetails(completedOrders);
+      
+      // Kiểm tra các order đã được đánh giá
+      await checkReviewedOrders(completedOrders);
     } catch (error) {
       console.error("Error fetching orders:", error);
     } finally {
@@ -137,9 +319,62 @@ const [showCancelDialog, setShowCancelDialog] = useState(false);
     }
   };
 
+  // Kiểm tra các order đã được đánh giá
+  const checkReviewedOrders = async (orders) => {
+    try {
+      const reviewedSet = new Set();
+      
+      for (const order of orders) {
+        if (order.order_code) {
+          try {
+            console.log(`🔍 Checking order: ${order.order_code}`);
+            // Kiểm tra xem order này đã được đánh giá chưa
+            const reviewRes = await api.get(`/reviews/order/${order.order_code}`);
+            console.log(`🔍 Review response for ${order.order_code}:`, reviewRes.data);
+            console.log(`🔍 Review response length:`, reviewRes.data?.length);
+            console.log(`🔍 Review response type:`, typeof reviewRes.data);
+            
+            const existingReviews = reviewRes.data || [];
+            
+            if (existingReviews.length > 0) {
+              reviewedSet.add(order.order_code);
+              console.log(`✅ Order ${order.order_code} has ${existingReviews.length} reviews`);
+            } else {
+              console.log(`❌ Order ${order.order_code} has no reviews`);
+            }
+          } catch (error) {
+            console.error(`❌ Error checking reviews for order ${order.order_code}:`, error);
+            console.error(`❌ Error details:`, {
+              message: error.message,
+              response: error.response?.data,
+              status: error.response?.status
+            });
+            // Nếu có lỗi, coi như chưa đánh giá
+          }
+        }
+      }
+      
+      setReviewedOrders(reviewedSet);
+      console.log("📝 Orders đã đánh giá:", Array.from(reviewedSet));
+    } catch (error) {
+      console.error("Lỗi kiểm tra orders đã đánh giá:", error);
+    }
+  };
+
   useEffect(() => {
     fetchOrdersWithDetails();
   }, [userInfo]);
+
+  // Refresh khi focus vào màn hình (để cập nhật trạng thái đánh giá)
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      if (ordersWithDetails.length > 0) {
+        checkReviewedOrders(ordersWithDetails);
+      }
+    });
+
+    return unsubscribe;
+  }, [navigation, ordersWithDetails]);
 
   // Lọc đơn hàng theo tab và tìm kiếm
   const getFilteredOrders = (tabKey) => {
@@ -204,8 +439,7 @@ const [showCancelDialog, setShowCancelDialog] = useState(false);
         </View>
         <View style={styles.orderActions}>
           {getTabKeyFromStatus(item.status) === "pending" && (
-
-           <TouchableOpacity
+            <TouchableOpacity
               style={styles.cancelBtn}
               onPress={() => {
                 setSelectedOrderId(item._id);
@@ -215,32 +449,170 @@ const [showCancelDialog, setShowCancelDialog] = useState(false);
               <Text style={styles.cancelBtnText}>Hủy đơn hàng</Text>
             </TouchableOpacity>
           )}
-          {(getTabKeyFromStatus(item.status) === "delivered" || getTabKeyFromStatus(item.status) === "completed") && (
+          
+          {getTabKeyFromStatus(item.status) === "shipping" && (
+            <TouchableOpacity
+              style={styles.confirmReceivedBtn}
+              onPress={() => handleConfirmReceived(item._id)}
+              disabled={confirmingOrderId === item._id}
+            >
+              <Text style={styles.confirmReceivedBtnText}>
+                {confirmingOrderId === item._id ? "Đang xử lý..." : "Đã nhận hàng"}
+              </Text>
+            </TouchableOpacity>
+          )}
+          
+          {getTabKeyFromStatus(item.status) === "delivered" && (
             <>
-             <TouchableOpacity 
-              style={styles.refundBtn}
-              onPress={() => {
-                navigation.navigate("RefundRequest", {
-                  orderId: item._id,
-                  orderCode: item.order_code,
-                  orderDetails: item.orderDetails,
-                });
-              }}
-            >
-              <Text style={styles.refundBtnText}>Yêu cầu hoàn tiền</Text>
-            </TouchableOpacity>
-
-                          <TouchableOpacity 
-              style={styles.reviewBtn}
-              onPress={() => navigation.navigate("WriteReview", {
-                orderId: item._id,
-                orderDetails: item.orderDetails,
-                orderCode: item.order_code
-              })}
-            >
-              <Text style={styles.reviewBtnText}>Viết đánh giá</Text>
-            </TouchableOpacity>
-
+              {/* Chỉ hiển thị nút đánh giá nếu order chưa được đánh giá */}
+              {!reviewedOrders.has(item.order_code) && (
+                <TouchableOpacity 
+                  style={styles.reviewBtn}
+                  onPress={() => navigation.navigate("WriteReview", {
+                    orderDetails: item.orderDetails,
+                    orderCode: item.order_code
+                  })}
+                >
+                  <Text style={styles.reviewBtnText}>Viết đánh giá</Text>
+                </TouchableOpacity>
+              )}
+              
+              {/* Hiển thị thông báo nếu order đã được đánh giá */}
+              {reviewedOrders.has(item.order_code) && (
+                <View style={styles.reviewedBadge}>
+                  <Text style={styles.reviewedText}>✓ Đã đánh giá</Text>
+                </View>
+              )}
+              
+              <TouchableOpacity
+                style={styles.rebuyBtn}
+                onPress={() => {
+                  console.log("🔄 Rebuy button pressed for delivered order:", item.order_code);
+                  console.log("🔄 Order details:", item.orderDetails);
+                  console.log("🔄 Order details length:", item.orderDetails?.length);
+                  
+                  if (item.orderDetails && item.orderDetails.length > 0) {
+                    const firstProduct = item.orderDetails[0];
+                    console.log("🔍 Processing rebuy for order:", item.order_code);
+                    console.log("🔍 First product from orderDetails:", firstProduct);
+                    
+                    // Sử dụng helper function để lấy product ID
+                    const productId = extractProductId(firstProduct);
+                    
+                    if (productId) {
+                      console.log("✅ Successfully extracted product ID:", productId);
+                      console.log("✅ Navigating to ProductDetail with product:", { _id: productId });
+                      navigation.navigate("ProductDetail", { product: { _id: productId } });
+                    } else {
+                      console.log("❌ Failed to extract product ID from firstProduct");
+                      console.log("❌ First product data:", JSON.stringify(firstProduct, null, 2));
+                      
+                      // Thử tìm product ID từ các sản phẩm khác trong orderDetails
+                      let foundProductId = null;
+                      for (let i = 1; i < item.orderDetails.length; i++) {
+                        const product = item.orderDetails[i];
+                        console.log(`🔍 Trying product ${i}:`, product);
+                        foundProductId = extractProductId(product);
+                        if (foundProductId) {
+                          console.log(`✅ Found product ID from product ${i}:`, foundProductId);
+                          break;
+                        }
+                      }
+                      
+                      if (foundProductId) {
+                        console.log("✅ Using alternative product ID:", foundProductId);
+                        navigation.navigate("ProductDetail", { product: { _id: foundProductId } });
+                      } else {
+                        console.log("❌ No product ID found in any order detail");
+                        Alert.alert("Lỗi", "Không thể tìm thấy thông tin sản phẩm để mua lại. Vui lòng thử lại sau.");
+                      }
+                    }
+                  } else {
+                    console.log("❌ No orderDetails found for item:", item);
+                    console.log("❌ Item structure:", JSON.stringify(item, null, 2));
+                    Alert.alert("Lỗi", "Không có thông tin sản phẩm trong đơn hàng này.");
+                  }
+                }}
+              >
+                <Text style={styles.rebuyBtnText}>Mua lại</Text>
+              </TouchableOpacity>
+            </>
+          )}
+          
+          {getTabKeyFromStatus(item.status) === "completed" && (
+            <>
+              {/* Chỉ hiển thị nút đánh giá nếu order chưa được đánh giá */}
+              {!reviewedOrders.has(item.order_code) && (
+                <TouchableOpacity 
+                  style={styles.reviewBtn}
+                  onPress={() => navigation.navigate("WriteReview", {
+                    orderDetails: item.orderDetails,
+                    orderCode: item.order_code
+                  })}
+                >
+                  <Text style={styles.reviewBtnText}>Viết đánh giá</Text>
+                </TouchableOpacity>
+              )}
+              
+              {/* Hiển thị thông báo nếu order đã được đánh giá */}
+              {reviewedOrders.has(item.order_code) && (
+                <View style={styles.reviewedBadge}>
+                  <Text style={styles.reviewedText}>✓ Đã đánh giá</Text>
+                </View>
+              )}
+              
+              <TouchableOpacity
+                style={styles.rebuyBtn}
+                onPress={() => {
+                  console.log("🔄 Rebuy button pressed for completed order:", item.order_code);
+                  console.log("🔄 Order details:", item.orderDetails);
+                  console.log("🔄 Order details length:", item.orderDetails?.length);
+                  
+                  if (item.orderDetails && item.orderDetails.length > 0) {
+                    const firstProduct = item.orderDetails[0];
+                    console.log("🔍 Processing rebuy for completed order:", item.order_code);
+                    console.log("🔍 First product from orderDetails:", firstProduct);
+                    
+                    // Sử dụng helper function để lấy product ID
+                    const productId = extractProductId(firstProduct);
+                    
+                    if (productId) {
+                      console.log("✅ Successfully extracted product ID:", productId);
+                      console.log("✅ Navigating to ProductDetail with product:", { _id: productId });
+                      navigation.navigate("ProductDetail", { product: { _id: productId } });
+                    } else {
+                      console.log("❌ Failed to extract product ID from firstProduct");
+                      console.log("❌ First product data:", JSON.stringify(firstProduct, null, 2));
+                      
+                      // Thử tìm product ID từ các sản phẩm khác trong orderDetails
+                      let foundProductId = null;
+                      for (let i = 1; i < item.orderDetails.length; i++) {
+                        const product = item.orderDetails[i];
+                        console.log(`🔍 Trying product ${i}:`, product);
+                        foundProductId = extractProductId(product);
+                        if (foundProductId) {
+                          console.log(`✅ Found product ID from product ${i}:`, foundProductId);
+                          break;
+                        }
+                      }
+                      
+                      if (foundProductId) {
+                        console.log("✅ Using alternative product ID:", foundProductId);
+                        navigation.navigate("ProductDetail", { product: { _id: foundProductId } });
+                      } else {
+                        console.log("❌ No product ID found in any order detail");
+                        Alert.alert("Lỗi", "Không thể tìm thấy thông tin sản phẩm để mua lại. Vui lòng thử lại sau.");
+                      }
+                    }
+                  } else {
+                    console.log("❌ No orderDetails found for completed item:", item);
+                    console.log("❌ Item structure:", JSON.stringify(item, null, 2));
+                    Alert.alert("Lỗi", "Không có thông tin sản phẩm trong đơn hàng này.");
+                  }
+                }}
+              >
+                <Text style={styles.rebuyBtnText}>Mua lại</Text>
+              </TouchableOpacity>
             </>
           )}
         </View>
@@ -525,6 +897,27 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontWeight: "bold",
   },
+  confirmReceivedBtn: {
+    backgroundColor: "#4CAF50",
+    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+  },
+  confirmReceivedBtnText: {
+    color: "#fff",
+    fontWeight: "bold",
+  },
+  rebuyBtn: {
+    backgroundColor: "#FF9800",
+    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    marginLeft: 8,
+  },
+  rebuyBtnText: {
+    color: "#fff",
+    fontWeight: "bold",
+  },
   emptyContainer: {
     flex: 1,
     alignItems: "center",
@@ -574,5 +967,17 @@ const styles = StyleSheet.create({
   menuBtnText: {
     fontSize: 15,
     color: '#222',
+  },
+  reviewedBadge: {
+    backgroundColor: '#4CAF50',
+    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    marginRight: 8,
+  },
+  reviewedText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 12,
   },
 });

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "275582868309",
+    "project_id": "noti-datn",
+    "storage_bucket": "noti-datn.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:275582868309:android:6b48ba942d969242c6eddc",
+        "android_client_info": {
+          "package_name": "com.vanthu.datnswear"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD6WnqjPawtjGzfmxrFSJonS4IqAZyPTjQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

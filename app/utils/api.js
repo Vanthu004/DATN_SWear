@@ -1,10 +1,11 @@
-
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 // Base URL for the API
+
 const API_BASE_URL = "http://192.168.1.9:3000/api";
 
 const WEBSOCKET_URL = "http://192.168.1.9:3000";
+
 
 
 
@@ -14,11 +15,6 @@ const api = axios.create({
     "Content-Type": "application/json",
   },
 });
-
-// Xuất cả named và default để tương thích mọi nơi (import { api } hoặc import api)
-
-
-// Interceptors
 api.interceptors.request.use(
   async (config) => {
     try {
@@ -30,28 +26,13 @@ api.interceptors.request.use(
       console.log("Error getting token for request:", error);
     }
 
-    // Nếu gửi FormData, loại bỏ Content-Type mặc định để RN tự thêm boundary
-    try {
-      const isRNFormData = config?.data && typeof config.data === 'object' && typeof config.data._parts !== 'undefined';
-      const isFormData = (typeof FormData !== 'undefined' && config.data instanceof FormData) || isRNFormData;
-      if (isFormData) {
-        if (config.headers && (config.headers['Content-Type'] || config.headers['content-type'])) {
-          delete config.headers['Content-Type'];
-          delete config.headers['content-type'];
-        }
-      }
-    } catch (e) {
-      // noop
-    }
-
-    // console.log("API Request:", {
-    //   method: config.method?.toUpperCase(),
-    //   url: config.url,
-    //   data: config.data,
-    //   params: config.params,
-    //   headers: config.headers,
-    // });
-
+    console.log("API Request:", {
+      method: config.method?.toUpperCase(),
+      url: config.url,
+      data: config.data,
+      params: config.params,
+      headers: config.headers,
+    });
     return config;
   },
   (error) => {
@@ -60,7 +41,6 @@ api.interceptors.request.use(
   }
 );
 
-// Response interceptor for logging and handling errors
 api.interceptors.response.use(
   (response) => {
     // console.log("API Response:", {
@@ -91,7 +71,6 @@ api.interceptors.response.use(
         console.error("Error handling 401:", err);
       }
     }
-
     console.log("API Response Error:", {
       status,
       url: error.config?.url,
@@ -103,7 +82,6 @@ api.interceptors.response.use(
   }
 );
 
-
 // Upload functions
 export const uploadImage = async (
   imageFile,
@@ -111,8 +89,6 @@ export const uploadImage = async (
   relatedId = null
 ) => {
   try {
-    console.log("📤 uploadImage called with:", { imageFile, relatedModel, relatedId });
-    
     const formData = new FormData();
     formData.append("image", imageFile);
 
@@ -124,20 +100,15 @@ export const uploadImage = async (
       formData.append("relatedId", relatedId);
     }
 
-    console.log("📤 FormData created:", formData);
-    console.log("📤 Uploading to /upload");
+    const response = await api.post("/upload", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
 
-    const response = await api.post("/upload", formData);
-
-    console.log("📤 Upload response:", response.data);
     return response.data;
   } catch (error) {
-    console.error("❌ Upload image error:", error);
-    console.error("❌ Error details:", {
-      message: error.message,
-      response: error.response?.data,
-      status: error.response?.status
-    });
+    console.error("Upload image error:", error);
     throw error;
   }
 };
@@ -152,7 +123,11 @@ export const uploadAvatar = async (imageUri) => {
       name: "avatar.jpg",
     });
 
-    const response = await api.post("/upload", formData);
+    const response = await api.post("/upload", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
 
     return response.data;
   } catch (error) {
@@ -200,7 +175,7 @@ export const updateProfileWithAvatar = async (profileData, imageUri = null) => {
 
 export const getUploads = async () => {
   try {
-    const response = await api.get("/uploads");
+    const response = await api.get("/upload");
     return response.data;
   } catch (error) {
     console.error("Get uploads error:", error);
@@ -210,7 +185,7 @@ export const getUploads = async () => {
 
 export const deleteUpload = async (uploadId) => {
   try {
-    const response = await api.delete(`/uploads/${uploadId}`);
+    const response = await api.delete(`/upload${uploadId}`);
     return response.data;
   } catch (error) {
     console.error("Delete upload error:", error);
@@ -372,18 +347,14 @@ export const addCartItem = async (cartItemData) => {
     const response = await api.post("/cart-items", cartItemData);
     return response.data;
   } catch (error) {
-    // Chỉ log nhẹ trong dev nếu không phải lỗi đã biết (ví dụ hết hàng 400)
-    const status = error?.response?.status;
-    if (status !== 400) {
-      console.error("Add cart item error:", error);
-    }
+    console.error("Add cart item error:", error);
     throw error;
   }
 };
 
 export const getCartItemsByCart = async (cartId) => {
   try {
-    const response = await api.get(`/cart-items/cart/${cartId}?populate=product_id,product_variant_id`);
+    const response = await api.get(`/cart-items/cart/${cartId}?populate=product_id`);
     return response.data;
   } catch (error) {
     console.error("Get cart items by cart error:", error);
@@ -529,8 +500,20 @@ export const getOrderDetailById = async (orderDetailId) => {
 export const getOrderDetailsByOrderId = async (orderId) => {
   try {
     const response = await api.get(`/order-details/order/${orderId}`);
+    console.log("🔍 API Response for order details:", {
+      orderId,
+      responseData: response.data,
+      responseDataKeys: Object.keys(response.data || {}),
+      hasData: !!response.data?.data,
+      dataKeys: response.data?.data ? Object.keys(response.data.data) : [],
+      details: response.data?.data?.details,
+      detailsLength: response.data?.data?.details?.length || 0
+    });
+    
     // Đảm bảo trả về đúng mảng details
-    return response.data?.data?.details || [];
+    const details = response.data?.data?.details || response.data?.details || response.data || [];
+    console.log("🔍 Final details to return:", details);
+    return Array.isArray(details) ? details : [details];
   } catch (error) {
     console.error("Get order details by orderId error:", error);
     return [];
@@ -546,6 +529,7 @@ export const deleteOrderDetail = async (orderDetailId) => {
     throw error;
   }
 };
+
 export const cancelOrder = async (orderId, reason) => {
   try {
     const response = await api.put(`/orders/${orderId}/cancel`, {
@@ -558,8 +542,6 @@ export const cancelOrder = async (orderId, reason) => {
   }
 };
 
-
-
 // Address APIs
 export const createAddress = async (addressData) => {
   try {
@@ -570,6 +552,7 @@ export const createAddress = async (addressData) => {
     throw error;
   }
 };
+
 // Không cần truyền userId vì đã lấy từ token
 export const getAddressList = async () => {
   try {
@@ -590,6 +573,7 @@ export const updateAddress = async (id, addressData) => {
     throw error;
   }
 };
+
 export const deleteAddress = async (id) => {
   try {
     const response = await api.delete(`/addresses/${id}`);
@@ -643,6 +627,7 @@ export const requestRefund = async (orderId, reason) => {
     throw error;
   }
 };
+
 export const getAllReviews = async () => {
   try {
     const response = await api.get("/reviews");
@@ -663,6 +648,7 @@ export const applyVoucherApi = async (voucherId) => {
   return res.data;
 
 };
+
 // ===== SHIPPING METHODS APIs =====
 
 export const createShippingMethod = async (shippingData) => {
@@ -716,6 +702,7 @@ export const getProductDetail = async (productId) => {
     throw error;
   }
 };
+
 // Giảm tồn kho
 export const decreaseProductStock = async (items) => {
   try {
@@ -929,6 +916,85 @@ export const getSearchStats = async (timeRange = 'all') => {
     throw error;
   }
 };
+
+// ===== ORDER CONFIRMATION API =====
+
+// Test kết nối API
+export const testApiConnection = async () => {
+  try {
+    console.log("🧪 Testing API connection...");
+    const response = await api.get("/orders");
+    console.log("✅ API connection successful:", response.status);
+    return true;
+  } catch (error) {
+    console.error("❌ API connection failed:", error.message);
+    return false;
+  }
+};
+
+// Test endpoint cụ thể
+export const testOrderEndpoint = async (orderId) => {
+  try {
+    console.log("🧪 Testing order endpoint:", `/orders/${orderId}`);
+    const response = await api.get(`/orders/${orderId}`);
+    console.log("✅ Order endpoint test successful:", response.status);
+    console.log("✅ Order data:", response.data);
+    return response.data;
+  } catch (error) {
+    console.error("❌ Order endpoint test failed:", error.message);
+    if (error.response) {
+      console.error("❌ Status:", error.response.status);
+      console.error("❌ Data:", error.response.data);
+    }
+    throw error;
+  }
+};
+
+// Xác nhận đã nhận hàng
+export const confirmOrderReceived = async (orderId, userId) => {
+  try {
+    console.log("🌐 Gọi API confirmOrderReceived với orderId:", orderId);
+    console.log("🌐 User ID:", userId);
+    console.log("🌐 Endpoint đúng: /orders/${orderId}/confirm-received");
+    
+    // Test kết nối trước
+    const isConnected = await testApiConnection();
+    if (!isConnected) {
+      throw new Error("Không thể kết nối đến API server");
+    }
+    
+    // Gọi đúng endpoint confirm-received với user_id
+    const requestData = {
+      user_id: userId
+    };
+    
+    console.log("📤 Gửi dữ liệu đúng:", requestData);
+    console.log("📤 API URL:", `/orders/${orderId}/confirm-received`);
+    console.log("📤 Method: PUT");
+    
+    const response = await api.put(`/orders/${orderId}/confirm-received`, requestData);
+    console.log("✅ API response:", response);
+    return response.data;
+    
+  } catch (error) {
+    console.error("❌ Confirm order received error:", error);
+    console.error("❌ Error status:", error.response?.status);
+    console.error("❌ Error data:", error.response?.data);
+    
+    // Log chi tiết hơn để debug
+    if (error.response) {
+      console.error("❌ Response headers:", error.response.headers);
+      console.error("❌ Response config:", error.response.config);
+      console.error("❌ Request URL:", error.response.config?.url);
+      console.error("❌ Request method:", error.response.config?.method);
+      console.error("❌ Request data:", error.response.config?.data);
+    }
+    
+    throw error;
+  }
+};
+
 export default api;
-export { api, WEBSOCKET_URL };
+export { WEBSOCKET_URL, api }; // Xuất hằng số WEBSOCKET_URL
+
 

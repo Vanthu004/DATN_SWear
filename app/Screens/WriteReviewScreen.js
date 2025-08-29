@@ -3,15 +3,15 @@ import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import React, { useEffect, useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    FlatList,
-    Image,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  Image,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { useAuth } from "../context/AuthContext";
 import { api } from "../utils/api";
@@ -43,27 +43,93 @@ export default function WriteReviewScreen({ navigation, route }) {
         }
 
         // Nếu là đánh giá từ đơn hàng
-        if (orderDetails && orderDetails.length > 0) {
-          const res = await api.get(`/reviews/user/${userInfo._id}`);
-          const reviewedProductIds = res.data.map((r) => r.product_id);
-
-          const filtered = orderDetails.filter(
-            (item) => !reviewedProductIds.includes(item.product_id)
-          );
-
-          setReviews(
-            filtered.map((item) => ({
+        if (orderDetails && orderDetails.length > 0 && orderCode) {
+          try {
+            console.log(`🔍 WriteReviewScreen: Checking reviews for order ${orderCode}`);
+            // Kiểm tra xem order này đã được đánh giá chưa
+            const reviewRes = await api.get(`/reviews/order/${orderCode}`);
+            console.log(`🔍 WriteReviewScreen: Review response:`, reviewRes.data);
+            console.log(`🔍 WriteReviewScreen: Review response length:`, reviewRes.data?.length);
+            console.log(`🔍 WriteReviewScreen: Review response type:`, typeof reviewRes.data);
+            
+            const existingReviews = reviewRes.data || [];
+            
+            if (existingReviews.length > 0) {
+              console.log(`✅ WriteReviewScreen: Order ${orderCode} has ${existingReviews.length} reviews`);
+              console.log(`🔍 WriteReviewScreen: Existing reviews:`, existingReviews);
+              
+              // Order đã được đánh giá rồi - hiển thị đánh giá cũ để cập nhật
+              const reviewsWithExistingData = orderDetails.map((item) => {
+                // Tìm review cũ cho sản phẩm này
+                const existingReview = existingReviews.find(review => 
+                  review.product_id === item.product_id
+                );
+                
+                console.log(`🔍 WriteReviewScreen: Looking for review for product ${item.product_id}`);
+                console.log(`🔍 WriteReviewScreen: Found existing review:`, existingReview);
+                
+                return {
+                  product_id: item.product_id,
+                  product_name: item.product_name,
+                  product_image: item.product_image,
+                  product_variant_id: item.product_variant_id,
+                  variant_text: [item.size, item.color].filter(Boolean).join(" - "),
+                  rating: existingReview ? existingReview.rating : 0,
+                  comment: existingReview ? existingReview.comment : "",
+                  image: null,
+                  // Lưu review_id để cập nhật thay vì tạo mới
+                  review_id: existingReview ? existingReview._id : null,
+                  // Lưu upload_ids cũ nếu có
+                  existing_upload_ids: existingReview ? existingReview.upload_ids : [],
+                };
+              });
+              
+              console.log(`🔍 WriteReviewScreen: Final reviews data:`, reviewsWithExistingData);
+              setReviews(reviewsWithExistingData);
+            } else {
+              console.log(`❌ WriteReviewScreen: Order ${orderCode} has no reviews`);
+              // Order chưa được đánh giá, hiển thị sản phẩm để đánh giá mới
+              const newReviews = orderDetails.map((item) => ({
+                product_id: item.product_id,
+                product_name: item.product_name,
+                product_image: item.product_image,
+                product_variant_id: item.product_variant_id,
+                variant_text: [item.size, item.color].filter(Boolean).join(" - "),
+                rating: 0,
+                comment: "",
+                image: null,
+                review_id: null,
+                existing_upload_ids: [],
+              }));
+              
+              console.log(`🔍 WriteReviewScreen: Setting new reviews:`, newReviews);
+              setReviews(newReviews);
+            }
+          } catch (error) {
+            console.error("❌ WriteReviewScreen: Lỗi kiểm tra đánh giá order:", error);
+            console.error("❌ WriteReviewScreen: Error details:", {
+              message: error.message,
+              response: error.response?.data,
+              status: error.response?.status
+            });
+            
+            // Fallback: hiển thị sản phẩm để đánh giá
+            const fallbackReviews = orderDetails.map((item) => ({
               product_id: item.product_id,
               product_name: item.product_name,
               product_image: item.product_image,
               product_variant_id: item.product_variant_id,
-              // Gộp thông tin biến thể nếu có (vd: Size - Color)
               variant_text: [item.size, item.color].filter(Boolean).join(" - "),
               rating: 0,
               comment: "",
               image: null,
-            }))
-          );
+              review_id: null,
+              existing_upload_ids: [],
+            }));
+            
+            console.log(`🔍 WriteReviewScreen: Setting fallback reviews:`, fallbackReviews);
+            setReviews(fallbackReviews);
+          }
         }
       } catch (err) {
         console.error("Lỗi khi tải dữ liệu đánh giá:", err);
@@ -74,7 +140,7 @@ export default function WriteReviewScreen({ navigation, route }) {
     };
 
     fetchReviewedProducts();
-  }, [isDirectReview, productId, product, orderDetails]);
+  }, [isDirectReview, productId, product, orderDetails, orderCode]);
 
   const handleRatingChange = (index, value) => {
     const updated = [...reviews];
@@ -160,7 +226,7 @@ export default function WriteReviewScreen({ navigation, route }) {
         // Upload ảnh trước nếu có
         if (item.image) {
           try {
-            console.log("📤 Uploading image for review...");
+           // console.log("📤 Uploading image for review...");
             const fileName = item.image.split("/").pop() || `review_${Date.now()}.jpg`;
             const fileType = (fileName.split(".").pop() || 'jpg').toLowerCase();
             
@@ -206,6 +272,11 @@ export default function WriteReviewScreen({ navigation, route }) {
           comment: item.comment || "",
         };
         
+        // Thêm order_id để phân biệt các lần mua hàng khác nhau
+        if (!isDirectReview && orderCode) {
+          reviewData.order_id = orderCode;
+        }
+        
         if (item.product_variant_id) {
           reviewData.product_variant_id = item.product_variant_id;
         }
@@ -217,18 +288,35 @@ export default function WriteReviewScreen({ navigation, route }) {
         }
 
         console.log("📤 Sending review data:", reviewData);
-        const res = await api.post("/reviews", reviewData);
+        
+        let res;
+        if (item.review_id) {
+          // Cập nhật review cũ
+          console.log("📤 Updating existing review:", item.review_id);
+          res = await api.put(`/reviews/${item.review_id}`, reviewData);
+          console.log("✅ Review updated successfully:", res.data);
+        } else {
+          // Tạo review mới
+          console.log("📤 Creating new review");
+          res = await api.post("/reviews", reviewData);
+          console.log("✅ Review created successfully:", res.data);
+        }
         
         if (!res.data) {
           throw new Error("Invalid review response");
         }
-        
-        console.log("✅ Review submitted successfully:", res.data);
       }
 
-      Alert.alert("Thành công", "Đã gửi đánh giá");
-      // Điều hướng về Home và yêu cầu refresh
-      navigation.navigate('Home', { screen: 'HomeScreen', params: { refresh: Date.now() } });
+      const hasUpdates = reviews.some(item => item.review_id);
+      Alert.alert("Thành công", hasUpdates ? "Đã cập nhật đánh giá" : "Đã gửi đánh giá");
+      
+      // Nếu đang đánh giá từ đơn hàng, quay lại
+      if (!isDirectReview) {
+        navigation.goBack();
+      } else {
+        // Điều hướng về Home và yêu cầu refresh
+        navigation.navigate('Home', { screen: 'HomeScreen', params: { refresh: Date.now() } });
+      }
     } catch (err) {
       console.error("❌ Review submission error:", err);
       const message = err?.response?.data?.message || "Không thể gửi đánh giá";
@@ -270,6 +358,14 @@ export default function WriteReviewScreen({ navigation, route }) {
             : `Bạn đã đánh giá tất cả sản phẩm trong đơn hàng ${orderCode}.`
           }
         </Text>
+        {!isDirectReview && (
+          <TouchableOpacity
+            style={[styles.button, { marginTop: 20, backgroundColor: '#007BFF' }]}
+            onPress={() => navigation.goBack()}
+          >
+            <Text style={styles.buttonText}>Quay lại</Text>
+          </TouchableOpacity>
+        )}
       </View>
     );
   }
@@ -282,6 +378,18 @@ export default function WriteReviewScreen({ navigation, route }) {
           : `Đánh giá đơn hàng ${orderCode}`
         }
       </Text>
+      
+      {/* Thông báo về việc đánh giá */}
+      {!isDirectReview && (
+        <View style={styles.infoBox}>
+          <Text style={styles.infoText}>
+            💡 Bạn có thể cập nhật đánh giá sản phẩm mỗi khi mua lại. Đánh giá sẽ được cập nhật với thông tin mới nhất.
+          </Text>
+          <Text style={[styles.infoText, { marginTop: 8, fontSize: 12, color: '#6b7280' }]}>
+            📝 Nếu sản phẩm đã có đánh giá, bạn có thể cập nhật rating và comment.
+          </Text>
+        </View>
+      )}
       <FlatList
         data={reviews}
         keyExtractor={(item) => item.product_id}
@@ -318,19 +426,21 @@ export default function WriteReviewScreen({ navigation, route }) {
               </View>
             )}
 
-            <TouchableOpacity
+            {/* <TouchableOpacity
               onPress={() => handlePickImage(index)}
               style={styles.cameraButton}
             >
               <Text style={styles.cameraText}>
                 {item.image ? "📷 Thay đổi ảnh" : "📷 Thêm ảnh sản phẩm"}
               </Text>
-            </TouchableOpacity>
+            </TouchableOpacity> */}
           </View>
         )}
         ListFooterComponent={
           <TouchableOpacity style={styles.button} onPress={handleSubmit}>
-            <Text style={styles.buttonText}>Gửi tất cả đánh giá</Text>
+            <Text style={styles.buttonText}>
+              {reviews.some(item => item.review_id) ? 'Cập nhật đánh giá' : 'Gửi tất cả đánh giá'}
+            </Text>
           </TouchableOpacity>
         }
       />
@@ -420,5 +530,18 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     padding: 20,
+  },
+  infoBox: {
+    backgroundColor: "#f0f9ff",
+    borderLeftWidth: 4,
+    borderLeftColor: "#3b82f6",
+    padding: 12,
+    marginBottom: 16,
+    borderRadius: 8,
+  },
+  infoText: {
+    fontSize: 14,
+    color: "#1e40af",
+    lineHeight: 20,
   },
 });

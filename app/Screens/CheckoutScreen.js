@@ -3,15 +3,15 @@ import { Picker } from "@react-native-picker/picker";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import React, { useEffect, useState } from "react";
 import {
-  ActivityIndicator,
-  Alert,
-  Image,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Alert,
+    Image,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import { ROUTES } from "../constants/routes";
 import { useAuth } from "../context/AuthContext";
@@ -59,23 +59,23 @@ const [selectedDiscountVoucher, setSelectedDiscountVoucher] = useState(null);
   // Fetch data on mount
   useEffect(() => {
     const fetchData = async () => {
-      console.log("📦 Fetching data...");
+      // console.log("📦 Fetching data...");
       try {
         // Addresses
         try {
           const addrList = await getAddressList();
           setAddressList(addrList);
-          console.log("📍 Loaded addresses:", addrList);
+          //console.log("📍 Loaded addresses:", addrList);
           const defaultAddress = addrList.find((a) => a.is_default);
           setSelectedAddressId(defaultAddress?._id || addrList[0]?._id);
         } catch (err) {
-          console.error("❌ Error loading addresses:", err);
+         // console.error("❌ Error loading addresses:", err);
         }
 
         // Vouchers
         try {
           const allVouchers = userInfo?._id ? await getUserVouchers(userInfo._id) : [];
-          console.log("🔥 User vouchers:", allVouchers);
+         // console.log("🔥 User vouchers:", allVouchers);
           const uniqueVoucherMap = new Map();
           allVouchers.forEach((v) => {
             if (!uniqueVoucherMap.has(v._id)) uniqueVoucherMap.set(v._id, v);
@@ -87,14 +87,14 @@ const [selectedDiscountVoucher, setSelectedDiscountVoucher] = useState(null);
             setSelectedVoucher(uniqueVouchers[0]);
           }
         } catch (err) {
-          console.error("❌ Error loading vouchers:", err);
+        //  console.error("❌ Error loading vouchers:", err);
         }
 
         // Payment Methods
         setLoadingPaymentMethods(true);
         try {
           const data = await getPaymentMethods();
-          console.log("💳 Payment methods from API:", data);
+        //  console.log("💳 Payment methods from API:", data);
           const filtered = data
             .filter((pm) => pm.code?.toUpperCase() === "COD" || pm.code?.toUpperCase() === "ZALOPAY")
             .map((pm) => ({
@@ -112,7 +112,7 @@ const [selectedDiscountVoucher, setSelectedDiscountVoucher] = useState(null);
         // Shipping Methods
         try {
           const shipMethods = await getShippingMethods();
-          console.log("🚚 Shipping methods:", shipMethods);
+        //  console.log("🚚 Shipping methods:", shipMethods);
           setShippingMethods(shipMethods);
           if (shipMethods.length > 0) {
             setSelectedShippingMethodId(shipMethods[0]._id);
@@ -235,11 +235,10 @@ const formatExpiryDayMonth = (dateString) => {
           product_id: item.product?._id || item.product_id,
           quantity: item.quantity,
         })),
-  ...(selectedFreeShippingVoucher ? { freeShippingVoucherId: selectedFreeShippingVoucher._id } : {}),
-  ...(selectedDiscountVoucher ? { discountVoucherId: selectedDiscountVoucher._id } : {}),
+        voucher_ids: [selectedFreeShippingVoucher?._id, selectedDiscountVoucher?._id].filter(Boolean),
 };
 
-
+      //console.log("🚀 Voucher IDs being sent:", orderData.voucher_ids);
       const result = await createOrderFromCart(selectedItems, orderData);
       if (result) {
           // --- Trừ kho ngay sau khi order thành công ---
@@ -249,7 +248,7 @@ const formatExpiryDayMonth = (dateString) => {
       quantity: item.quantity,
     }));
     await decreaseProductStock(stockItems);
-    console.log("✅ Stock decreased successfully");
+   // console.log("✅ Stock decreased successfully");
   } catch (err) {
     console.error("❌ Error decreasing stock:", err);
     // Nếu muốn rollback order, có thể thêm logic gọi API server để hủy order
@@ -257,7 +256,7 @@ const formatExpiryDayMonth = (dateString) => {
         if (selectedFreeShippingVoucher) {
   try {
     await applyVoucherApi(selectedFreeShippingVoucher.voucher_id);
-    console.log("✅ Free shipping voucher applied");
+  //  console.log("✅ Free shipping voucher applied");
   } catch (err) {
     console.error("❌ Error applying free shipping voucher:", err);
   }
@@ -266,17 +265,17 @@ const formatExpiryDayMonth = (dateString) => {
 if (selectedDiscountVoucher) {
   try {
     await applyVoucherApi(selectedDiscountVoucher.voucher_id);
-    console.log("✅ Discount voucher applied");
+  //  console.log("✅ Discount voucher applied");
   } catch (err) {
     console.error("❌ Error applying discount voucher:", err);
   }
 }
-        console.log("id đơn hàng.......", result.data.order._id);
+       // console.log("id đơn hàng.......", result.data.order._id);
         
         // Handle ZaloPay payment        
         const selectedMethod = paymentMethods.find(pm => pm._id === selectedPaymentMethod);
-        console.log("selectedPaymentMethod:", selectedPaymentMethod); // LOG 2
-        console.log("selectedMethod:", selectedMethod); // LOG 3
+       // console.log("selectedPaymentMethod:", selectedPaymentMethod); // LOG 2
+       // console.log("selectedMethod:", selectedMethod); // LOG 3
         
         if (selectedMethod && selectedMethod.code?.toUpperCase() === 'ZALOPAY') {
           setProcessingZaloPay(true);
@@ -302,7 +301,7 @@ if (selectedDiscountVoucher) {
             });
 
             const paymentData = paymentRes.data;
-            console.log("ZaloPay paymentData:", paymentData); // LOG QR RESPONSE
+          //  console.log("ZaloPay paymentData:", paymentData); // LOG QR RESPONSE
             const qrValue = paymentData.qr_url || paymentData.order_url || paymentData.paymentUrl || paymentData.payUrl;
             // Chuyển sang màn hình QR, truyền thêm orderId để polling check trạng thái
             navigation.navigate(ROUTES.ZALOPAY_QR, {
@@ -401,6 +400,17 @@ if (selectedDiscountVoucher) {
                   <Text style={{ fontWeight: "500", fontSize: 15 }}>
                     {item.product?.name || item.product_name}
                   </Text>
+                  {/* Hiển thị biến thể nếu có */}
+                  {(item.size || item.color || item.variant_name || item.product_variant) && (
+                    <Text style={{ color: "#666", fontSize: 12, marginTop: 2 }}>
+                      {[
+                        item.size && `Kích cỡ: ${item.size}`,
+                        item.color && `Màu: ${item.color}`,
+                        item.variant_name && `Biến thể: ${item.variant_name}`,
+                        item.product_variant && `Biến thể: ${item.product_variant}`
+                      ].filter(Boolean).join(" | ")}
+                    </Text>
+                  )}
                   <Text style={{ color: "#888", fontSize: 13 }}>Số lượng: {item.quantity}</Text>
                   <Text style={{ color: "#222", fontSize: 13 }}>
                     {formatMoney(item.price_at_time || item.product?.price || 0)}
@@ -414,8 +424,14 @@ if (selectedDiscountVoucher) {
         {/* Shipping Address */}
         <View style={styles.card}>
           <View style={{flexDirection:'row'}}>
+            <View style={{flex:1, flexDirection:'row', justifyContent:'space-between'}}>
             <Text style={styles.cardTitle}>Địa chỉ giao hàng</Text>
+            <TouchableOpacity onPress={() => navigation.navigate('AddAddress')}>
+              <Text style={{color:'blue'}}>+ Thêm</Text>
+            </TouchableOpacity>
+            </View>
 
+              
           </View>
           {addressList.length > 0 ? (
             <Picker

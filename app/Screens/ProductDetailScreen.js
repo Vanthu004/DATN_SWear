@@ -15,8 +15,9 @@ import ProductVariantModal from '../components/ProductVariantModal';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../utils/api';
 
+import RelatedProducts from "../components/RelatedProducts";
 import { useReview } from "../hooks/useReview";
-
+import { getFavoritesByUser, getPersonalizedProducts } from "../utils/api";
 const calculateAvg = (reviews) => {
   if (!reviews || reviews.length === 0) return 0;
   const total = reviews.reduce((sum, r) => sum + (r.rating || 0), 0);
@@ -51,19 +52,26 @@ export default function ProductDetailScreen({ route, navigation }) {
   const [showVariantModal, setShowVariantModal] = useState(false);
   const { reviews, avgRating, addReview, canReview, checkCanReview } = useReview(productId);
   const [selectedColor, setSelectedColor] = useState(null);
-
+  
+  // State cho personalized products - giống HomeScreen
+  const [personalizedProducts, setPersonalizedProducts] = useState([]);
+  const [personalizedLoading, setPersonalizedLoading] = useState(false);
+  const [favoriteIds, setFavoriteIds] = useState([]);
+  
+  const userId = userInfo?._id;
     useEffect(() => {
     const fetchProductDetail = async () => {
       try {
         // Kiểm tra productId có hợp lệ không
-        if (!productId || typeof productId !== 'string' || productId.length !== 24) {
-          console.warn('⚠️ Product ID không hợp lệ, bỏ qua gọi API. ID:', productId);
-          return;
-        }
+    if (!productId) {
+  console.warn('⚠️ Product ID không hợp lệ, bỏ qua gọi API. ID:', productId);
+  return;
+}
         
         console.log('🔍 Fetching product detail for ID:', productId);
+        setLoading(true);
         const res = await api.get(`/products/${productId}/frontend`);
-        console.log('✅ API response:', res.data);
+        // console.log('✅ API response:', res.data);
         setFullProduct(res.data);
       } catch (error) {
         console.error('❌ Lỗi lấy sản phẩm:', error.message);
@@ -89,6 +97,59 @@ export default function ProductDetailScreen({ route, navigation }) {
       }
     }
   }, [fullProduct, selectedVariant]);
+
+  // Fetch personalized products - sử dụng logic giống HomeScreen
+  useEffect(() => {
+    const fetchPersonalizedProducts = async () => {
+      if (!userId) return;
+      setPersonalizedLoading(true);
+      try {
+        const response = await getPersonalizedProducts(userId, 6);
+        let products = [];
+        if (response?.success && Array.isArray(response?.personalizedProducts)) {
+          products = response.personalizedProducts;
+        } else if (Array.isArray(response)) {
+          products = response;
+        } else if (Array.isArray(response?.data)) {
+          products = response.data;
+        } else if (Array.isArray(response?.items)) {
+          products = response.items;
+        } else if (response?.data?.items && Array.isArray(response.data.items)) {
+          products = response.data.items;
+        }
+        const normalizedProducts = products.map(p => ({ ...p, _id: p?._id || p?.id || p?.product_id }));
+        // Loại bỏ sản phẩm hiện tại khỏi danh sách gợi ý
+        const filteredProducts = normalizedProducts.filter(p => p._id !== productId);
+        console.log('🔍 Normalized personalized products:', filteredProducts.map(p => ({ _id: p._id, name: p.name })));
+        setPersonalizedProducts(filteredProducts);
+      } catch (error) {
+        console.error('Error fetching personalized products:', error);
+        setPersonalizedProducts([]);
+      } finally {
+        setPersonalizedLoading(false);
+      }
+    };
+
+    // Fetch favorite IDs - sử dụng logic giống HomeScreen
+    const fetchFavoriteIds = async () => {
+      if (!userId) return;
+      try {
+        const data = await getFavoritesByUser(userId);
+        console.log('🔍 Favorites data:', data);
+        const favoriteProductIds = data.map(fav => fav.product_id?._id);
+        console.log('🔍 Favorite product IDs:', favoriteProductIds);
+        setFavoriteIds(favoriteProductIds);
+      } catch (err) {
+        console.error('❌ Lỗi khi fetch favorites:', err);
+        setFavoriteIds([]);
+      }
+    };
+
+    if (userId && productId) {
+      fetchPersonalizedProducts();
+      fetchFavoriteIds();
+    }
+  }, [userId, productId]);
 
   useEffect(() => {
     const checkIsFavorite = async () => {
@@ -133,7 +194,39 @@ export default function ProductDetailScreen({ route, navigation }) {
     }
   };
 
+  // Toggle yêu thích cho sản phẩm bất kỳ (dùng cho danh sách gợi ý)
+  const handleToggleFavoriteForProduct = async (target) => {
+    try {
+      if (!userInfo?._id) {
+        Alert.alert('Lỗi', 'Vui lòng đăng nhập để thêm vào yêu thích');
+        return;
+      }
+
+      const targetId = target?._id || target?.id || target?.product_id || target;
+      if (!targetId) return;
+
+      const currentlyFav = favoriteIds.includes(targetId);
+
+      if (currentlyFav) {
+        await api.delete(`/favorites/${userInfo._id}/${targetId}`);
+        setFavoriteIds((prev) => prev.filter((id) => id !== targetId));
+        if ((product?._id || product?.id || product?.product_id) === targetId) setIsFavorite(false);
+      } else {
+        await api.post('/favorites', { user_id: userInfo._id, product_id: targetId });
+        setFavoriteIds((prev) => Array.from(new Set([...prev, targetId])));
+        if ((product?._id || product?.id || product?.product_id) === targetId) setIsFavorite(true);
+      }
+    } catch (error) {
+      console.log('❌ Lỗi khi thêm/xoá yêu thích (gợi ý):', error.message);
+      Alert.alert('Lỗi', 'Không thể thực hiện thao tác');
+    }
+  };
+
 const handleAddToCart = async ({ product, variant, quantity }) => {
+  if (!userInfo?._id) {
+    Alert.alert('Lỗi', 'Vui lòng đăng nhập để thêm sản phẩm vào giỏ hàng');
+    return;
+  }
   setLoadingAddCart(true);
 
   try {
@@ -334,9 +427,12 @@ const handleShowVariantModal = (type) => {
         {/* Tên, giá, danh mục */}
         <Text style={styles.title}>{fullProduct.name || product.name}</Text>
         <Text style={styles.price}>{(fullProduct.price || product.price)?.toLocaleString('vi-VN')} VND</Text>
-        {(fullProduct.stock_quantity || product.stock_quantity) && (
-          <Text style={styles.category}>Số lượng: {(fullProduct.stock_quantity || fullProduct.quantity) || (product.stock_quantity || product.category)}</Text>
-        )}
+       {((fullProduct.stock_quantity || 0) > 0 || (fullProduct.quantity || 0) > 0 || (product.stock_quantity || 0) > 0 || (product.quantity || 0) > 0) && (
+  <Text style={styles.category}>
+    Số lượng: {(fullProduct.stock_quantity || fullProduct.quantity || product.stock_quantity || product.quantity)}
+  </Text>
+)}
+
         
         {/* Thông báo hết hàng */}
         {outOfStock && (
@@ -356,93 +452,247 @@ const handleShowVariantModal = (type) => {
           <Text style={styles.description}>Chưa có mô tả cho sản phẩm này.</Text>
         )}
 
-        {/* Rating */}
-        <Text style={styles.label}>Đánh giá</Text>
-          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
-            {renderStars(fullProduct.rating || product.rating || 5)}
-            <Text style={{ marginLeft: 8, color: '#888' }}>
-              {avgRating ? `${avgRating} điểm (${reviews?.length || 0} đánh giá)` : 'Chưa có đánh giá'}
-            </Text>
-          </View>
+{/* Rating */}
+<View style={{ marginTop: 16 }}>
+  <View
+    style={{
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+    }}
+  >
+    <Text style={styles.label}>Đánh giá</Text>
+  </View>
 
-        {/* Reviews */}
-        {reviews?.length > 0 ? (
-          <>
-            {reviews.map((review, idx) => (
+  {/* Điểm trung bình */}
+  <View
+    style={{
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginVertical: 8,
+    }}
+  >
+    {renderStars(fullProduct.rating || product.rating || 5)}
+    <Text style={{ marginLeft: 8, color: '#555' }}>
+      {avgRating
+        ? `${avgRating} điểm (${reviews?.length || 0} đánh giá)`
+        : 'Chưa có đánh giá'}
+    </Text>
+  </View>
+
+  {/* Danh sách đánh giá - Chỉ hiển thị 3 reviews mới nhất */}
+  {reviews?.length > 0 ? (
+    <>
+      {reviews.slice(0, 3).map((review, idx) => (
+        <View
+          key={idx}
+          style={{
+            flexDirection: 'row',
+            alignItems: 'flex-start',
+            marginBottom: 16,
+          }}
+        >
+          {/* Avatar */}
+          <Image
+            source={{
+              uri:
+                review.user_id?.avata_url || review.user_id?.avatar_url ||
+                'https://cdn-icons-png.flaticon.com/512/149/149071.png',
+            }}
+            style={{
+              width: 40,
+              height: 40,
+              borderRadius: 20,
+              marginRight: 10,
+              backgroundColor: '#eee',
+            }}
+          />
+
+          {/* Nội dung */}
+          <View style={{ flex: 1 }}>
+            <Text style={{ fontWeight: 'bold', marginBottom: 2 }}>
+              {review.user_id?.name || 'Người dùng'}
+            </Text>
+
+            {/* Số sao */}
+            <View style={{ flexDirection: 'row', marginBottom: 4 }}>
+              {Array.from({
+                length: Math.max(0, Math.min(5, review.rating || 0)),
+              }).map((_, i) => (
+                <Text key={i} style={{ color: '#facc15' }}>
+                  ★
+                </Text>
+              ))}
+            </View>
+
+            {/* Phân loại */}
+            {!!(
+              review.product_variant_id ||
+              review.variant_text ||
+              review.size ||
+              review.color
+            ) && (
+              <Text style={{ color: '#666', marginBottom: 4 }}>
+                Phân loại:{" "}
+                {[review.variant_text, review.size, review.color]
+                  .filter(Boolean)
+                  .join(' - ')}
+              </Text>
+            )}
+
+            {/* Nội dung bình luận */}
+            <Text style={{ marginBottom: 4 }}>{review.comment}</Text>
+
+            {/* Hình ảnh đính kèm */}
+            {!!review.image_urls && Array.isArray(review.image_urls) && review.image_urls.length > 0 && (
               <View
-                key={idx}
                 style={{
                   flexDirection: 'row',
-                  alignItems: 'flex-start',
-                  marginBottom: 16,
-                
+                  flexWrap: 'wrap',
+                  gap: 8,
+                  marginTop: 4,
                 }}
               >
-                {/* Avatar */}
-                <Image
-                  source={{
-                  uri: review.user_id?.avata_url || 'https://cdn-icons-png.flaticon.com/512/149/149071.png',
-                  }}
-                  style={{
-                    width: 36,
-                    height: 36,
-                    borderRadius: 18,
-                    backgroundColor: '#eee',
-                  }}
-                />
-                {/* Nội dung */}
-                <View style={{ flex: 1 }}>
-                  <Text style={{ fontWeight: 'bold' }}>{review.user_id?.name || 'Người dùng'}</Text>
-                  {/* Số sao */}
-                  <View style={{ flexDirection: 'row', marginVertical: 4 }}>
-                    {Array.from({ length: Math.max(0, Math.min(5, review.rating || 0)) }).map((_, i) => (
-                      <Text key={i} style={{ color: '#facc15' }}>★</Text>
-                    ))}
-                  </View>
-                  {!!(review.product_variant_id || review.variant_text || review.size || review.color) && (
-                    <Text style={{ color: '#555', marginBottom: 4 }}>
-                      Phân loại: {[review.variant_text, review.size, review.color].filter(Boolean).join(' - ')}
-                    </Text>
-                  )}
-                  <Text>{review.comment}</Text>
-                  {!!review.images && Array.isArray(review.images) && review.images.length > 0 && (
-                    <View style={{ flexDirection: 'row', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
-                      {review.images.map((img, i2) => (
-                        <Image key={i2} source={{ uri: img.url || img }} style={{ width: 80, height: 80, borderRadius: 8 }} />
-                      ))}
-                    </View>
-                  )}
-                  {!review.images && review.image_url && (
-                    <Image source={{ uri: review.image_url }} style={{ width: 120, height: 120, borderRadius: 8, marginTop: 8 }} />
-                  )}
-                </View>
+                {review.image_urls.map((img, i2) => (
+                  <Image
+                    key={i2}
+                    source={{ uri: img }}
+                    style={{
+                      width: 80,
+                      height: 80,
+                      borderRadius: 8,
+                      marginRight: 8,
+                      marginTop: 8,
+                    }}
+                  />
+                ))}
               </View>
-            ))}
+            )}
 
-    {/* 👉 Thêm nút Xem tất cả đánh giá */}
-          {/* 👉 Thêm nút Xem tất cả đánh giá */}
-          {reviews?.length > 0 && (
-            <TouchableOpacity
-            onPress={() => {
-              navigation.navigate('AllReviews', {
-                productId: fullProduct._id || product._id,  // ưu tiên fullProduct._id
-              });
-            }}
-          >
-            <Text style={{ color: '#3b82f6', fontWeight: 'bold', marginBottom: 12 }}>
-              Xem tất cả đánh giá sản phẩm này
-            </Text>
-          </TouchableOpacity>
+            {!review.image_urls && review.image_url && (
+              <Image
+                source={{ uri: review.image_url }}
+                style={{
+                  width: 120,
+                  height: 120,
+                  borderRadius: 8,
+                  marginTop: 8,
+                }}
+              />
+            )}
 
-          )}
+          {/* ✅ Phản hồi của Admin */}
+         {/* Trả lời của admin */}
+{review.replies && review.replies.length > 0 && (
+  <View style={{ marginTop: 8, paddingLeft: 20 }}>
+    {review.replies.map((reply, i3) => (
+      <View
+        key={i3}
+        style={{
+          flexDirection: 'row',
+          alignItems: 'flex-start',
+          marginTop: 8,
+          backgroundColor: '#f3f4f6',
+          padding: 8,
+          borderRadius: 8,
+        }}
+      >
+        {/* Avatar Admin */}
+        <Image
+          source={{
+            uri:
+              reply.user_id?.avata_url || reply.user_id?.avatar_url ||
+              'https://cdn-icons-png.flaticon.com/512/149/149071.png',
+          }}
+          style={{
+            width: 30,
+            height: 30,
+            borderRadius: 15,
+            marginRight: 8,
+            backgroundColor: '#eee',
+          }}
+        />
 
-            </>
-          ) : (
-            <Text style={{ color: '#888', marginTop: 8 }}>Chưa có đánh giá nào.</Text>
-          )}
+        {/* Nội dung trả lời */}
+        <View style={{ flex: 1 }}>
+          <Text style={{ fontWeight: 'bold', color: '#3b82f6' }}>
+            {reply.user_id?.name || 'Admin'}
+          </Text>
+          <Text style={{ color: '#333' }}>{reply.comment}</Text>
+        </View>
+      </View>
+    ))}
+  </View>
+)}
 
-      </ScrollView>                {/* Footer */}
-        <View style={styles.footer}>
+        </View>
+      </View>
+    ))}
+    
+    {/* Nút "Xem tất cả đánh giá" nếu có nhiều hơn 3 reviews */}
+    {reviews?.length > 3 && (
+      <TouchableOpacity
+        style={{
+          backgroundColor: '#f3f4f6',
+          padding: 12,
+          borderRadius: 8,
+          alignItems: 'center',
+          marginTop: 16,
+        }}
+        onPress={() => navigation.navigate('AllReviewsScreen', { productId })}
+      >
+        <Text style={{ color: '#3b82f6', fontWeight: '600' }}>
+          Xem tất cả {reviews.length} đánh giá
+        </Text>
+      </TouchableOpacity>
+    )}
+    </>
+  ) : (
+    <Text style={{ color: '#888', marginTop: 8 }}>Chưa có đánh giá nào.</Text>
+  )}
+</View>
+
+        {/* Personalized Products - Gợi ý dành cho bạn */}
+        {userId && (
+          <View style={styles.recommendationsContainer}>
+            {personalizedLoading ? (
+              <View style={styles.loadingContainer}>
+                <Text style={styles.loadingText}>Đang tải gợi ý...</Text>
+              </View>
+            ) : personalizedProducts.length > 0 ? (
+              <RelatedProducts
+                products={personalizedProducts}
+                loading={personalizedLoading}
+                title="Gợi ý dành cho bạn"
+                navigation={navigation}
+                isFavorite={(productId) => {
+                  const isFav = favoriteIds.includes(productId);
+                  // console.log('🔍 Checking favorite for product:', productId, 'favoriteIds:', favoriteIds, 'isFavorite:', isFav);
+                  return isFav;
+                }}
+                onToggleFavorite={handleToggleFavoriteForProduct}
+                showFavoriteIcon={true}
+                onViewAll={() => navigation.navigate('SearchSc', { keyword: 'personalized' })}
+              />
+            ) : (
+              <View style={styles.noRecommendationsContainer}>
+                <Text style={styles.noRecommendationsTitle}>Gợi ý dành cho bạn</Text>
+                <Text style={styles.noRecommendationsText}>Chưa có gợi ý nào. Hãy khám phá thêm sản phẩm!</Text>
+                <TouchableOpacity 
+                  style={styles.exploreButton}
+                  onPress={() => navigation.navigate('Home')}
+                >
+                  <Text style={styles.exploreButtonText}>Khám phá ngay</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
+        )}
+
+      </ScrollView>
+      
+      {/* Footer */}
+      <View style={styles.footer}>
           <Text style={styles.footerPrice}>
             {selectedVariant?.price?.toLocaleString('vi-VN') || (fullProduct.price || product.price)?.toLocaleString('vi-VN')} VND
           </Text>
@@ -539,7 +789,7 @@ const styles = StyleSheet.create({
   label: {
     marginTop: 16,
     fontWeight: '500',
-    fontSize: 15,
+    fontSize: 18,
   },
   variantBtn: {
     padding: 10,
@@ -663,6 +913,51 @@ const styles = StyleSheet.create({
     marginLeft: 8,
     fontSize: 14,
     color: '#dc2626',
+    fontWeight: 'bold',
+  },
+  // Style cho phần gợi ý
+  recommendationsContainer: {
+    marginTop: 24,
+    marginBottom: 16,
+    paddingHorizontal: 0,
+  },
+  loadingContainer: {
+    padding: 20,
+    alignItems: 'center',
+  },
+  loadingText: {
+    fontSize: 16,
+    color: '#888',
+  },
+  noRecommendationsContainer: {
+    padding: 20,
+    alignItems: 'center',
+    backgroundColor: '#f8f9fa',
+    borderRadius: 12,
+    marginHorizontal: 16,
+  },
+  noRecommendationsTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 8,
+  },
+  noRecommendationsText: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 16,
+    lineHeight: 20,
+  },
+  exploreButton: {
+    backgroundColor: '#3b82f6',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+  },
+  exploreButtonText: {
+    color: '#fff',
+    fontSize: 14,
     fontWeight: 'bold',
   },
 });

@@ -30,7 +30,7 @@ import { chatAPI, chatUtils } from '../services/chatService';
 import socketService from '../services/socketService';
 
 const ChatScreen = ({ route }) => {
-  console.log('🔍 ChatScreen params:', route.params);
+//  console.log('🔍 ChatScreen params:', route.params);
   const navigation = useAppNavigation();
   const dispatch = useDispatch();
   const { user } = useAuth();
@@ -49,7 +49,7 @@ const ChatScreen = ({ route }) => {
   const isRoomOwner = user?._id === room?.userId;
 
   useEffect(() => {
-    console.log('🔍 Current messages IDs:', currentMessages.map(msg => msg.id));
+    //console.log('🔍 Current messages IDs:', currentMessages.map(msg => msg.id));
     const initializeChat = async () => {
       try {
         dispatch(clearCurrentRoom());
@@ -59,7 +59,7 @@ const ChatScreen = ({ route }) => {
         }
         socketService.joinRoom(room.roomId);
         const result = await dispatch(fetchMessages({ roomId: room.roomId, page: 1 })).unwrap();
-        console.log('🔍 fetchMessages result:', result);
+        //console.log('🔍 fetchMessages result:', result);
         setTimeout(() => {
           flatListRef.current?.scrollToEnd({ animated: false });
         }, 100);
@@ -84,7 +84,7 @@ const ChatScreen = ({ route }) => {
 
   useEffect(() => {
     const handleNewMessage = (message) => {
-      console.log('🔍 New message from socket:', message);
+      //console.log('🔍 New message from socket:', message);
       const messageExists = currentMessages.some(msg => msg.id === message.id);
       if (!messageExists && (!lastMessageId.current || message.id !== lastMessageId.current)) {
         dispatch(addMessage(message));
@@ -179,7 +179,7 @@ const ChatScreen = ({ route }) => {
         roomId: room.roomId, 
         page: nextPage 
       })).unwrap();
-      console.log('🔍 Load more result:', result);
+     // console.log('🔍 Load more result:', result);
       setCurrentPage(nextPage);
     } catch (error) {
       console.error('Load more messages error:', error);
@@ -198,8 +198,8 @@ const ChatScreen = ({ route }) => {
   };
 
   const renderMessage = ({ item, index }) => {
-    console.log('🔍 Message key:', item.id.toString());
-    console.log('🔍 Rendering message:', item, 'User ID:', getCurrentUserId());
+   // console.log('🔍 Message key:', item.id.toString());
+    //console.log('🔍 Rendering message:', item, 'User ID:', getCurrentUserId());
     const isCurrentUser = item.sender_id === getCurrentUserId();
     const showSenderInfo = !isCurrentUser && (
       index === 0 || 

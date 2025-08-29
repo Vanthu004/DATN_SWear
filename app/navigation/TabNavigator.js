@@ -42,8 +42,8 @@ export const navigationRef = createRef();
 
 // Hàm resetNavigation để chuyển hướng về màn hình bất kỳ
 export const resetNavigation = (screenName) => {
-  console.log("resetNavigation called with screen:", screenName);
-  console.log("navigationRef.current:", navigationRef.current);
+ // console.log("resetNavigation called with screen:", screenName);
+  //console.log("navigationRef.current:", navigationRef.current);
   if (navigationRef.current) {
     navigationRef.current.reset({
       index: 0,
@@ -97,14 +97,9 @@ function HomeStack() {
         options={{ headerShown: false }}
       />
       <Stack.Screen
-        name="AddressList"
-        component={AddressListScreen}
-        options={{ title: "Địa chỉ" }}
-      />
-      <Stack.Screen
         name="AddAddress"
         component={AddAddressScreen}
-        options={{ title: "Thêm địa chỉ" }}
+        options={{headerShown: false }}
       />
       <Stack.Screen
         name="Payment"
@@ -216,18 +211,6 @@ function ProfileStack() {
         component={AddAddressScreen}
         options={{ headerShown: false }}
       />
-      {/* <Stack.Screen
-        name="Payment"
-        component={PaymentScreen}
-        options={{ headerShown: false }}
-      />
-      <Stack.Screen
-        name="AddBankCard"
-        component={AddBankCardScreen}
-        options={{ headerShown: false }}
-      /> */}
-
-
       <Stack.Screen
         name="ChangePassword"
         component={ChangePasswordScreen}
@@ -326,9 +309,9 @@ const CustomTabBar = ({ state, descriptors, navigation }) => (
         if (isFocused) {
           // Nếu tab đang được focus, quay về màn hình đầu tiên của stack đó
           const targetScreen = route.name === "Home" ? "HomeScreen" : 
-                             route.name === "Notifications" ? "NotificationsScreen" :
-                             route.name === "Wishlist" ? "WishlistScreen" :
-                             "ProfileScreen";
+            route.name === "Notifications" ? "NotificationsScreen" :
+            route.name === "Wishlist" ? "WishlistScreen" :
+            "ProfileScreen";
           
           // Sử dụng navigate với merge: true để quay về màn hình đầu tiên của stack
           navigation.navigate(route.name, {

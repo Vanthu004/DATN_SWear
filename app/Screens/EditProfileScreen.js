@@ -1,13 +1,13 @@
 import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect, useState } from "react";
 import {
-    Alert,
-    Image,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View
+  Alert,
+  Image,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuth } from "../context/AuthContext";
@@ -35,7 +35,7 @@ const EditProfileScreen = ({ navigation, route }) => {
         email: userInfo.email || "",
         phone: userInfo.phone_number || "",
         gender: userInfo.gender || "male",
-        avatar: userInfo.avata_url || null,
+        avatar: userInfo.avatar_url || null,
       });
     }
   }, [userInfo]);
@@ -73,7 +73,7 @@ const EditProfileScreen = ({ navigation, route }) => {
       const imageUri = newAvatar ? newAvatar.uri : null;
       const response = await updateProfileWithAvatar(profileData, imageUri);
       
-      console.log('Update profile response:', response);
+    //  console.log('Update profile response:', response);
 
       if (response && response.user) {
         // Cập nhật userInfo trong context sau khi update thành công
@@ -131,7 +131,7 @@ const EditProfileScreen = ({ navigation, route }) => {
         </View>
 
         <View style={styles.inputGroup}>
-          <Text style={styles.label}>Họ và tên *</Text>
+          <Text style={styles.label}>Họ và tên</Text>
           <TextInput
             style={styles.input}
             value={formData.name}
@@ -141,15 +141,15 @@ const EditProfileScreen = ({ navigation, route }) => {
         </View>
 
         <View style={styles.inputGroup}>
-          <Text style={styles.label}>Email *</Text>
-          <TextInput
-            style={styles.input}
-            value={formData.email}
-            onChangeText={(text) => setFormData({ ...formData, email: text })}
-            placeholder="Nhập email"
-            keyboardType="email-address"
-            autoCapitalize="none"
-          />
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Email</Text>
+            <View style={styles.input}>
+              <Text style={{ fontSize: 14, color: '#333' }}>
+                {formData.email || "Chưa có email"}
+              </Text>
+            </View>
+          </View>
+
         </View>
 
         <View style={styles.inputGroup}>

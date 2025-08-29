@@ -1,15 +1,15 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useState } from 'react';
 import {
-    Alert,
-    Dimensions,
-    Image,
-    Modal,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Alert,
+  Dimensions,
+  Image,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { useProductVariant } from '../hooks/useProductVariant';
 
@@ -35,14 +35,43 @@ const ProductVariantModal = ({
     variants: productVariants,
   } = useProductVariant(product?._id);
 
+  // Cập nhật ảnh khi productVariants thay đổi
+  useEffect(() => {
+    if (productVariants && productVariants.length > 0 && visible) {
+      const firstVariant = productVariants[0];
+      if (firstVariant.image_url && !selectedColorImageUrl) {
+        setSelectedColorImageUrl(firstVariant.image_url);
+      }
+    }
+  }, [productVariants, visible, selectedColorImageUrl]);
+
   useEffect(() => {
     if (visible) {
       setQuantity(1);
       setSelectedVariant(null);
       setSelectedColor(null);
       setSelectedSize(null);
+      
+              // Tự động chọn biến thể đầu tiên nếu có
+        if (productVariants && productVariants.length > 0) {
+          const firstVariant = productVariants[0];
+          setSelectedVariant(firstVariant);
+          
+          // Tự động chọn màu và size đầu tiên
+          if (firstVariant.attributes?.color) {
+            setSelectedColor(firstVariant.attributes.color);
+          }
+          if (firstVariant.attributes?.size) {
+            setSelectedSize(firstVariant.attributes.size);
+          }
+          
+          // Cập nhật ảnh từ biến thể đầu tiên
+          if (firstVariant.image_url) {
+            setSelectedColorImageUrl(firstVariant.image_url);
+          }
+        }
     }
-  }, [visible]);
+  }, [visible, productVariants]);
 
   useEffect(() => {
     if (selectedColor && selectedSize) {
@@ -51,15 +80,25 @@ const ProductVariantModal = ({
         v.attributes.size._id === selectedSize._id
       );
       setSelectedVariant(matchedVariant || null);
+      
+      // Cập nhật ảnh khi có biến thể hoàn chỉnh
+      if (matchedVariant?.image_url) {
+        setSelectedColorImageUrl(matchedVariant.image_url);
+      }
     } else if (selectedColor && !selectedSize) {
       const matchedByColor = productVariants.find(v =>
         v.attributes.color._id === selectedColor._id
       );
       setSelectedVariant(matchedByColor || null);
+      
+      // Cập nhật ảnh khi chỉ có màu
+      if (matchedByColor?.image_url) {
+        setSelectedColorImageUrl(matchedByColor.image_url);
+      }
     } else {
       setSelectedVariant(null);
     }
-  }, [selectedColor, selectedSize]);
+  }, [selectedColor, selectedSize, productVariants]);
 
   const handleBuyNow = () => {
     if (!userInfo?._id) {
@@ -141,9 +180,14 @@ const ProductVariantModal = ({
           <View style={styles.rowInfo}>
             <Image
               source={{
-                uri: selectedColorImageUrl || selectedVariant?.image_url || product?.images?.[0]?.url
+                uri: selectedColorImageUrl || 
+                      selectedVariant?.image_url || 
+                      product?.images?.[0]?.url ||
+                      product?.image_url ||
+                      product?.image
               }}
               style={styles.productImage}
+              defaultSource={require("../../assets/images/box-icon.png")}
             />
 
             <View style={styles.productInfo}>
@@ -183,6 +227,15 @@ const ProductVariantModal = ({
                       style={[styles.colorBox, isSelected && styles.selectedBox]}
                       onPress={() => {
                         setSelectedColor(color);
+                        
+                        // Cập nhật ảnh khi chọn màu
+                        const colorVariant = productVariants.find(v => 
+                          v.attributes.color._id === color._id
+                        );
+                        if (colorVariant?.image_url) {
+                          setSelectedColorImageUrl(colorVariant.image_url);
+                        }
+                        
                         const stillValid = productVariants.some(v =>
                           v.attributes.color._id === color._id &&
                           v.attributes.size._id === selectedSize?._id
@@ -210,7 +263,22 @@ const ProductVariantModal = ({
                     <TouchableOpacity
                       key={size._id}
                       style={[styles.sizeBox, isSelected && styles.selectedBox]}
-                      onPress={() => isAvailable && setSelectedSize(size)}
+                      onPress={() => {
+                        if (isAvailable) {
+                          setSelectedSize(size);
+                          
+                          // Cập nhật ảnh khi chọn size
+                          if (selectedColor) {
+                            const sizeColorVariant = productVariants.find(v =>
+                              v.attributes.color._id === selectedColor._id &&
+                              v.attributes.size._id === size._id
+                            );
+                            if (sizeColorVariant?.image_url) {
+                              setSelectedColorImageUrl(sizeColorVariant.image_url);
+                            }
+                          }
+                        }
+                      }}
                       disabled={!isAvailable}
                     >
                       <Text style={[styles.sizeText, isSelected && styles.selectedText]}>

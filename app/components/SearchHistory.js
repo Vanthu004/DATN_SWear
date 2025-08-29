@@ -1,69 +1,109 @@
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import {
-    ActivityIndicator,
-    FlatList,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View
+  ActivityIndicator,
+  FlatList,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 
-const SearchHistory = ({ 
-  history, 
-  loading, 
-  title = "🔍 Tìm kiếm gần đây",
+const SearchHistory = ({
+  history,
+  loading,
+  title = 'Tìm kiếm gần đây',
   onKeywordPress,
   onDeleteHistory,
-  onClearAll
+  onClearAll,
 }) => {
-  if (!history?.length && !loading) return null;
+  if (!history?.length && !loading) {
+    console.log('Không có lịch sử hoặc đang tải:', { history, loading });
+    return null;
+  }
 
   const formatTime = (dateString) => {
+    if (!dateString) {
+      console.warn('Ngày không hợp lệ:', dateString);
+      return 'N/A';
+    }
     const date = new Date(dateString);
+    if (isNaN(date.getTime())) {
+      console.warn('Ngày không hợp lệ:', dateString);
+      return 'N/A';
+    }
     const now = new Date();
     const diff = now - date;
-    
+
     if (diff < 60000) return 'Vừa xong';
     if (diff < 3600000) return `${Math.floor(diff / 60000)} phút trước`;
     if (diff < 86400000) return `${Math.floor(diff / 3600000)} giờ trước`;
     return date.toLocaleDateString('vi-VN');
   };
 
-  const renderHistoryItem = ({ item, index }) => (
-    <View style={styles.historyItem}>
-      <TouchableOpacity
-        style={styles.historyContent}
-        onPress={() => onKeywordPress(item.keyword)}
-      >
-        <View style={styles.historyIcon}>
-          <Ionicons name="time" size={16} color="#666" />
-        </View>
-        <View style={styles.historyInfo}>
-          <Text style={styles.historyKeyword}>{item.keyword}</Text>
-          <Text style={styles.historyTime}>{formatTime(item.last_searched_at)}</Text>
-        </View>
-        {item.result_count && (
-          <View style={styles.resultCount}>
-            <Text style={styles.resultCountText}>{item.result_count} kết quả</Text>
+  const renderHistoryItem = ({ item, index }) => {
+    if (!item || !item.keyword) {
+      console.warn('Mục lịch sử không hợp lệ tại index', index, item);
+      return null;
+    }
+    return (
+      <View style={styles.historyItem}>
+        <TouchableOpacity
+          style={styles.historyContent}
+          onPress={() => {
+            if (typeof item.keyword === 'string') {
+              onKeywordPress(item.keyword);
+            } else {
+              console.warn('Keyword không hợp lệ:', item.keyword);
+            }
+          }}
+        >
+          <View style={styles.historyIcon}>
+            <Ionicons name="time-outline" size={16} color="#666" />
           </View>
-        )}
-      </TouchableOpacity>
-      <TouchableOpacity
-        style={styles.deleteButton}
-        onPress={() => onDeleteHistory(item.keyword)}
-      >
-        <Ionicons name="close" size={16} color="#999" />
-      </TouchableOpacity>
-    </View>
-  );
+          <View style={styles.historyInfo}>
+            <Text style={styles.historyKeyword}>
+              {typeof item.keyword === 'string' ? item.keyword : 'N/A'}
+            </Text>
+            <Text style={styles.historyTime}>{formatTime(item.last_searched_at)}</Text>
+          </View>
+          {item.result_count && typeof item.result_count === 'number' && (
+            <View style={styles.resultCount}>
+              <Text style={styles.resultCountText}>{item.result_count} kết quả</Text>
+            </View>
+          )}
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.deleteButton}
+          onPress={() => {
+            if (typeof item.keyword === 'string') {
+              onDeleteHistory(item.keyword);
+            } else {
+              console.warn('Keyword không hợp lệ khi xóa:', item.keyword);
+            }
+          }}
+        >
+          <Ionicons name="close-outline" size={16} color="#999" />
+        </TouchableOpacity>
+      </View>
+    );
+  };
 
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>{title}</Text>
+        <Text style={styles.title}>{typeof title === 'string' ? title : 'Tìm kiếm'}</Text>
         {history?.length > 0 && (
-          <TouchableOpacity onPress={onClearAll} style={styles.clearButton}>
+          <TouchableOpacity
+            onPress={() => {
+              if (typeof onClearAll === 'function') {
+                onClearAll();
+              } else {
+                console.warn('onClearAll không phải là hàm');
+              }
+            }}
+            style={styles.clearButton}
+          >
             <Text style={styles.clearText}>Xóa tất cả</Text>
           </TouchableOpacity>
         )}
@@ -77,7 +117,7 @@ const SearchHistory = ({
       ) : (
         <FlatList
           data={history}
-          keyExtractor={(item, index) => item.keyword || index.toString()}
+          keyExtractor={(item, index) => (item.keyword ? item.keyword : index.toString())}
           renderItem={renderHistoryItem}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.historyList}

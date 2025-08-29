@@ -12,16 +12,37 @@ const RelatedProducts = ({
   products, 
   loading, 
   title = "Sản phẩm liên quan",
-  navigation 
+  navigation,
+  isFavorite,
+  onToggleFavorite,
+  showFavoriteIcon = true
 }) => {
+  // console.log('🔍 RelatedProducts props:', { 
+  //   productsCount: products?.length, 
+  //   loading, 
+  //   hasIsFavorite: !!isFavorite, 
+  //   hasOnToggleFavorite: !!onToggleFavorite, 
+  //   showFavoriteIcon 
+  // });
   if (!products?.length && !loading) return null;
 
-  const renderProductItem = ({ item, index }) => (
-    <View style={styles.productItem}>
-      <ProductCard product={item} navigation={navigation} />
-    </View>
-  );
+  const renderProductItem = ({ item, index }) => {
+    const isFav = isFavorite ? isFavorite(item._id) : false;
+    // console.log('🔍 Rendering product:', item._id, 'isFavorite:', isFav, 'item:', item);
+    return (
+      <View style={styles.productItem}>
+        <ProductCard 
+          product={item} 
+          navigation={navigation}
+          isFavorite={isFav}
+          onToggleFavorite={onToggleFavorite}
+          showFavoriteIcon={showFavoriteIcon}
+        />
+      </View>
+    );
+  };
 
+  console.log('🔍 Rendering RelatedProducts with', products?.length, 'products');
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -42,6 +63,7 @@ const RelatedProducts = ({
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.productsList}
           ItemSeparatorComponent={() => <View style={styles.separator} />}
+          onLayout={() => console.log('🔍 FlatList layout completed')}
         />
       )}
     </View>
@@ -89,7 +111,7 @@ const styles = StyleSheet.create({
     width: 160,
   },
   separator: {
-    width: 12,
+    width: 28,
   },
 });
 

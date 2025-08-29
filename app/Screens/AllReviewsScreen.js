@@ -1,13 +1,13 @@
 // screens/AllReviewsScreen.js
 import React, { useEffect, useState } from 'react';
 import {
-    ActivityIndicator,
-    Image,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View
+  ActivityIndicator,
+  Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from 'react-native';
 import api from '../utils/api';
 import { renderStars } from '../utils/renderStars';
@@ -127,7 +127,7 @@ export default function AllReviewsScreen({ route }) {
           <Image
             source={{
               uri:
-                review.user_id?.avata_url ||
+                review.user_id?.avata_url || review.user_id?.avatar_url ||
                 'https://cdn-icons-png.flaticon.com/512/149/149071.png',
             }}
             style={styles.avatar}
