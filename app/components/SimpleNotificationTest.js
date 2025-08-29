@@ -10,7 +10,6 @@ const SimpleNotificationTest = () => {
       // 1. Kiểm tra quyền
       const { status } = await Notifications.getPermissionsAsync();
       console.log('Permission status:', status);
-      
       if (status !== 'granted') {
         console.log('Requesting permission...');
         const { status: newStatus } = await Notifications.requestPermissionsAsync();

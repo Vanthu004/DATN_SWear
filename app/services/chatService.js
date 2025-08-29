@@ -1,7 +1,8 @@
 //app/services/chatService.js
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
-import { API_BASE_URL } from '@env';  // Import từ .env
+
+const API_BASE_URL = "http://192.168.52.108:3000/api";
 
 // Axios instance for chat API
 const chatAPIClient = axios.create({
@@ -53,7 +54,7 @@ export const chatAPI = {
     try {
       //console.log('Sending create room payload:', roomData);
       const response = await chatAPIClient.post('/chat/rooms', roomData);
-      //console.log('API response:', response.data);
+      console.log('API response:', response.data);
       if (!response.data) {
         throw new Error('No data in API response');
       }

@@ -160,7 +160,7 @@ export default function WriteReviewScreen({ navigation, route }) {
         // Upload ảnh trước nếu có
         if (item.image) {
           try {
-            console.log("📤 Uploading image for review...");
+           // console.log("📤 Uploading image for review...");
             const fileName = item.image.split("/").pop() || `review_${Date.now()}.jpg`;
             const fileType = (fileName.split(".").pop() || 'jpg').toLowerCase();
             

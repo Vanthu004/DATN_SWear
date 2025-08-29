@@ -40,7 +40,9 @@ export const useOrder = () => {
 
     try {
       setLoading(true);
-      //console.log("🛒 Tạo đơn hàng từ cart:", cartItems.length, "items");
+
+      // console.log("🛒 Tạo đơn hàng từ cart:", cartItems.length, "items");
+
 
       // Chuẩn bị order details từ cart items
       const orderDetails = cartItems.map((item) => ({
@@ -61,11 +63,13 @@ export const useOrder = () => {
         orderDetails: orderDetails,
       };
 
-      //console.log("📦 Order payload:", orderPayload);
+
+    //  console.log("📦 Order payload:", orderPayload);
 
       // Tạo đơn hàng với details
       const result = await createOrderWithDetails(orderPayload);
-      //console.log("✅ Đơn hàng được tạo:", result);
+     // console.log("✅ Đơn hàng được tạo:", result);
+
 
       // Refresh danh sách đơn hàng
       await fetchUserOrders();

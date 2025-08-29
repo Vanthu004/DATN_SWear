@@ -15,12 +15,12 @@ const OrderSuccessScreen = () => {
   const { sendOrderSuccessNotification } = useNotifications(userInfo?._id);
 
   useEffect(() => {
-    console.log("id đơn hàng.......",orderId);
-    console.log("userInfo:", userInfo);
+    //console.log("id đơn hàng.......",orderId);
+    //console.log("userInfo:", userInfo);
     
     // Gửi thông báo đặt hàng thành công
     if (orderId) {
-      console.log("Sending order success notification...");
+      //console.log("Sending order success notification...");
       try {
         sendOrderSuccessNotification({
           orderId: orderId,

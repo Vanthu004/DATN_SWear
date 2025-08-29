@@ -105,8 +105,12 @@ export default function HomeScreen() {
     const fetchFavorites = async () => {
       try {
         const data = await getFavoritesByUser(userId);
-        setFavoriteIds(data.map(fav => fav.product_id?._id));
+        console.log('🔍 Favorites data:', data);
+        const favoriteProductIds = data.map(fav => fav.product_id?._id);
+        console.log('🔍 Favorite product IDs:', favoriteProductIds);
+        setFavoriteIds(favoriteProductIds);
       } catch (err) {
+        console.error('❌ Lỗi khi fetch favorites:', err);
         setFavoriteIds([]);
       }
     };
@@ -120,8 +124,12 @@ export default function HomeScreen() {
         const fetchFavorites = async () => {
           try {
             const data = await getFavoritesByUser(userId);
-            setFavoriteIds(data.map(fav => fav.product_id?._id));
+            console.log('🔍 Refresh favorites data:', data);
+            const favoriteProductIds = data.map(fav => fav.product_id?._id);
+            console.log('🔍 Refresh favorite product IDs:', favoriteProductIds);
+            setFavoriteIds(favoriteProductIds);
           } catch (err) {
+            console.error('❌ Lỗi khi refresh favorites:', err);
             setFavoriteIds([]);
           }
         };
@@ -130,7 +138,7 @@ export default function HomeScreen() {
        refreshCart(); // ✅ Gọi đúng tên function
        
        // Debug cart data
-       console.log('🔍 Debug: refreshCart called, userId:', userId);
+      // console.log('🔍 Debug: refreshCart called, userId:', userId);
     }, [userId])
   );
 
@@ -179,7 +187,9 @@ export default function HomeScreen() {
         } else if (response?.data?.items && Array.isArray(response.data.items)) {
           products = response.data.items;
         }
-        setPersonalizedProducts(products.map(p => ({ ...p, _id: p?._id || p?.id || p?.product_id })));
+        const normalizedProducts = products.map(p => ({ ...p, _id: p?._id || p?.id || p?.product_id }));
+        console.log('🔍 Normalized personalized products:', normalizedProducts.map(p => ({ _id: p._id, name: p.name })));
+        setPersonalizedProducts(normalizedProducts);
       } catch (error) {
         console.error('Error fetching personalized products:', error);
         setPersonalizedProducts([]);
@@ -200,11 +210,15 @@ export default function HomeScreen() {
       if (isFav) {
         await removeFavorite(userId, product._id);
         setFavoriteIds(favoriteIds.filter(id => id !== product._id));
+        console.log('✅ Đã xóa sản phẩm khỏi yêu thích:', product._id);
       } else {
         await addFavorite(userId, product._id);
         setFavoriteIds([...favoriteIds, product._id]);
+        console.log('✅ Đã thêm sản phẩm vào yêu thích:', product._id);
       }
-    } catch (err) {}
+    } catch (err) {
+      console.error('❌ Lỗi khi toggle yêu thích:', err);
+    }
   };
  
 // state và gọi api cho danh mục hot
@@ -581,10 +595,14 @@ const ShoseMoutainCategoryList = ({ categories }) => (
             loading={personalizedLoading}
             title="Gợi ý dành cho bạn"
             navigation={navigation}
-            // isFavorite={favoriteIds.includes(item._id)}
-            // onToggleFavorite={handleToggleFavorite}
-            // showFavoriteIcon={true}
-            // onViewAll={() => navigation.navigate('SearchSc', { keyword: 'personalized' })}
+            isFavorite={(productId) => {
+              const isFav = favoriteIds.includes(productId);
+              console.log('🔍 Checking favorite for product:', productId, 'favoriteIds:', favoriteIds, 'isFavorite:', isFav);
+              return isFav;
+            }}
+            onToggleFavorite={handleToggleFavorite}
+            showFavoriteIcon={true}
+            onViewAll={() => navigation.navigate('SearchSc', { keyword: 'personalized' })}
           />
         )}
         {/* <View style={styles.sectionRow}>

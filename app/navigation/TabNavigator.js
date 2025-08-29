@@ -40,7 +40,9 @@ export const navigationRef = createRef();
 
 // Hàm resetNavigation để chuyển hướng về màn hình bất kỳ
 export const resetNavigation = (screenName) => {
-  //console.log("resetNavigation called with screen:", screenName);
+
+ // console.log("resetNavigation called with screen:", screenName);
+
   //console.log("navigationRef.current:", navigationRef.current);
   if (navigationRef.current) {
     navigationRef.current.reset({

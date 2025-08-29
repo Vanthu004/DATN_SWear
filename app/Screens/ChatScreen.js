@@ -30,7 +30,9 @@ import { chatAPI, chatUtils } from '../services/chatService';
 import socketService from '../services/socketService';
 
 const ChatScreen = ({ route }) => {
-  //console.log('🔍 ChatScreen params:', route.params);
+
+//  console.log('🔍 ChatScreen params:', route.params);
+
   const navigation = useAppNavigation();
   const dispatch = useDispatch();
   const { userInfo } = useAuth(); // Sử dụng userInfo thay vì user
@@ -186,7 +188,8 @@ const ChatScreen = ({ route }) => {
         roomId: room.roomId, 
         page: nextPage 
       })).unwrap();
-      //console.log('🔍 Load more result:', result);
+
+     // console.log('🔍 Load more result:', result);
       setCurrentPage(nextPage);
     } catch (error) {
       console.error('Load more messages error:', error);
@@ -209,7 +212,8 @@ const ChatScreen = ({ route }) => {
   };
 
   const renderMessage = ({ item, index }) => {
-   //('🔍 Message key:', item.id.toString());
+
+   // console.log('🔍 Message key:', item.id.toString());
     //console.log('🔍 Rendering message:', item, 'User ID:', getCurrentUserId());
     const isCurrentUser = item.sender_id === getCurrentUserId();
     const showSenderInfo = !isCurrentUser && (

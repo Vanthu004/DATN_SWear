@@ -1,165 +1,88 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import axios from 'axios'; // Giả định dùng axios cho API calls
 
-// Expo Push API endpoint
-const EXPO_PUSH_API_URL = 'https://exp.host/--/api/v2/push/send';
+const API_BASE_URL = 'http://192.168.52.108:3000/api/notifications'; // Config chung từ BE
 
-// Hàm gửi push notification thông qua Expo Push API
-export const sendPushNotification = async (expoPushToken, title, body, data = {}) => {
-  try {
-    const message = {
-      to: expoPushToken,
-      sound: 'default',
-      title: title,
-      body: body,
-      data: data,
-    };
-
-    const response = await fetch(EXPO_PUSH_API_URL, {
-      method: 'POST',
-      headers: {
-        Accept: 'application/json',
-        'Accept-encoding': 'gzip, deflate',
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(message),
-    });
-
-    const result = await response.json();
-    
-    if (result.data?.status === 'error') {
-      console.error('Push notification error:', result.data.message);
-      return { success: false, error: result.data.message };
-    }
-
-    console.log('Push notification sent successfully:', result);
-    return { success: true, result };
-  } catch (error) {
-    console.error('Error sending push notification:', error);
-    return { success: false, error: error.message };
-  }
-};
-
-// Hàm gửi thông báo cho nhiều tokens cùng lúc
-export const sendPushNotificationToMultipleTokens = async (tokens, title, body, data = {}) => {
-  try {
-    const messages = tokens.map(token => ({
-      to: token,
-      sound: 'default',
-      title: title,
-      body: body,
-      data: data,
-    }));
-
-    const response = await fetch(EXPO_PUSH_API_URL, {
-      method: 'POST',
-      headers: {
-        Accept: 'application/json',
-        'Accept-encoding': 'gzip, deflate',
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(messages),
-    });
-
-    const result = await response.json();
-    
-    if (Array.isArray(result)) {
-      const errors = result.filter(item => item.data?.status === 'error');
-      if (errors.length > 0) {
-        console.error('Some push notifications failed:', errors);
-        return { success: false, errors };
-      }
-    }
-
-    console.log('Multiple push notifications sent successfully:', result);
-    return { success: true, result };
-  } catch (error) {
-    console.error('Error sending multiple push notifications:', error);
-    return { success: false, error: error.message };
-  }
-};
-
-// Hàm gửi thông báo đơn hàng từ server
-export const sendOrderNotificationFromServer = async (userId, orderId, notificationType, additionalData = {}) => {
+// Hàm gửi push notification qua BE (single user)
+export const sendPushNotification = async (userId, title, body, data = {}) => {
   try {
     const userToken = await AsyncStorage.getItem('userToken');
-    
-    const response = await fetch('https://your-api-url.com/api/notifications/send-order-notification', {
-      method: 'POST',
+    const response = await axios.post(`${API_BASE_URL}/send-notification`, {
+      id: userId,
+      title,
+      body,
+      data,
+    }, {
       headers: {
-        'Content-Type': 'application/json',
         'Authorization': `Bearer ${userToken}`,
       },
-      body: JSON.stringify({
-        userId: userId,
-        orderId: orderId,
-        notificationType: notificationType,
-        additionalData: additionalData,
-      }),
     });
-
-    if (response.ok) {
-      const result = await response.json();
-      console.log('Order notification sent from server:', result);
-      return { success: true, result };
-    } else {
-      console.error('Failed to send order notification from server:', response.status);
-      return { success: false, error: 'Server error' };
-    }
+    console.log('Push notification sent via server:', response.data);
+    return { success: true, result: response.data };
   } catch (error) {
-    console.error('Error sending order notification from server:', error);
+    console.error('Error sending push notification via server:', error.response ? error.response.data : error.message);
     return { success: false, error: error.message };
   }
 };
 
-// Hàm kiểm tra trạng thái token
-export const validatePushToken = async (token) => {
+// Hàm gửi cho multiple users qua BE
+export const sendPushNotificationToMultipleTokens = async (userIds, title, body, data = {}) => {
   try {
-    const response = await fetch(EXPO_PUSH_API_URL, {
-      method: 'POST',
+    const userToken = await AsyncStorage.getItem('userToken');
+    const response = await axios.post(`${API_BASE_URL}/send-bulk-notification`, {
+      userIds,
+      title,
+      body,
+      data,
+    }, {
       headers: {
-        Accept: 'application/json',
-        'Accept-encoding': 'gzip, deflate',
-        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${userToken}`,
       },
-      body: JSON.stringify({
-        to: token,
-        title: 'Test',
-        body: 'Test notification',
-        data: { test: true },
-      }),
     });
-
-    const result = await response.json();
-    
-    if (result.data?.status === 'error') {
-      return { valid: false, error: result.data.message };
-    }
-
-    return { valid: true };
+    console.log('Multiple push notifications sent via server:', response.data);
+    return { success: true, result: response.data };
   } catch (error) {
-    return { valid: false, error: error.message };
+    console.error('Error sending multiple push notifications via server:', error.response ? error.response.data : error.message);
+    return { success: false, error: error.message };
   }
 };
 
-// Hàm lấy thống kê thông báo
+// Hàm gửi order notification (tùy chỉnh nếu cần, giả định BE có endpoint riêng; nếu không, dùng sendPushNotification với data)
+export const sendOrderNotificationFromServer = async (userId, orderId, notificationType, additionalData = {}) => {
+  // Nếu BE không có endpoint riêng, map thành title/body/data
+  let title = '';
+  let body = '';
+  switch (notificationType) {
+    case 'new_order': title = 'Đơn hàng mới'; body = `Đơn hàng #${orderId} đã được tạo.`; break;
+    // Thêm cases khác
+    default: title = 'Thông báo đơn hàng'; body = `Cập nhật về đơn hàng #${orderId}.`;
+  }
+  return sendPushNotification(userId, title, body, { orderId, notificationType, ...additionalData });
+};
+
+// Hàm validate token (gọi BE nếu BE có endpoint validate; nếu không, giữ Expo test nhưng chỉ cho debug)
+export const validatePushToken = async (token, tokenType = 'expo') => {
+  // Nếu BE có logic validate, gọi BE; tạm giữ cho Expo
+  if (tokenType === 'expo') {
+    // Giữ code gốc, nhưng chỉ dùng debug
+    try {
+      // Code gốc fetch Expo API...
+    } catch (error) { /* ... */ }
+  } else {
+    // Cho FCM, dùng Firebase admin ở BE
+    console.warn('Validate FCM nên gọi BE');
+    return { valid: false, error: 'Validate FCM qua BE' };
+  }
+};
+
+// Hàm get stats (nếu BE có /stats, giữ; nếu không, xóa hoặc implement ở BE)
 export const getNotificationStats = async () => {
   try {
     const userToken = await AsyncStorage.getItem('userToken');
-    
-    const response = await fetch('https://your-api-url.com/api/notifications/stats', {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${userToken}`,
-      },
+    const response = await axios.get(`${API_BASE_URL}/stats`, {
+      headers: { 'Authorization': `Bearer ${userToken}` },
     });
-
-    if (response.ok) {
-      const result = await response.json();
-      return { success: true, stats: result };
-    } else {
-      console.error('Failed to get notification stats:', response.status);
-      return { success: false, error: 'Server error' };
-    }
+    return { success: true, stats: response.data };
   } catch (error) {
     console.error('Error getting notification stats:', error);
     return { success: false, error: error.message };

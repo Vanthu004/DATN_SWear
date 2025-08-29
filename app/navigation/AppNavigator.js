@@ -17,7 +17,8 @@ const Stack = createNativeStackNavigator();
 export default function AppNavigator() {
   const { isLoading, userToken, isBanned } = useAuth();
 
-  //console.log("AppNavigator: userToken:", userToken, "isBanned:", isBanned);
+
+  // console.log("AppNavigator: userToken:", userToken, "isBanned:", isBanned);
 
   if (isLoading) {
     return <LoadingScreen />;

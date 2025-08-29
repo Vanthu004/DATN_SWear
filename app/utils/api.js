@@ -1,8 +1,5 @@
-// app/utils/api.js
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
-import { Alert } from "react-native";
-import { logoutGlobal } from "../context/AuthContext";
 // Base URL for the API
 const API_BASE_URL = "http://192.168.52.108:3000/api";
 
@@ -76,29 +73,23 @@ api.interceptors.response.use(
     const status = error.response?.status;
     const message = error.response?.data?.message || "Lỗi không xác định";
 
-    if (status === 401 && message === 'Token đã hết hạn') {
-      // Xử lý token expired: logout và alert
-      await logoutGlobal();
-      Alert.alert('Phiên hết hạn', 'Vui lòng đăng nhập lại.');
-      return Promise.reject(error);
-    }
-
-    if (status === 403 && message === 'Token không hợp lệ') {
-      // Xử lý invalid token: tương tự expired
-      await logoutGlobal();
-      Alert.alert('Token không hợp lệ', 'Vui lòng đăng nhập lại.');
-      return Promise.reject(error);
-    }
     if (status === 403 && message.includes("bị khóa")) {
       try {
         await AsyncStorage.setItem("banMessage", message);
         console.log("api.js: Ban detected, stored banMessage, relying on AuthContext for logout");
-        await logoutGlobal();
       } catch (err) {
         console.error("Error handling 403:", err);
       }
     }
 
+    if (status === 401 && message.toLowerCase().includes("jwt")) {
+      try {
+        await AsyncStorage.setItem("banMessage", message);
+        console.log("api.js: JWT error detected, stored banMessage, relying on AuthContext for logout");
+      } catch (err) {
+        console.error("Error handling 401:", err);
+      }
+    }
 
     console.log("API Response Error:", {
       status,
@@ -135,7 +126,11 @@ export const uploadImage = async (
     console.log("📤 FormData created:", formData);
     console.log("📤 Uploading to /upload");
 
-    const response = await api.post("/uploads/upload", formData);
+  const response = await api.post("/upload", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
 
     console.log("📤 Upload response:", response.data);
     return response.data;
@@ -153,6 +148,8 @@ export const uploadImage = async (
 // Upload avatar function theo format API mới
 export const uploadAvatar = async (imageUri) => {
   try {
+    console.log("Uploading to:", api.defaults.baseURL + "/upload");
+
     const formData = new FormData();
     formData.append("image", {
       uri: imageUri,
@@ -160,17 +157,24 @@ export const uploadAvatar = async (imageUri) => {
       name: "avatar.jpg",
     });
 
-    const response = await api.post("/uploads/upload", formData);
+const response = await api.post("/upload", formData, {
+  headers: { "Content-Type": "multipart/form-data" },
+  timeout: 10000,
+});
 
+    console.log("Upload response:", response.data);
     return response.data;
-  } catch (error) {
-    console.error("Upload avatar error:", error);
-    throw error;
+  } catch (err) {
+    console.error("Upload error:", err.message);
+    if (err.response) console.error("Response:", err.response.data);
+    if (err.request) console.error("Request made but no response");
+    throw err;
   }
 };
 
+
 // Hàm helper để update profile với avatar theo flow mới
-export const updateProfileWithAvatar = async (profileData, imageUri = null) => {
+export const updateProfileWithAvatar = async (profileData, imageUri) => {
   try {
     let uploadId = null;
 

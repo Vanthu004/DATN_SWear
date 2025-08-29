@@ -2,19 +2,19 @@ import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import React, { useEffect, useRef, useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    Dimensions,
-    FlatList,
-    Image,
-    Modal,
-    Pressable,
-    SafeAreaView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View
+  ActivityIndicator,
+  Alert,
+  Dimensions,
+  FlatList,
+  Image,
+  Modal,
+  Pressable,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
 } from "react-native";
 import Dialog from "react-native-dialog";
 import { TabBar, TabView } from 'react-native-tab-view';
@@ -73,7 +73,7 @@ const [showCancelDialog, setShowCancelDialog] = useState(false);
       navigation.navigate('PaymentScreen');
     } else {
       // fallback
-      console.log('Selected:', key);
+      //onsole.log('Selected:', key);
     }
   };
 
@@ -95,7 +95,8 @@ const [showCancelDialog, setShowCancelDialog] = useState(false);
 
       // Hoàn kho sản phẩm
       await increaseProductStock(stockItems);
-      //console.log("✅ Stock increased successfully after order cancellation");
+
+     // console.log("✅ Stock increased successfully after order cancellation");
     }
       Alert.alert("Thành công", "Đơn hàng đã được hủy.");
       setShowCancelDialog(false);
@@ -117,7 +118,9 @@ const [showCancelDialog, setShowCancelDialog] = useState(false);
         let details = await getOrderDetailsByOrderId(order._id);
         if (!Array.isArray(details)) details = [];
         // Log để kiểm tra dữ liệu
-        //console.log("Order:", order.order_code, "Details:", details);
+
+       // console.log("Order:", order.order_code, "Details:", details);
+
         return {
           ...order,
           orderDetails: details
